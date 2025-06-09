@@ -58,9 +58,8 @@ export function lanzarAnimacionCelebracion(confettiInstance, event) {
 
 // --- UTILIDAD PARA LLAMADAS A LA API (CORREGIDA PARA ?endpoint=...) ---
 export async function fetchData(endpoint_con_params, options = {}) {
-    // Loguear los valores recibidos y el importado API_BASE_URL
-    console.log("[fetchData] Inicio. API_BASE_URL importado:", API_BASE_URL, "(tipo:", typeof API_BASE_URL, ")");
-    console.log("[fetchData] Recibido endpoint_con_params:", endpoint_con_params, "(tipo:", typeof endpoint_con_params, ")");
+    console.log("[fetchData] Inicio. API_BASE_URL importado:", API_BASE_URL);
+    console.log("[fetchData] Recibido endpoint_con_params:", endpoint_con_params);
 
     let endpoint_base = String(endpoint_con_params || ''); 
     let query_string_original = '';
@@ -74,67 +73,50 @@ export async function fetchData(endpoint_con_params, options = {}) {
     const cleanApiBaseUrl = String(API_BASE_URL || '').trim(); 
 
     if (!cleanApiBaseUrl) {
-        console.error("[fetchData] ERROR: API_BASE_URL está vacío o no definido después de importar y limpiar.");
+        console.error("[fetchData] ERROR: API_BASE_URL está vacío o no definido.");
         throw new Error("Configuración de API_BASE_URL incorrecta.");
     }
     if (!endpoint_base) {
-        console.error("[fetchData] ERROR: endpoint_base está vacío después de procesar.");
+        console.error("[fetchData] ERROR: endpoint_base está vacío.");
         throw new Error("Endpoint no especificado para fetchData.");
     }
     
-    console.log("[fetchData] Valores limpios -> cleanApiBaseUrl:", cleanApiBaseUrl, "| endpoint_base:", endpoint_base, "| query_string_original:", query_string_original);
-
     let url = `${cleanApiBaseUrl}?endpoint=${endpoint_base}`;
     if (query_string_original) {
         url += `&${query_string_original}`;
     }
 
-    const logOptions = { ...options, body: options.body && typeof options.body !== 'string' ? '[Cuerpo no string]' : options.body };
-    console.log("fetchData URL FINAL:", url, "CON OPCIONES:", logOptions);
+    // Para manejar sesiones con cookies, es crucial incluir 'credentials'
+    const finalOptions = {
+        ...options,
+        credentials: 'include' // Envía cookies (como el ID de sesión) con la petición.
+    };
+
+    console.log("fetchData URL FINAL:", url, "CON OPCIONES:", finalOptions);
     
     try {
-        const response = await fetch(url, options);
+        const response = await fetch(url, finalOptions);
         
-        if (response.type === 'opaque') { // Capturar redirecciones CORS bloqueadas (como a la página 404 de InfinityFree)
-             console.error(`fetchData: Respuesta opaca para ${url}. Indica un problema de CORS o una redirección a un recurso no permitido (posible 404 no manejado por tu API).`);
-             throw new Error(`Fallo al obtener recurso (respuesta opaca): ${url}. Verifica la ruta del endpoint y la configuración del servidor.`);
+        if (response.type === 'opaque') {
+             console.error(`fetchData: Respuesta opaca para ${url}.`);
+             throw new Error(`Fallo al obtener recurso (respuesta opaca): ${url}.`);
+        }
+        
+        const responseData = await response.json();
+
+        if (!response.ok) {
+            // Si la respuesta tiene un error en formato JSON, úsalo. Si no, usa el statusText.
+            const error = new Error(responseData.error || `Error HTTP ${response.status} (${response.statusText})`);
+            error.status = response.status;
+            throw error;
         }
 
-        if (!response.ok) { // Capturar errores HTTP (4xx, 5xx)
-            let errorText = `Error HTTP ${response.status} (${response.statusText}) al obtener ${url}.`;
-            let responseBodyText = '';
-            try {
-                responseBodyText = await response.text(); 
-                console.error("fetchData: Respuesta de error del servidor (status no OK):", responseBodyText);
-                errorText += ` Respuesta del servidor: ${responseBodyText.substring(0, 200)}...`;
-            } catch (e) {
-                console.error("fetchData: No se pudo leer el cuerpo de la respuesta de error.");
-            }
-            throw new Error(errorText);
-        }
-
-        // Si response.ok es true, intentar parsear como JSON
-        const responseData = await response.json().catch(jsonError => {
-            console.error(`fetchData: Error al parsear JSON desde ${url}. Status: ${response.status}`, jsonError);
-            // En este punto, response.ok era true, pero el cuerpo no es JSON.
-            // Esto indica que el servidor PHP envió un 200 OK pero con contenido incorrecto (ej. un error PHP mostrado como HTML).
-            // No podemos re-leer response.text() aquí si .json() ya consumió el stream y falló.
-            // El error original jsonError es lo más útil aquí.
-            throw new Error(`Respuesta del servidor no es JSON válido desde ${url} (Status: ${response.status}), aunque el status fue OK. Error de parseo: ${jsonError.message}`);
-        });
         return responseData;
 
     } catch (error) {
         console.error(`Error en fetchData para '${url || endpoint_con_params}':`, error.message);
-        // Si el error ya es uno de los que hemos formateado arriba, simplemente lo re-lanzamos.
-        // Si es un error genérico de "Failed to fetch", lo envolvemos.
-        if (error.message.toLowerCase().includes("failed to fetch") && 
-            !error.message.includes("HTTP") && 
-            !error.message.includes("JSON válido") &&
-            !error.message.includes("respuesta opaca")) {
-             throw new Error(`Fallo de red al obtener recurso: ${url || endpoint_con_params}. Verifica la conexión y la URL.`);
-        }
-        throw error; // Re-lanzar el error si ya tiene un mensaje descriptivo o es uno de nuestros errores personalizados.
+        // Re-lanzar el error para que sea manejado por el código que llamó a fetchData
+        throw error;
     }
 }
 

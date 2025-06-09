@@ -121,7 +121,6 @@ export function abrirModalParaNuevoElemento(contexto = null, fechaPreseleccionad
         return; 
     }
     
-    // Definir el callback de guardado
     const onGuardarCallback = async () => {
         let urlEndpoint, options, payload = {}, successMessage, reloadFunction;
         const tipoOp = contexto;
@@ -191,7 +190,6 @@ export function abrirModalParaNuevoElemento(contexto = null, fechaPreseleccionad
     
     mostrarFormulario(formHtmlCampos, onGuardarCallback, formTitle, guardarBtnText);
 
-    // Lógica específica post-renderizado del modal para 'dia-a-dia'
     if (contexto === 'dia-a-dia') {
         const fechaInputDisplayEl = document.getElementById('fechaInicioInputDisplay');
         const initialDateForMiniCal = fechaPreseleccionada ? new Date(fechaPreseleccionada + "T00:00:00Z") : new Date();
@@ -222,23 +220,46 @@ export function abrirModalParaNuevoElemento(contexto = null, fechaPreseleccionad
         const addMoreSubtasksBtn = document.getElementById('addMoreSubtasksBtn');
         const subtasksContainer = document.getElementById('subtasks-inputs-container');
         if (addMoreSubtasksBtn && subtasksContainer) {
-            addMoreSubtasksBtn.onclick = () => { /* ... (lógica añadir subtarea de la respuesta #3) ... */ };
+            addMoreSubtasksBtn.onclick = () => {
+                const newEntry = document.createElement('div');
+                newEntry.className = 'subtask-entry';
+                newEntry.innerHTML = `<input type="text" class="subtask-text-input" placeholder="Siguiente subtarea..."><button type="button" class="quitar-subtarea-btn" title="Quitar">&times;</button>`;
+                subtasksContainer.appendChild(newEntry);
+                newEntry.querySelector('.quitar-subtarea-btn').onclick = () => newEntry.remove();
+                newEntry.querySelector('.subtask-text-input').focus();
+             };
         }
         const emojiOptsAddTask = document.querySelectorAll('#emojiSelectorAddTask .emoji-option');
         if(emojiOptsAddTask.length) {
+            const emojiDisplay = document.getElementById('currentEmojiAnotacionDisplay');
+            const emojiInput = document.getElementById('emojiAnotacionTareaInput');
             let selectedEmojisModalArray = []; 
             emojiOptsAddTask.forEach(opt => { 
-                opt.onclick = () => { /* ... (lógica rolling emoji selector de la respuesta #3) ... */ }; 
+                opt.onclick = () => {
+                    const emoji = opt.dataset.emoji;
+                    const index = selectedEmojisModalArray.indexOf(emoji);
+                    if (index > -1) {
+                        selectedEmojisModalArray.splice(index, 1);
+                        opt.classList.remove('selected');
+                    } else if (selectedEmojisModalArray.length < 3) {
+                        selectedEmojisModalArray.push(emoji);
+                        opt.classList.add('selected');
+                    } else {
+                        alert("Máximo 3 emojis.");
+                    }
+                    emojiDisplay.textContent = selectedEmojisModalArray.join(' ');
+                    emojiInput.value = selectedEmojisModalArray.join('');
+                }; 
                 opt.onkeydown = e => { if(e.key==='Enter'||e.key===' ') opt.click();};
             });
         }
     }
-} // Fin de abrirModalParaNuevoElemento
+}
 export function mostrarFormularioAddSubTarea(parentId, fechaObjRecarga) {
     const formHtmlCampos = `
         <label for="nuevaSubTareaTexto">Texto de la Sub-Tarea:</label>
         <input type="text" id="nuevaSubTareaTexto" placeholder="Ej. Comprar leche">
-    `; // Botones se añadirán por mostrarFormulario de ui.js
+    `;
     
     const onGuardarSubTarea = async () => { 
         const texto = document.getElementById('nuevaSubTareaTexto').value.trim();
@@ -252,33 +273,26 @@ export function mostrarFormularioAddSubTarea(parentId, fechaObjRecarga) {
             texto, 
             tipo: 'subtarea', 
             parent_id: parentId,
-            // Las subtareas añadidas así son para el día específico del título padre
-            // y no son recurrentes por sí mismas. Heredan la fecha_inicio de su instancia de título.
             fecha_inicio: fechaObjRecarga.toISOString().split('T')[0], 
             regla_recurrencia: 'NONE' 
         };
         const options = { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) };
         
         try {
-            // fetchData usa API_BASE_URL internamente
             await fetchData(urlEndpoint, options); 
             alert('Sub-tarea añadida.'); 
-            ocultarFormulario(); // ocultarFormulario se importa desde ui.js
+            ocultarFormulario();
             
-            // cargarTareasDiaADia y appRenderizarCalendario se importan desde views.js
-            // fechaCalendarioActual y setFechaCalendarioActual se importan desde app.js
             const fechaParaRecargar = new Date(fechaCalendarioActual.getTime() || fechaObjRecarga.getTime());
             await cargarTareasDiaADia(fechaParaRecargar); 
             await appRenderizarCalendario(fechaParaRecargar.getFullYear(), fechaParaRecargar.getMonth(), setFechaCalendarioActual);
         } catch (error) {
             console.error("Error al añadir subtarea:", error);
             alert(`Error al añadir subtarea: ${error.message}`);
-            // No ocultar el formulario aquí para que el usuario pueda reintentar.
-            throw error; // Re-lanzar para que el catch de mostrarFormulario lo maneje si es necesario.
+            throw error;
         }
     };
     
-    // mostrarFormulario ahora maneja sus propios botones
     mostrarFormulario(formHtmlCampos, onGuardarSubTarea, "Añadir Sub-Tarea", "Guardar Sub-Tarea");
 }
 
@@ -286,7 +300,7 @@ export function mostrarFormularioAddSubObjetivo(objetivoPrincipalId, mode_id_rec
     const formHtmlCampos = `
         <label for="nuevoSubObjetivoModalTexto">Texto del Sub-Objetivo:</label>
         <input type="text" id="nuevoSubObjetivoModalTexto" placeholder="Ej. Investigar opciones">
-    `; // Botones se añadirán por mostrarFormulario de ui.js
+    `;
     
     const onGuardarSubObjetivo = async () => {
         const texto = document.getElementById('nuevoSubObjetivoModalTexto').value.trim();
@@ -300,11 +314,10 @@ export function mostrarFormularioAddSubObjetivo(objetivoPrincipalId, mode_id_rec
         const options = { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) };
         
         try {
-            // fetchData usa API_BASE_URL internamente
             await fetchData(urlEndpoint, options);
             alert('Sub-objetivo añadido.');
-            ocultarFormulario(); // ocultarFormulario se importa desde ui.js
-            await cargarObjetivos(mode_id_recarga); // cargarObjetivos se importa desde views.js
+            ocultarFormulario();
+            await cargarObjetivos(mode_id_recarga);
         } catch (error) {
             console.error("Error al añadir sub-objetivo:", error);
             alert(`Error al añadir sub-objetivo: ${error.message}`);
@@ -351,7 +364,6 @@ export function mostrarFormularioEditarTarea(tarea, fechaObjRecarga, tipoOrigina
             </fieldset>
         `;
     }
-    // Los botones se añadirán por mostrarFormulario
     
     const onGuardarEditarTarea = async () => { 
         const texto = document.getElementById('editTareaTexto').value.trim();
@@ -475,4 +487,3 @@ export function mostrarFormularioEditarSubObjetivo(objetivoIdPadre, subObjetivo,
     };
     mostrarFormulario(formHtmlCampos, onGuardarEditarSubObjetivo, "Editar Sub-Objetivo");
 }
-// Fin del módulo modals.js

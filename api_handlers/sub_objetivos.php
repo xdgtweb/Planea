@@ -1,107 +1,90 @@
 <?php
 // api_handlers/sub_objetivos.php
 
-// Este archivo es incluido por el api.php principal.
-// Las variables $mysqli (de db_config.php, global), 
-// $handler_http_method (el método HTTP efectivo: GET, POST, PUT, DELETE),
-// $data_for_handler (el payload JSON decodificado para POST, PUT, DELETE),
-// y las funciones jsonResponse() y getTodayDate() están disponibles desde el router principal.
+if (!isset($_SESSION['usuario_id'])) { jsonResponse(["error" => "No autorizado."], 401); exit; }
+$usuario_id = $_SESSION['usuario_id'];
 
-if (!isset($mysqli)) {
-    jsonResponse(["error" => "Error crítico: Conexión a base de datos no disponible en sub_objetivos.php."], 500);
-    exit;
-}
-if (!isset($handler_http_method)) {
-    jsonResponse(["error" => "Error crítico: Método HTTP no determinado en sub_objetivos.php."], 500);
-    exit;
-}
-// $data_for_handler está disponible y contiene el cuerpo de la solicitud si el método es POST, PUT, DELETE
+if (!isset($mysqli)) { jsonResponse(["error" => "Error crítico: Conexión a base de datos no disponible."], 500); exit; }
+if (!isset($handler_http_method)) { jsonResponse(["error" => "Error crítico: Método HTTP no determinado."], 500); exit; }
 
 switch ($handler_http_method) {
     case 'POST': // Crear nuevo sub-objetivo
         try {
-            // $data_for_handler ya contiene el cuerpo JSON decodificado
             $objetivo_id = $data_for_handler['objetivo_id'] ?? '';
             $texto = $data_for_handler['texto'] ?? '';
+            if (empty($objetivo_id) || empty($texto)) { jsonResponse(["error" => "ID de objetivo y texto son requeridos."], 400); }
 
-            if (empty($objetivo_id) || empty($texto)) {
-                jsonResponse(["error" => "ID de objetivo y texto son requeridos para crear un sub-objetivo."], 400);
-            }
+            // Verificar que el objetivo padre pertenece al usuario
+            $sql_check = "SELECT id FROM objetivos WHERE id = ? AND usuario_id = ?";
+            $stmt_check = $mysqli->prepare($sql_check);
+            $stmt_check->bind_param("si", $objetivo_id, $usuario_id);
+            $stmt_check->execute();
+            $stmt_check->store_result();
+            if ($stmt_check->num_rows == 0) { jsonResponse(["error" => "Objetivo no encontrado o sin permiso."], 404); }
+            $stmt_check->close();
+
             $sql = "INSERT INTO sub_objetivos (objetivo_id, texto, completado) VALUES (?, ?, FALSE)";
             $stmt = $mysqli->prepare($sql);
-            if (!$stmt) { throw new Exception("DB Error (subobj_c_prep): " . $mysqli->error . " SQL: " . $sql); }
             $stmt->bind_param("ss", $objetivo_id, $texto);
             if ($stmt->execute()) {
-                jsonResponse(["success" => true, "id" => $mysqli->insert_id, "texto" => $texto, "completado" => false, "objetivo_id" => $objetivo_id], 201);
-            } else {
-                throw new Exception("Error al añadir sub-objetivo: " . $stmt->error . " SQL: " . $sql);
-            }
+                jsonResponse(["success" => true, "id" => $mysqli->insert_id], 201);
+            } else { throw new Exception("Error al añadir sub-objetivo: " . $stmt->error); }
             $stmt->close();
         } catch (Exception $e) {
-            error_log("Error en POST /sub_objetivos: " . $e->getMessage());
-            jsonResponse(["error" => "No se pudo crear el sub-objetivo.", "details" => $e->getMessage()], 500);
+            error_log("Error en POST /sub_objetivos (user $usuario_id): " . $e->getMessage());
+            jsonResponse(["error" => "No se pudo crear el sub-objetivo."], 500);
         }
         break;
 
-    case 'PUT': // Actualizar sub-objetivo existente
+    case 'PUT': // Actualizar sub-objetivo
         try {
-            // $data_for_handler ya contiene el cuerpo JSON decodificado
-            $id_subobjetivo_put = $data_for_handler['id'] ?? null; // ID del sub-objetivo
+            $id_subobjetivo_put = $data_for_handler['id'] ?? null;
             $texto_put = $data_for_handler['texto'] ?? '';
+            if ($id_subobjetivo_put === null || empty($texto_put)) { jsonResponse(["error" => "ID de sub-objetivo y texto son requeridos."], 400); }
 
-            if ($id_subobjetivo_put === null || empty($texto_put)) {
-                jsonResponse(["error" => "ID de sub-objetivo y texto son requeridos para actualizar."], 400);
-            }
-            $sql_put = "UPDATE sub_objetivos SET texto = ? WHERE id = ?";
+            // Actualizar solo si el objetivo padre pertenece al usuario
+            $sql_put = "UPDATE sub_objetivos s JOIN objetivos o ON s.objetivo_id = o.id SET s.texto = ? WHERE s.id = ? AND o.usuario_id = ?";
             $stmt_put = $mysqli->prepare($sql_put);
-            if (!$stmt_put) { throw new Exception("DB Error (subobj_u_prep): " . $mysqli->error . " SQL: " . $sql_put); }
-            $stmt_put->bind_param("si", $texto_put, $id_subobjetivo_put);
+            $stmt_put->bind_param("sii", $texto_put, $id_subobjetivo_put, $usuario_id);
             if ($stmt_put->execute()) {
                 if ($stmt_put->affected_rows > 0) {
                      jsonResponse(["success" => true, "message" => "Sub-objetivo actualizado."]);
                 } else {
-                     jsonResponse(["success" => false, "message" => "No se actualizó el sub-objetivo (ID no encontrado o datos iguales).", "id" => $id_subobjetivo_put], 200);
+                     jsonResponse(["success" => false, "message" => "No se actualizó (ID no encontrado o sin permiso)."], 404);
                 }
-            } else {
-                throw new Exception("Error al actualizar sub-objetivo: " . $stmt_put->error . " SQL: " . $sql_put);
-            }
+            } else { throw new Exception("Error al actualizar sub-objetivo: " . $stmt_put->error); }
             $stmt_put->close();
         } catch (Exception $e) {
-            error_log("Error en PUT /sub_objetivos: " . $e->getMessage());
-            jsonResponse(["error" => "No se pudo actualizar el sub-objetivo.", "details" => $e->getMessage()], 500);
+            error_log("Error en PUT /sub_objetivos (user $usuario_id): " . $e->getMessage());
+            jsonResponse(["error" => "No se pudo actualizar el sub-objetivo."], 500);
         }
         break;
 
     case 'DELETE': // Eliminar sub-objetivo
         try {
-            // $data_for_handler ya contiene el cuerpo JSON decodificado
-            $id_subobjetivo_del = $data_for_handler['id'] ?? null; // ID del sub-objetivo
-            if ($id_subobjetivo_del === null) {
-                jsonResponse(["error" => "ID de sub-objetivo es requerido para eliminar."], 400);
-            }
-            $sql_del = "DELETE FROM sub_objetivos WHERE id = ?";
+            $id_subobjetivo_del = $data_for_handler['id'] ?? null;
+            if ($id_subobjetivo_del === null) { jsonResponse(["error" => "ID de sub-objetivo es requerido."], 400); }
+
+            // Eliminar solo si el objetivo padre pertenece al usuario
+            $sql_del = "DELETE s FROM sub_objetivos s JOIN objetivos o ON s.objetivo_id = o.id WHERE s.id = ? AND o.usuario_id = ?";
             $stmt_del = $mysqli->prepare($sql_del);
-            if (!$stmt_del) { throw new Exception("DB Error (subobj_d_prep): " . $mysqli->error . " SQL: " . $sql_del); }
-            $stmt_del->bind_param("i", $id_subobjetivo_del);
+            $stmt_del->bind_param("ii", $id_subobjetivo_del, $usuario_id);
             if ($stmt_del->execute()) {
                 if ($stmt_del->affected_rows > 0) {
                     jsonResponse(["success" => true, "message" => "Sub-objetivo eliminado."]);
                 } else {
-                     jsonResponse(["success" => false, "message" => "No se encontró el sub-objetivo para eliminar o ya fue eliminado."], 404);
+                     jsonResponse(["success" => false, "message" => "No se encontró el sub-objetivo o no tienes permiso."], 404);
                 }
-            } else {
-                throw new Exception("Error al eliminar sub-objetivo: " . $stmt_del->error . " SQL: " . $sql_del);
-            }
+            } else { throw new Exception("Error al eliminar sub-objetivo: " . $stmt_del->error); }
             $stmt_del->close();
         } catch (Exception $e) {
-            error_log("Error en DELETE /sub_objetivos: " . $e->getMessage());
-            jsonResponse(["error" => "No se pudo eliminar el sub-objetivo.", "details" => $e->getMessage()], 500);
+            error_log("Error en DELETE /sub_objetivos (user $usuario_id): " . $e->getMessage());
+            jsonResponse(["error" => "No se pudo eliminar el sub-objetivo."], 500);
         }
         break;
 
     default:
-        jsonResponse(["error" => "Método " . htmlspecialchars($handler_http_method) . " no soportado para el endpoint /sub_objetivos."], 405);
+        jsonResponse(["error" => "Método no soportado."], 405);
         break;
 }
-
 ?>

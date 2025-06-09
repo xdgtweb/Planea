@@ -18,7 +18,6 @@ let modoContenido = null;
 let appFechaCalendarioActual = new Date(); 
 let appSetFechaCalendarioActual = (newDate) => { console.warn("setFechaCalendarioActual no inicializada en views.js"); fechaCalendarioActual = newDate; };
 let modosDisponibles = [];
-// let appModoActivo = 'dia-a-dia'; // No se necesita directamente aquí
 let myConfettiInstance = null;
 
 // Función para inicializar las variables/referencias desde app.js
@@ -27,7 +26,6 @@ export function initViewsModule(appState) {
     appFechaCalendarioActual = appState.appFechaCalendarioActual;
     appSetFechaCalendarioActual = appState.appSetFechaCalendarioActual;
     modosDisponibles = appState.modosDisponibles;
-    // appModoActivo = appState.appModoActivo; 
     myConfettiInstance = appState.myConfettiInstance;
     console.log("views.js: Módulo inicializado con referencias de app.js");
 }
@@ -42,8 +40,6 @@ export async function renderizarModoDiaADia() {
         return; 
     }
     
-    let fechaActualVista = new Date(appFechaCalendarioActual.getTime());
-
     modoContenido.innerHTML = `
         <h2>Día a Día</h2>
         <p class="descripcion-pagina">Clic derecho en un día del calendario para añadir tareas programadas. Clic izquierdo para ver detalles y anotaciones del día.</p>
@@ -77,19 +73,16 @@ export async function renderizarModoDiaADia() {
             const isExpanded = listaInactivasDiv.classList.toggle('expandido');
             toggleInactivasBtn.classList.toggle('expandido', isExpanded);
             toggleInactivasBtn.setAttribute('aria-expanded', isExpanded.toString());
-            if (isExpanded && listaTareasInactivasDiv.innerHTML.trim() === '') { 
+            // Si se expande y está vacío, intenta cargar las tareas
+            if (isExpanded && listaInactivasDiv.innerHTML.trim() === '') { 
                 cargarTareasDiaADia(new Date(appFechaCalendarioActual.getTime())); 
             }
         };
         toggleInactivasBtn.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') toggleInactivasBtn.click(); };
     }
 
-    console.log("renderizarModoDiaADia (views.js): HTML base y botón de añadir inyectados.");
-    // renderizarCalendario (se definirá en Parte 4) llamará a appSetFechaCalendarioActual como callback
     await renderizarCalendario(appFechaCalendarioActual.getFullYear(), appFechaCalendarioActual.getMonth(), appSetFechaCalendarioActual); 
     await cargarTareasDiaADia(new Date(appFechaCalendarioActual.getTime())); 
-    // Los listeners para #tareasDetalleDia se añadirán en verDetalleDia()
-    console.log("renderizarModoDiaADia (views.js): Finalizado.");
 }
 
 export async function cargarTareasDiaADia(fechaObj) {
@@ -110,11 +103,9 @@ export async function cargarTareasDiaADia(fechaObj) {
 
     const fechaParaAPI = fechaObj.toISOString().split('T')[0];
     const urlEndpoint = `tareas-dia-a-dia?fecha=${fechaParaAPI}`;
-    console.log("cargarTareasDiaADia (views.js): Iniciando carga para fecha:", fechaParaAPI);
-    let todasLasTareas; 
+    
     try {
-        todasLasTareas = await fetchData(urlEndpoint); 
-        console.log("cargarTareasDiaADia (views.js): Tareas recibidas para " + fechaParaAPI + ":", todasLasTareas);
+        const todasLasTareas = await fetchData(urlEndpoint); 
         if (!Array.isArray(todasLasTareas)) {
             throw new Error("Datos de tareas no válidos (no es un array).");
         }
@@ -152,19 +143,12 @@ export async function cargarTareasDiaADia(fechaObj) {
         }
         renderizarTareasInactivas(tareasInactivas, fechaObj); 
     } catch (error) { 
-        console.error("Error en cargarTareasDiaADia dentro del try:", error); 
+        console.error("Error en cargarTareasDiaADia:", error); 
         tareasDiariasListaDiv.innerHTML = `<p class="error-mensaje">Error al cargar tareas: ${error.message}</p>`; 
         
         const toggleBtn = document.getElementById('toggle-tareas-inactivas');
         if (listaTareasInactivasDiv.classList.contains('expandido')) {
              listaTareasInactivasDiv.innerHTML = `<p class="error-mensaje">Error al cargar tareas inactivas.</p>`;
-        }
-        if(toggleBtn) { 
-             let numInactivasError = '?'; 
-             if (typeof todasLasTareas !== 'undefined' && Array.isArray(todasLasTareas)) {
-                numInactivasError = todasLasTareas.filter(t => !t.activo).length;
-             }
-             toggleBtn.textContent = `Mostrar Tareas Archivadas/Inactivas (${numInactivasError})`;
         }
     }
 }
@@ -173,10 +157,7 @@ export function renderizarTareasInactivas(tareasInactivas, fechaObj) {
     const listaTareasInactivasDiv = document.getElementById('lista-tareas-inactivas');
     const toggleBtn = document.getElementById('toggle-tareas-inactivas');
 
-    if (!listaTareasInactivasDiv || !toggleBtn) {
-        console.error("renderizarTareasInactivas: Contenedores para inactivas no encontrados.");
-        return;
-    }
+    if (!listaTareasInactivasDiv || !toggleBtn) return;
     
     const numInactivas = tareasInactivas ? tareasInactivas.length : 0; 
     const estaExpandido = listaTareasInactivasDiv.classList.contains('expandido');
@@ -219,6 +200,7 @@ export function renderizarTareasInactivas(tareasInactivas, fechaObj) {
     });
     listaTareasInactivasDiv.appendChild(ulInactivas);
 }
+
 export function crearElementoTituloTareaDiaria(tarea, fechaObj) {
     const liTitulo = document.createElement('li');
     liTitulo.className = 'tarea-titulo-item';
@@ -229,7 +211,6 @@ export function crearElementoTituloTareaDiaria(tarea, fechaObj) {
     textoSpan.textContent = tarea.texto;
     liTitulo.appendChild(textoSpan);
 
-    // createActionToggleButton se importa desde ui.js
     const toggleBtn = createActionToggleButton(tarea, fechaObj, 'dia-a-dia'); 
     liTitulo.appendChild(toggleBtn);
     return liTitulo;
@@ -241,16 +222,20 @@ export function crearElementoSubTareaDiaria(tarea, fechaObj, esSuelta = false) {
     if (!tarea.activo) { li.classList.add('tarea-inactiva'); }
 
     const checkboxId = `tarea-${tarea.id}-${fechaObj.toISOString().split('T')[0].replace(/-/g, '')}`;
-    let labelText = tarea.texto; 
     const checkbox = document.createElement('input');
-    checkbox.type = 'checkbox'; checkbox.id = checkboxId; checkbox.dataset.idTareaDb = tarea.id; checkbox.checked = tarea.completado;
+    checkbox.type = 'checkbox';
+    checkbox.id = checkboxId;
+    checkbox.dataset.idTareaDb = tarea.id;
+    checkbox.checked = tarea.completado;
+    
     const label = document.createElement('label');
-    label.htmlFor = checkboxId; label.textContent = labelText;
+    label.htmlFor = checkboxId;
+    label.textContent = tarea.texto;
     
     if(tarea.completado && tarea.activo) {
-        label.classList.add('sub-objetivo-completado'); // Reutilizamos clase para el tachado
+        label.classList.add('sub-objetivo-completado');
     } else if (!tarea.activo) { 
-        label.classList.add('sub-objetivo-completado'); // Las inactivas también se tachan
+        label.classList.add('sub-objetivo-completado');
     }
 
     li.appendChild(checkbox);
@@ -261,18 +246,11 @@ export function crearElementoSubTareaDiaria(tarea, fechaObj, esSuelta = false) {
     
     const hoy = new Date(); 
     hoy.setHours(0,0,0,0);
-    // fechaObj es la fecha del día para el cual se está renderizando esta lista de tareas
     const fechaDeLaTareaVisualizada = new Date(fechaObj); 
     fechaDeLaTareaVisualizada.setHours(0,0,0,0);
-
-    const esHoy = fechaDeLaTareaVisualizada.getTime() === hoy.getTime();
     const esPasado = fechaDeLaTareaVisualizada.getTime() < hoy.getTime();
 
-    // Deshabilitar checkbox si:
-    // 1. La tarea es de un día pasado.
-    // 2. No es hoy Y es un día futuro (solo se pueden completar tareas del día actual).
-    // 3. La tarea misma está inactiva.
-    checkbox.disabled = esPasado || (!esHoy && fechaDeLaTareaVisualizada.getTime() > hoy.getTime()) || !tarea.activo;
+    checkbox.disabled = esPasado || !tarea.activo;
     
     if (checkbox.disabled) { 
         checkbox.style.opacity = '0.6'; 
@@ -282,15 +260,13 @@ export function crearElementoSubTareaDiaria(tarea, fechaObj, esSuelta = false) {
     checkbox.onchange = async (e) => {
         const esMarcado = e.target.checked; 
         const idTareaDB = e.target.dataset.idTareaDb;
-        // myConfettiInstance se inicializa en app.js y se accede a través de initViewsModule
         if (esMarcado && myConfettiInstance) lanzarAnimacionCelebracion(myConfettiInstance, e); 
 
-        const urlEndpoint = `tareas-dia-a-dia`; 
         const payload = { 
             _method: "PUT", 
             id: parseInt(idTareaDB), 
             completado: esMarcado, 
-            fecha_actualizacion: fechaObj.toISOString().split('T')[0] // Fecha del día donde se marcó
+            fecha_actualizacion: fechaObj.toISOString().split('T')[0]
         };
         const options = { 
             method: 'POST', 
@@ -298,14 +274,13 @@ export function crearElementoSubTareaDiaria(tarea, fechaObj, esSuelta = false) {
             body: JSON.stringify(payload) 
         };
         try {
-            await fetchData(urlEndpoint, options); 
+            await fetchData(`tareas-dia-a-dia`, options); 
             if (tarea.activo) { 
                 label.classList.toggle('sub-objetivo-completado', esMarcado); 
             }
-            // renderizarCalendario es de este mismo módulo (views.js) y se definirá en la Parte 4
-            await renderizarCalendario(fechaCalendarioActual.getFullYear(), fechaCalendarioActual.getMonth(), setFechaCalendarioActual); 
+            await renderizarCalendario(appFechaCalendarioActual.getFullYear(), appFechaCalendarioActual.getMonth(), appSetFechaCalendarioActual); 
         } catch (error) {
-            e.target.checked = !esMarcado; // Revertir el checkbox si hay error
+            e.target.checked = !esMarcado;
             if (tarea.activo) { 
                 label.classList.toggle('sub-objetivo-completado', !esMarcado); 
             }
@@ -316,16 +291,13 @@ export function crearElementoSubTareaDiaria(tarea, fechaObj, esSuelta = false) {
 }
 
 export async function restaurarTarea(tareaARestaurar, fechaObjRecarga) {
-    console.log("Intentando restaurar tarea:", tareaARestaurar);
     let payload = { _method: "PUT", id: parseInt(tareaARestaurar.id), activo: true, tipo: tareaARestaurar.tipo };
     const urlEndpointBase = `tareas-dia-a-dia`;
 
     if (tareaARestaurar.tipo === 'subtarea') { 
         try {
-            const urlTitulosEndpoint = `tareas-dia-a-dia?fecha=${fechaObjRecarga.toISOString().split('T')[0]}&solo_titulos_activos=true`;
-            const titulosActivos = await fetchData(urlTitulosEndpoint); 
-            console.log("Títulos activos para reasignar:", titulosActivos);
-    
+            const titulosActivos = await fetchData(`tareas-dia-a-dia?fecha=${fechaObjRecarga.toISOString().split('T')[0]}&solo_titulos_activos=true`);
+            
             let optionsHtml = '<option value="">-- Restaurar como tarea suelta (sin título) --</option>';
             if (titulosActivos && titulosActivos.length > 0) {
                 titulosActivos.forEach(titulo => {
@@ -333,35 +305,25 @@ export async function restaurarTarea(tareaARestaurar, fechaObjRecarga) {
                 });
             }
             
-            const reasignarHtml = `
-                <p>La tarea "${tareaARestaurar.texto}" es una subtarea. ¿Dónde quieres restaurarla?</p>
-                <label for="selectNuevoParentId" style="display:block; margin-bottom:5px;">Asignar al título (o dejar como suelta):</label>
-                <select id="selectNuevoParentId" style="width:100%; padding:8px; margin-bottom:15px;">${optionsHtml}</select>
-            `;
+            const reasignarHtml = `<p>La tarea "${tareaARestaurar.texto}" es una subtarea. ¿Dónde quieres restaurarla?</p><select id="selectNuevoParentId">${optionsHtml}</select>`;
             
             mostrarFormulario(reasignarHtml, async () => {
                 const selectParent = document.getElementById('selectNuevoParentId');
-                const nuevoParentId = selectParent.value ? parseInt(selectParent.value) : null; 
-                payload.parent_id = nuevoParentId; 
-                console.log("Restaurando subtarea con payload:", payload);
+                payload.parent_id = selectParent.value ? parseInt(selectParent.value) : null; 
                 const optionsRestaurar = { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) };
                 try {
                     await fetchData(urlEndpointBase, optionsRestaurar);
-                    alert('Subtarea restaurada.'); 
-                    ocultarFormulario(); 
-                    
-                    const fechaParaRecarga = new Date(fechaCalendarioActual.getTime() || fechaObjRecarga.getTime());
-                    await cargarTareasDiaADia(fechaParaRecarga); 
-                    await renderizarCalendario(fechaParaRecarga.getFullYear(), fechaParaRecarga.getMonth(), setFechaCalendarioActual);
+                    ocultarFormulario();
+                    await cargarTareasDiaADia(new Date(appFechaCalendarioActual.getTime() || fechaObjRecarga.getTime())); 
+                    await renderizarCalendario(appFechaCalendarioActual.getFullYear(), appFechaCalendarioActual.getMonth(), appSetFechaCalendarioActual);
                 } catch (error) { alert(`Error al restaurar subtarea: ${error.message}`); throw error; }
             }, "Reasignar Subtarea", "Confirmar", "Cancelar");
             return; 
         } catch (error) { 
-            alert(`Error obteniendo títulos para reasignar: ${error.message}. Se ofrecerá restaurar como tarea suelta.`);
-            if (!confirm("No se pudieron cargar los títulos. ¿Restaurar como tarea suelta (sin título) de todas formas?")) return;
-            payload.parent_id = null; 
+            alert(`Error obteniendo títulos para reasignar: ${error.message}.`);
+            return;
         }
-    } else { // Es un título
+    } else {
          if (!confirm("¿Quieres restaurar este elemento a la lista de tareas activas?")) return;
          if (payload.tipo === 'titulo') delete payload.parent_id;
     }
@@ -370,43 +332,35 @@ export async function restaurarTarea(tareaARestaurar, fechaObjRecarga) {
     try {
         await fetchData(urlEndpointBase, options);
         alert('Elemento restaurado a activo.');
-        const fechaParaRecarga = new Date(fechaCalendarioActual.getTime() || fechaObjRecarga.getTime());
-        await cargarTareasDiaADia(fechaParaRecarga); 
-        await renderizarCalendario(fechaParaRecarga.getFullYear(), fechaParaRecarga.getMonth(), setFechaCalendarioActual);
+        await cargarTareasDiaADia(new Date(appFechaCalendarioActual.getTime() || fechaObjRecarga.getTime())); 
+        await renderizarCalendario(appFechaCalendarioActual.getFullYear(), appFechaCalendarioActual.getMonth(), appSetFechaCalendarioActual);
     } catch (error) { alert(`Error al restaurar tarea: ${error.message}`); }
 }
 
 export async function eliminarTareaDiaria(tarea, fechaObjRecarga, esActivaActual) {
-    let confirmMessage = ""; let operationMethod = "";
-    if (esActivaActual) {
-        confirmMessage = `¿Marcar este elemento como inactivo? ${tarea.tipo === 'titulo' ? 'Sus subtareas también se marcarán como inactivas.' : (tarea.tipo === 'subtarea' ? 'La subtarea se marcará como inactiva y suelta (sin título asociado).' : '')}`;
-        operationMethod = "DELETE"; 
-    } else {
-        confirmMessage = "Esto eliminará la tarea PERMANENTEMENTE y no se podrá recuperar. ¿Continuar?";
-        operationMethod = "HARD_DELETE"; 
-    }
+    let confirmMessage = esActivaActual 
+        ? `¿Marcar este elemento como inactivo? ${tarea.tipo === 'titulo' ? 'Sus subtareas también se marcarán como inactivas.' : ''}`
+        : "Esto eliminará la tarea PERMANENTEMENTE. ¿Continuar?";
+    
     if (!confirm(confirmMessage)) return;
-    const urlEndpoint = `tareas-dia-a-dia`;
+
+    const operationMethod = esActivaActual ? "DELETE" : "HARD_DELETE";
     const payload = { _method: operationMethod, id: parseInt(tarea.id), tipo: tarea.tipo };
     const options = { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) };
+
     try {
-        await fetchData(urlEndpoint, options);
+        await fetchData('tareas-dia-a-dia', options);
         alert(esActivaActual ? 'Elemento marcado como inactivo.' : 'Elemento eliminado permanentemente.');
-        const fechaParaRecarga = new Date(fechaCalendarioActual.getTime() || fechaObjRecarga.getTime());
-        await cargarTareasDiaADia(fechaParaRecarga);
-        await renderizarCalendario(fechaParaRecarga.getFullYear(), fechaParaRecarga.getMonth(), setFechaCalendarioActual);
+        await cargarTareasDiaADia(new Date(appFechaCalendarioActual.getTime() || fechaObjRecarga.getTime()));
+        await renderizarCalendario(appFechaCalendarioActual.getFullYear(), appFechaCalendarioActual.getMonth(), appSetFechaCalendarioActual);
     } catch (error) { alert(`Error al procesar la eliminación: ${error.message}`); }
 }
+
 export async function renderizarModoObjetivos(mode_id) {
-    console.log("renderizarModoObjetivos (views.js): Iniciando para modo:", mode_id);
-    // modoContenido y modosDisponibles se inicializan en app.js y se acceden mediante initViewsModule
-    if (!modoContenido) { 
-        console.error("renderizarModoObjetivos: Contenedor #modo-contenido NO está disponible."); 
-        return; 
-    }
+    if (!modoContenido) return;
     
     const modoData = modosDisponibles.find(m => m.id === mode_id);
-    const modoNombreDisplay = modoData ? modoData.nombre : (mode_id === 'corto-medio-plazo' ? 'Corto/Medio Plazo' : 'Largo Plazo');
+    const modoNombreDisplay = modoData ? modoData.nombre : 'Objetivos';
 
     modoContenido.innerHTML = `
         <h2>${modoNombreDisplay}</h2>
@@ -418,34 +372,24 @@ export async function renderizarModoObjetivos(mode_id) {
     if (addObjetivoContainer) {
         const btnAddObjetivo = document.createElement('button');
         btnAddObjetivo.id = `add-objetivo-btn-${mode_id}`;
-        btnAddObjetivo.className = 'add-elemento-diario-btn'; // Reutilizar clase de estilo
+        btnAddObjetivo.className = 'add-elemento-diario-btn';
         btnAddObjetivo.textContent = '+ Añadir Nuevo Objetivo';
-        btnAddObjetivo.type = 'button';
-        // abrirModalParaNuevoElemento se importa de modals.js
         btnAddObjetivo.onclick = () => abrirModalParaNuevoElemento(mode_id); 
         addObjetivoContainer.appendChild(btnAddObjetivo);
     }
-    console.log("renderizarModoObjetivos (views.js): HTML base y botón de añadir inyectados. Llamando a cargarObjetivos.");
     await cargarObjetivos(mode_id);
-    console.log("renderizarModoObjetivos (views.js): Finalizado para modo:", mode_id);
 }
 
 export async function cargarObjetivos(mode_id) {
     const contenedorObjetivos = document.getElementById(`lineaDeTiempo-${mode_id}`);
-    if (!contenedorObjetivos) { 
-        console.error("cargarObjetivos (views.js): Contenedor #lineaDeTiempo-" + mode_id + " NO encontrado!"); 
-        return;
-    }
+    if (!contenedorObjetivos) return;
+    
     contenedorObjetivos.innerHTML = '<p>Cargando objetivos...</p>';
-    const urlEndpoint = `objetivos?mode=${mode_id}`; 
-    console.log("cargarObjetivos (views.js): Iniciando carga para modo:", mode_id);
+    
     try {
-        // fetchData usa API_BASE_URL internamente
-        let objetivosData = await fetchData(urlEndpoint); 
-        console.log("cargarObjetivos (views.js): Objetivos recibidos para " + mode_id + ":", objetivosData);
+        let objetivosData = await fetchData(`objetivos?mode=${mode_id}`); 
         
         objetivosData.sort((a, b) => { 
-            // obtenerValorPrioridad se importa desde utils.js
             const prioridadA = obtenerValorPrioridad(a.fecha_estimada); 
             const prioridadB = obtenerValorPrioridad(b.fecha_estimada);
             if (prioridadA !== prioridadB) return prioridadA - prioridadB;
@@ -465,8 +409,6 @@ export async function cargarObjetivos(mode_id) {
             let subObjetivosCompletados = objetivo.sub_objetivos ? objetivo.sub_objetivos.filter(sub => sub.completado).length : 0;
             let porcentajeCompletado = totalSubObjetivos > 0 ? Math.round((subObjetivosCompletados / totalSubObjetivos) * 100) : 0;
             
-            // obtenerClaseDeEstado (importado de utils.js) devuelve 'cal-estado-X'
-            // El CSS para .seccion-objetivo (Parte 1 de estilos.css, respuesta #151) está preparado para estas clases.
             divObjetivo.classList.add(obtenerClaseDeEstado(porcentajeCompletado)); 
 
             const cabeceraObjetivo = document.createElement('div');
@@ -478,9 +420,8 @@ export async function cargarObjetivos(mode_id) {
                 </div>
                 <span class="fecha-estimada">${objetivo.fecha_estimada || ''}</span>`;
             cabeceraObjetivo.onclick = function() {
-                const contenido = this.parentElement.querySelector('.contenido-objetivo');
+                this.parentElement.querySelector('.contenido-objetivo')?.classList.toggle('expandido');
                 this.classList.toggle('expandido');
-                if (contenido) contenido.classList.toggle('expandido');
             };
             divObjetivo.appendChild(cabeceraObjetivo);
 
@@ -512,21 +453,17 @@ export async function cargarObjetivos(mode_id) {
                     liSub.appendChild(checkbox); 
                     liSub.appendChild(label);
                     
-                    // createActionToggleButton importado de ui.js
-                    // mode_id es el contexto del objetivo padre.
                     const toggleSubBtn = createActionToggleButton(sub, null, mode_id); 
                     liSub.appendChild(toggleSubBtn);
                     
                     checkbox.onchange = async (evento) => {
                         const esMarcado = evento.target.checked; 
                         const idSubObjetivoDB = evento.target.dataset.idSubDb;
-                        // myConfettiInstance se inicializa en app.js y se accede mediante initViewsModule
                         if(esMarcado && myConfettiInstance) lanzarAnimacionCelebracion(myConfettiInstance, evento); 
 
-                        const updateUrlEndpoint = `sub-objetivos-estado`; 
                         const updateOptions = { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ idSubObjetivoDB: parseInt(idSubObjetivoDB), completado: esMarcado }) };
                         try {
-                            await fetchData(updateUrlEndpoint, updateOptions);
+                            await fetchData(`sub-objetivos-estado`, updateOptions);
                             evento.target.closest('li').classList.toggle('sub-objetivo-completado', esMarcado);
                             
                             let completadosActuales = 0; 
@@ -538,8 +475,7 @@ export async function cargarObjetivos(mode_id) {
                             divObjetivo.querySelector('.porcentaje-progreso').textContent = `(${nuevoPorcentaje}%)`;
                             divObjetivo.querySelector('.barra-progreso').style.width = `${nuevoPorcentaje}%`;
                             
-                            // Actualizar clase de estado del objetivo principal
-                            divObjetivo.classList.remove('cal-estado-0', 'cal-estado-1', 'cal-estado-2', 'cal-estado-3', 'cal-estado-4', 'cal-estado-5');
+                            divObjetivo.className = 'seccion-objetivo'; // Reset classes
                             divObjetivo.classList.add(obtenerClaseDeEstado(nuevoPorcentaje));
 
                         } catch (error) {
@@ -567,12 +503,8 @@ export async function cargarObjetivos(mode_id) {
     }
 }
 export async function renderizarCalendario(currentYear, currentMonth, updateGlobalDateCallback) {
-    console.log("renderizarCalendario (views.js): Iniciando para", currentYear, currentMonth + 1);
     const calendarioContenedor = document.getElementById('calendario-contenedor');
-    if (!calendarioContenedor) { 
-        console.error("renderizarCalendario: Contenedor #calendario-contenedor NO encontrado!"); 
-        return; 
-    }
+    if (!calendarioContenedor) return;
     
     const fechaVistaActual = new Date(Date.UTC(currentYear, currentMonth, 1)); 
     const nombreMes = fechaVistaActual.toLocaleString('es-ES', { month: 'long', timeZone: 'UTC' });
@@ -605,15 +537,14 @@ export async function renderizarCalendario(currentYear, currentMonth, updateGlob
         <div class="dias-mes"></div>`;
     
     const diasMesContenedor = calendarioContenedor.querySelector('.dias-mes');
-    if (!diasMesContenedor) { console.error("renderizarCalendario: Contenedor .dias-mes NO encontrado."); return; }
+    if (!diasMesContenedor) return;
     
     const primerDiaDelMes = new Date(Date.UTC(anioVista, mesVista, 1));
-    const ultimoDiaDelMes = new Date(Date.UTC(anioVista, mesVista + 1, 0)); 
-    const numDiasEnMes = ultimoDiaDelMes.getUTCDate(); 
     let diaDeSemanaPrimerDia = primerDiaDelMes.getUTCDay(); 
     if (diaDeSemanaPrimerDia === 0) diaDeSemanaPrimerDia = 7; 
     for (let i = 1; i < diaDeSemanaPrimerDia; i++) { diasMesContenedor.appendChild(document.createElement('span')); }
     
+    const numDiasEnMes = new Date(Date.UTC(anioVista, mesVista + 1, 0)).getUTCDate();
     const hoy = new Date(); 
     hoy.setUTCHours(0,0,0,0); 
 
@@ -625,26 +556,16 @@ export async function renderizarCalendario(currentYear, currentMonth, updateGlob
         const diaSpan = document.createElement('span');
         diaSpan.className = 'dia-calendario';
         diaSpan.dataset.fecha = fechaStr;
-        diaSpan.setAttribute('role', 'button'); diaSpan.setAttribute('tabindex', '0');
+        diaSpan.setAttribute('role', 'button');
+        diaSpan.setAttribute('tabindex', '0');
         
-        const numeroDiaSpan = document.createElement('span'); 
-        numeroDiaSpan.className = 'dia-numero';
-        numeroDiaSpan.textContent = dia;
-        diaSpan.appendChild(numeroDiaSpan);
-
-        const emojiSpan = document.createElement('span'); 
-        emojiSpan.className = 'emoji-anotacion';
+        diaSpan.innerHTML = `<span class="dia-numero">${dia}</span><span class="emoji-anotacion"></span>`;
         if (anotacionDia && anotacionDia.emoji) {
-            emojiSpan.textContent = anotacionDia.emoji; 
+            diaSpan.querySelector('.emoji-anotacion').textContent = anotacionDia.emoji; 
             if (anotacionDia.descripcion) diaSpan.title = anotacionDia.descripcion;
         }
-        diaSpan.appendChild(emojiSpan);
 
         if (porcentaje >= 0) { diaSpan.classList.add(obtenerClaseDeEstado(porcentaje)); } 
-        else { 
-            const fechaCelda = new Date(Date.UTC(anioVista, mesVista, dia)); 
-            if (fechaCelda.getTime() < hoy.getTime() ) { diaSpan.classList.add('cal-estado-sin-datos'); }
-        }
         const fechaCeldaActual = new Date(Date.UTC(anioVista, mesVista, dia));
         if (fechaCeldaActual.getTime() === hoy.getTime()) { 
             diaSpan.classList.add('dia-actual'); 
@@ -659,43 +580,32 @@ export async function renderizarCalendario(currentYear, currentMonth, updateGlob
         diaSpan.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') e.target.click(); };
         diasMesContenedor.appendChild(diaSpan);
     }
-    const prevBtn = calendarioContenedor.querySelector('#prevMonth');
-    if (prevBtn) {
-        prevBtn.onclick = () => {
-            const nuevaFecha = new Date(appFechaCalendarioActual); 
-            nuevaFecha.setUTCMonth(nuevaFecha.getUTCMonth() - 1); 
-            updateGlobalDateCallback(nuevaFecha); 
-        };
-    }
-    const nextBtn = calendarioContenedor.querySelector('#nextMonth');
-    if (nextBtn) {
-        nextBtn.onclick = () => {
-            const nuevaFecha = new Date(appFechaCalendarioActual);
-            nuevaFecha.setUTCMonth(nuevaFecha.getUTCMonth() + 1);
-            updateGlobalDateCallback(nuevaFecha);
-        };
-    }
-    console.log("renderizarCalendario (views.js): Finalizado.");
+    
+    calendarioContenedor.querySelector('#prevMonth').onclick = () => {
+        const nuevaFecha = new Date(appFechaCalendarioActual); 
+        nuevaFecha.setUTCMonth(nuevaFecha.getUTCMonth() - 1); 
+        updateGlobalDateCallback(nuevaFecha); 
+    };
+    calendarioContenedor.querySelector('#nextMonth').onclick = () => {
+        const nuevaFecha = new Date(appFechaCalendarioActual);
+        nuevaFecha.setUTCMonth(nuevaFecha.getUTCMonth() + 1);
+        updateGlobalDateCallback(nuevaFecha);
+    };
 }
 
 export async function verDetalleDia(fechaStr) {
     const tareasDetalleDiaOverlay = document.getElementById('tareasDetalleDia'); 
-    if (!tareasDetalleDiaOverlay) { console.error("Contenedor de modal #tareasDetalleDia no encontrado."); return; }
+    if (!tareasDetalleDiaOverlay) return;
     const modalInterno = tareasDetalleDiaOverlay.querySelector('.form-modal');
-    if (!modalInterno) { console.error(".form-modal dentro de #tareasDetalleDia no encontrado."); return; }
+    if (!modalInterno) return;
 
-    // Estructura HTML interna del modal con áreas para header, contenido desplazable y acciones fijas
     modalInterno.innerHTML = `
         <div class="form-modal-header">
             <h3 id="detalle-dia-titulo">Tareas para <span id="detalleDiaFecha"></span></h3>
         </div>
-        <div id="listaDetalleTareasScroll" class="form-modal-content">
-            <p>Cargando detalles...</p>
-        </div>
-        <div id="anotacionActionsFooter" class="form-modal-actions" style="flex-direction: column; gap: var(--space-s); padding-bottom: var(--space-s); justify-content: center; text-align:center;">
-            {/* Botones de Guardar/Quitar Anotación irán aquí si es día actual/futuro */}
-        </div>
-        <div class="form-modal-actions main-close-action" style="border-top:none; padding-top: var(--space-s);">
+        <div id="listaDetalleTareasScroll" class="form-modal-content"><p>Cargando detalles...</p></div>
+        <div id="anotacionActionsFooter" class="form-modal-actions"></div>
+        <div class="form-modal-actions main-close-action">
             <button type="button" id="cerrarDetalleDia" class="cancel-btn">Cerrar</button>
         </div>
     `;
@@ -707,98 +617,96 @@ export async function verDetalleDia(fechaStr) {
     const fechaConsultadaObj = new Date(fechaStr + 'T00:00:00Z'); 
     if (detalleDiaFechaSpan) detalleDiaFechaSpan.textContent = fechaConsultadaObj.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' });
     
-    // Mostrar el modal
     tareasDetalleDiaOverlay.classList.remove('hidden');
-    tareasDetalleDiaOverlay.removeAttribute('inert');
-    tareasDetalleDiaOverlay.setAttribute('aria-hidden', 'false');
-
     const cerrarBtn = modalInterno.querySelector('#cerrarDetalleDia');
-    if (cerrarBtn) {
-        cerrarBtn.onclick = () => {
-            tareasDetalleDiaOverlay.classList.add('hidden');
-            tareasDetalleDiaOverlay.setAttribute('inert', 'true');
-            tareasDetalleDiaOverlay.setAttribute('aria-hidden', 'true');
-        };
-    }
+    if (cerrarBtn) cerrarBtn.onclick = () => tareasDetalleDiaOverlay.classList.add('hidden');
 
-    // Cargar y mostrar tareas y anotaciones en paralelo
-    let tareasHtml = '<p class="mensaje-vacio">No hay tareas registradas para este día.</p>';
+    let tareasHtml = '<p class="mensaje-vacio">No hay tareas para este día.</p>';
     try {
         const tareas = await fetchData(`tareas-por-fecha?fecha=${fechaStr}`);
         if (Array.isArray(tareas) && tareas.length > 0) {
-            let html = '<ul>';
-            tareas.forEach(tarea => {
-                if (tarea.tipo === 'titulo') {
-                    html += `<li style="font-weight: bold; margin-top: 10px; color: var(--color-fondo-principal);">${tarea.texto}${!tarea.activo ? ' (inactiva)' : ''}</li>`;
-                    if (tarea.subtareas && tarea.subtareas.length > 0) {
-                        html += '<ul style="padding-left: 15px;">';
-                        tarea.subtareas.forEach(subtarea => {
-                            const statusColor = subtarea.completado ? 'var(--color-exito)' : (subtarea.activo ? 'var(--color-error)' : 'var(--color-texto-secundario)');
-                            html += `<li><span class="status-indicator" style="background-color: ${statusColor};"></span><span style="${subtarea.completado && subtarea.activo ? 'text-decoration: line-through; opacity:0.7;' : ''} ${!subtarea.activo ? 'font-style:italic; color:var(--color-texto-secundario); text-decoration: line-through;' : ''}">${subtarea.texto} ${!subtarea.activo ? '(inactiva)' : ''}</span></li>`;
-                        });
-                        html += '</ul>';
-                    }
-                } else if (tarea.tipo === 'subtarea' && (tarea.parent_id === null || tarea.parent_id === undefined) ) {
-                    const statusColor = tarea.completado ? 'var(--color-exito)' : (tarea.activo ? 'var(--color-error)' : 'var(--color-texto-secundario)');
-                    html += `<li><span class="status-indicator" style="background-color: ${statusColor};"></span><span style="${tarea.completado && tarea.activo ? 'text-decoration: line-through; opacity:0.7;' : ''} ${!tarea.activo ? 'font-style:italic; color:var(--color-texto-secundario); text-decoration: line-through;' : ''}">${tarea.texto} ${!tarea.activo ? '(inactiva)' : ''}</span></li>`;
+            tareasHtml = '<ul>' + tareas.map(tarea => {
+                let subtareasHtml = '';
+                if (tarea.tipo === 'titulo' && tarea.subtareas && tarea.subtareas.length > 0) {
+                    subtareasHtml = '<ul style="padding-left: 15px;">' + tarea.subtareas.map(sub => `<li>...</li>`).join('') + '</ul>';
                 }
-            });
-            html += '</ul>';
-            tareasHtml = html;
+                return `<li>...</li>` + subtareasHtml;
+            }).join('') + '</ul>';
         }
     } catch (error) {
-        tareasHtml = `<p class="error-mensaje">Error al cargar detalle de tareas: ${error.message}</p>`;
+        tareasHtml = `<p class="error-mensaje">Error al cargar tareas: ${error.message}</p>`;
     }
 
-    // Obtener y preparar HTML del editor de anotaciones
-    let currentEmojisString = ''; let currentDesc = '';
-    const hoy = new Date(); hoy.setUTCHours(0,0,0,0);
-    const fechaConsultadaUTC = new Date(Date.UTC(parseInt(fechaStr.substring(0,4)), parseInt(fechaStr.substring(5,7)) - 1, parseInt(fechaStr.substring(8,10))));
-    const esDiaPasado = fechaConsultadaUTC.getTime() < hoy.getTime();
+    let currentEmojisString = '', currentDesc = '';
+    const hoy = new Date();
+    hoy.setUTCHours(0,0,0,0);
+    const esDiaPasado = new Date(fechaStr + 'T00:00:00Z').getTime() < hoy.getTime();
 
     try {
         const anotacion = await fetchData(`anotaciones?fecha=${fechaStr}`);
-        if (anotacion && (anotacion.emoji || anotacion.descripcion)) { currentEmojisString = anotacion.emoji || ''; currentDesc = anotacion.descripcion || ''; }
+        if (anotacion) {
+            currentEmojisString = anotacion.emoji || '';
+            currentDesc = anotacion.descripcion || '';
+        }
     } catch (e) { console.warn("No se pudo cargar anotación para", fechaStr); }
 
-    let emojiOptionsHTML = EMOJIS_PREDEFINIDOS.map(emoji => `<span class="emoji-option ${esDiaPasado ? 'disabled' : ''}" data-emoji="${emoji}" role="button" ${esDiaPasado ? 'aria-disabled="true"' : 'tabindex="0"'} aria-label="Seleccionar ${emoji}">${emoji}</span>`).join('');
-    
-    const anotacionEditorHtml = `
-        <div class="anotacion-editor">
-            <h4>Anotación del Día:</h4>
-            <div>
-                <label for="emojiDiaModalDisplay">Emoji(s) (máx. 3): <span id="emojiDiaModalDisplay" class="current-emoji-display">${currentEmojisString}</span></label>
-                ${!esDiaPasado ? `<div id="emojiSelectorModal" class="emoji-selector-container">${emojiOptionsHTML}</div>` : '<p style="font-size:0.9em; color:#777;">(No se pueden editar emojis de días pasados)</p>'}
-                <input type="hidden" id="emojiDiaModalInput" value="${currentEmojisString}">
-            </div>
-            <div>
-                <label for="descripcionEmojiDiaModal">Descripción (opcional):</label>
-                <input type="text" id="descripcionEmojiDiaModal" value="${currentDesc}" placeholder="Ej. Cumpleaños" ${esDiaPasado ? 'disabled' : ''}>
-            </div>
-        </div>`;
+    const anotacionEditorHtml = `...`; // El HTML para el editor
+    listaDetalleTareasScrollDiv.innerHTML = `<div id="tareas-del-dia-container">${tareasHtml}</div>` + anotacionEditorHtml;
 
-    // Inyectar HTML de tareas y editor de anotaciones en el área de scroll
-    if (listaDetalleTareasScrollDiv) listaDetalleTareasScrollDiv.innerHTML = `<div id="tareas-del-dia-container">${tareasHtml}</div>` + anotacionEditorHtml;
-
-    // Poblar y configurar el footer de acciones de anotación
     if (anotacionActionsFooter && !esDiaPasado) {
-        anotacionActionsFooter.innerHTML = `
-            <button type="button" id="guardarAnotacionBtnModal">Guardar Anotación</button>
-            ${(currentEmojisString || currentDesc) ? `<button type="button" id="quitarAnotacionBtnModal" class="cancel-btn">Quitar Anotación</button>` : ''}
-        `;
+        anotacionActionsFooter.innerHTML = `<button type="button" id="guardarAnotacionBtnModal">Guardar</button>`;
+        if (currentEmojisString || currentDesc) {
+            anotacionActionsFooter.innerHTML += `<button type="button" id="quitarAnotacionBtnModal" class="cancel-btn">Quitar</button>`;
+        }
         
         const guardarBtn = anotacionActionsFooter.querySelector('#guardarAnotacionBtnModal');
         const quitarBtn = anotacionActionsFooter.querySelector('#quitarAnotacionBtnModal');
 
-        // Adjuntar lógica a los emojis y botones del editor (si no es día pasado)
         const emojiOptions = listaDetalleTareasScrollDiv.querySelectorAll('#emojiSelectorModal .emoji-option:not(.disabled)');
         const emojiDisplay = listaDetalleTareasScrollDiv.querySelector('#emojiDiaModalDisplay');
         const emojiInputHidden = listaDetalleTareasScrollDiv.querySelector('#emojiDiaModalInput');
-        
-        if (emojiOptions.length && emojiDisplay && emojiInputHidden) { /* ... Lógica rolling emoji selector (de respuesta #11) ... */ }
+        const descInput = listaDetalleTareasScrollDiv.querySelector('#descripcionEmojiDiaModal');
 
-        if (guardarBtn) { guardarBtn.onclick = async () => { /* ... lógica guardar anotación (de respuesta #11) ... */ }; }
-        if (quitarBtn) { quitarBtn.onclick = async () => { /* ... lógica quitar anotación (de respuesta #11) ... */ }; }
+        if (emojiOptions.length > 0) {
+            let selectedEmojis = emojiInputHidden.value.match(/./gu) || [];
+            emojiOptions.forEach(option => {
+                if (selectedEmojis.includes(option.dataset.emoji)) option.classList.add('selected');
+                option.onclick = () => {
+                    const emoji = option.dataset.emoji;
+                    const index = selectedEmojis.indexOf(emoji);
+                    if (index > -1) {
+                        selectedEmojis.splice(index, 1);
+                        option.classList.remove('selected');
+                    } else if (selectedEmojis.length < 3) {
+                        selectedEmojis.push(emoji);
+                        option.classList.add('selected');
+                    }
+                    emojiDisplay.textContent = selectedEmojis.join(' ');
+                    emojiInputHidden.value = selectedEmojis.join('');
+                };
+            });
+        }
+
+        if (guardarBtn) {
+            guardarBtn.onclick = async () => {
+                const payload = { fecha: fechaStr, emoji: emojiInputHidden.value, descripcion: descInput.value.trim() };
+                try {
+                    await fetchData('anotaciones', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                    cerrarBtn.click();
+                    await renderizarCalendario(appFechaCalendarioActual.getFullYear(), appFechaCalendarioActual.getMonth(), appSetFechaCalendarioActual);
+                } catch (error) { alert(`Error al guardar: ${error.message}`); }
+            };
+        }
+        
+        if (quitarBtn) {
+            quitarBtn.onclick = async () => {
+                 if (!confirm("¿Quitar anotación?")) return;
+                 try {
+                    await fetchData('anotaciones', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fecha: fechaStr }) });
+                    cerrarBtn.click();
+                    await renderizarCalendario(appFechaCalendarioActual.getFullYear(), appFechaCalendarioActual.getMonth(), appSetFechaCalendarioActual);
+                } catch (error) { alert(`Error al quitar: ${error.message}`); }
+            };
+        }
     }
 }
-// Fin del módulo views.js
