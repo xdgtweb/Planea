@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"> {/* Añadido viewport-fit=cover */}
+    <title>Planificador de Vida en Pareja</title>
+    <link rel="stylesheet" href="estilos.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script> 
+    {/* Considerar añadir un favicon y meta descripciones en el futuro */}
+    {/* <link rel="icon" href="/favicon.ico" sizes="any"> */}
+    {/* <meta name="description" content="Nuestro planificador personal para organizar metas y sueños."> */}
+</head>
+<body>
+    <div class="contenedor-principal">
+        <header>
+            <h1 id="app-title">Nuestro Plan de Vida</h1>
+            <p class="descripcion-pagina">Un espacio para organizar nuestras metas, sueños y el día a día junt@s.</p>
+        </header>
+
+        <nav id="nav-modes-container" class="bottom-nav" aria-label="Navegación de Modos">
+            {/* Botones de modo se cargarán aquí por JavaScript */}
+        </nav>
+        
+        <main id="modo-contenido">
+            {/* El contenido del modo activo se cargará aquí por JavaScript */}
+            <p>Cargando contenido del modo...</p> 
+        </main>
+
+        {/* Contenedor para el formulario modal dinámico */}
+        <div id="formulario-dinamico-contenedor" class="form-overlay hidden" role="dialog" aria-modal="true" aria-hidden="true">
+            <div class="form-modal">
+                {/* El contenido del formulario se inyectará aquí con JS */}
+            </div>
+        </div>
+    </div>
+
+    <canvas id="confetti-canvas" style="position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:9999;"></canvas>
+    
+    <script type="module" src="script_modules/app.js" defer></script> 
+</body>
+</html>

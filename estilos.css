@@ -1,0 +1,962 @@
+/* estilos.css */
+
+/* PARTE 1 DE 5: Variables Globales, Reset, Body, Contenedor Principal, Tipografía Base */
+
+:root {
+    /* Paleta de Colores Principal */
+    --color-fondo-pagina: #f4f6f8;    /* Un gris azulado muy claro, limpio */
+    --color-superficie-clara: #ffffff; /* Para modales, tarjetas */
+    --color-fondo-principal: #2c3e50; /* Azul noche profundo */
+    --color-fondo-secundario: #34495e; /* Azul grisáceo oscuro */
+    
+    --color-texto-principal-oscuro: #212529;    /* Casi negro para máxima legibilidad */
+    --color-texto-secundario-oscuro: #5a6f81; /* Gris azulado para texto menos importante */
+    --color-texto-claro: #f8f9fa;       /* Casi blanco para usar sobre fondos oscuros */
+    --color-texto-placeholder: #adb5bd; /* Gris para placeholders */
+
+    --color-primario: #007bff;        /* Azul vibrante */
+    --color-primario-hover: #0056b3;
+    --color-secundario: #4DB6AC;      /* Turquesa suave */
+    --color-secundario-hover: #00897B;
+    
+    --color-exito: #28a745;         
+    --color-exito-hover: #218838;
+    --color-alerta: #ffc107;        
+    --color-error: #dc3545;          
+    
+    /* Colores para Cancelar/Cerrar (Rojo Claro) */
+    --color-cancel-bg: #fee2e2; 
+    --color-cancel-text: #b91c1c; 
+    --color-cancel-border: #fecaca; 
+    --color-cancel-hover-bg: #fecaca; 
+    --color-cancel-hover-text: #991B1B; 
+    --color-cancel-hover-border: #fca5a5;
+    
+    --color-borde: #dee2e6;          
+    --color-borde-input: #ced4da;
+    --color-fondo-input: #ffffff;
+    --color-fondo-overlay: rgba(30, 40, 50, 0.75); 
+
+    /* Sombras Modernas y Suaves */
+    --sombra-xs: 0 1px 2px rgba(0,0,0,0.05);
+    --sombra-s: 0 2px 4px rgba(0,0,0,0.1);
+    --sombra-m: 0 4px 8px rgba(0,0,0,0.12);
+    --sombra-l: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
+
+    /* Variables para fondos de objetivos (gradientes) */
+    --estado-0-obj-bg: linear-gradient(135deg, #F87171, #DC2626); 
+    --estado-1-obj-bg: linear-gradient(135deg, #FBBF24, #D97706); 
+    --estado-2-obj-bg: linear-gradient(135deg, #A7F3D0, #34D399); 
+    --estado-3-obj-bg: linear-gradient(135deg, #6EE7B7, #10B981); 
+    --estado-4-obj-bg: linear-gradient(135deg, #34D399, #059669); 
+    --estado-5-obj-bg: linear-gradient(135deg, #60A5FA, #2563EB); 
+
+    /* Colores para estados del CALENDARIO (sólidos, buen contraste texto/fondo) */
+    --cal-estado-0-bg: #FFEBEB; --cal-estado-0-text: #C53030;
+    --cal-estado-1-bg: #FFF5EB; --cal-estado-1-text: #DD6B20;
+    --cal-estado-2-bg: #FEF3C7; --cal-estado-2-text: #9A6700;
+    --cal-estado-3-bg: #F0FFF4; --cal-estado-3-text: #38A169;
+    --cal-estado-4-bg: #C6F6D5; --cal-estado-4-text: #2F855A;
+    --cal-estado-5-bg: #EBF8FF; --cal-estado-5-text: #2C5282;
+    --cal-estado-sin-datos-bg: #EDF2F7; 
+    --cal-estado-sin-datos-text: #A0AEC0;
+
+    --radius-s: 6px;
+    --radius-m: 10px;
+    --radius-l: 16px;
+
+    --space-xxs: 0.25rem; /* 4px */
+    --space-xs: 0.5rem;   /* 8px */
+    --space-s: 0.75rem;  /* 12px */
+    --space-m: 1rem;     /* 16px */
+    --space-l: 1.5rem;   /* 24px */
+    --space-xl: 2rem;    /* 32px */
+
+    --transition-fast: all 0.15s ease-out;
+    --transition-medium: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-modal: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s ease-in-out;
+}
+
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+html {
+    font-size: 16px; 
+    -webkit-tap-highlight-color: transparent;
+    scroll-behavior: smooth;
+    height: 100%;
+    background-color: var(--color-fondo-pagina);
+}
+
+/* --- CORRECCIÓN PARA LAYOUT Y SCROLL --- */
+body {
+    font-family: 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.6; 
+    color: var(--color-texto-principal-oscuro); 
+    
+    /* Usar Flexbox para evitar el "estiramiento" y controlar el layout */
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh; /* El body ocupa al menos toda la altura de la pantalla */
+    margin: 0; 
+}
+
+.contenedor-principal {
+    max-width: 960px; 
+    width: 100%;
+    background: var(--color-superficie-clara);
+    padding: var(--space-l);
+    border-radius: var(--radius-l);
+    box-shadow: var(--sombra-l);
+    position: relative;
+    z-index: 1; 
+    
+    flex-grow: 1; /* El contenedor principal se estira para ocupar el espacio disponible */
+    
+    /* Margen para no superponer con la barra de navegación fija y el borde del body */
+    margin: var(--space-m);
+    margin-bottom: calc(60px + var(--space-m)); /* Altura de la nav + margen */
+}
+
+/* --- TIPOGRAFÍA BASE --- */
+h1#app-title { font-size: clamp(1.6rem, 4.5vw, 2.2rem); font-weight: 700; color: var(--color-fondo-principal); border-bottom: 3px solid var(--color-primario); padding-bottom: var(--space-s); margin-top: 0; margin-bottom: var(--space-s); text-align: center; }
+p.descripcion-pagina { text-align: center; margin-bottom: var(--space-l); font-size: clamp(0.9rem, 2.5vw, 1rem); color: var(--color-texto-secundario-oscuro); line-height: 1.6; max-width: 600px; margin-left: auto; margin-right: auto; }
+h2 { font-size: clamp(1.3rem, 4vw, 1.75rem); font-weight: 600; color: var(--color-fondo-principal); border-bottom: 1px solid var(--color-borde); padding-bottom: var(--space-s); margin-top: var(--space-l); margin-bottom: var(--space-m); text-align: center; }
+h3 { font-size: clamp(1.1rem, 3.5vw, 1.4rem); font-weight: 600; color: var(--color-fondo-secundario); margin-bottom: var(--space-m); text-align: center; }
+
+
+/* --- ANIMACIONES GENERALES --- */
+@keyframes fadeInSlideUp {
+    0% { opacity: 0; transform: translateY(20px); }
+    100% { opacity: 1; transform: translateY(0); }
+}
+
+/* --- MODALES REFINADOS --- */
+.form-overlay { 
+    position: fixed; 
+    inset: 0; /* Cubre toda la pantalla: top, right, bottom, left = 0 */
+    background: var(--color-fondo-overlay); 
+    display: flex; 
+    justify-content: center; 
+    align-items: center; /* Centrar en desktop/tablet */
+    z-index: 1001; 
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    opacity: 0; 
+    visibility: hidden;
+    transition: opacity 0.3s ease-in-out, visibility 0s linear 0.3s;
+}
+.form-overlay.hidden {
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease-in-out, visibility 0s linear 0.3s;
+}
+.form-overlay:not(.hidden) { 
+    opacity: 1;
+    visibility: visible;
+    transition-delay: 0s; 
+}
+
+/* Estructura principal del modal usando Flexbox */
+.form-modal { 
+    background: var(--color-superficie-clara); 
+    border-radius: var(--radius-m); 
+    box-shadow: var(--sombra-l); 
+    color: var(--color-texto-principal-oscuro); 
+    
+    display: flex; 
+    flex-direction: column; /* Estructura vertical: header, content, actions */
+    
+    /* Desktop/Tablet defaults */
+    width: 90%;
+    max-width: 520px; 
+    max-height: 88vh; /* Altura máxima total del modal */
+    
+    /* Animación de entrada */
+    transform: scale(0.95) translateY(10px); 
+    opacity: 0;
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.25s ease-out;
+    will-change: transform, opacity;
+}
+.form-overlay:not(.hidden) .form-modal { 
+    transform: scale(1) translateY(0);
+    opacity: 1;
+}
+
+/* --- Estructura interna del modal para scroll y pie fijo --- */
+
+/* Encabezado del Modal (Título) */
+.form-modal-header { 
+    padding: var(--space-m) var(--space-l);
+    border-bottom: 1px solid var(--color-borde-sutil);
+    flex-shrink: 0; /* No se encoge */
+    text-align: center; 
+}
+.form-modal-header h3 { margin: 0; }
+
+/* Contenido Principal del Modal (Desplazable) */
+.form-modal-content { 
+    padding: var(--space-l); 
+    overflow-y: auto;  /* CLAVE: Scroll SÓLO para esta sección de contenido */
+    flex-grow: 1;      /* CLAVE: Permite que esta sección ocupe el espacio vertical disponible */
+    min-height: 0;     /* Ayuda a flex-grow con overflow en algunos navegadores */
+    -webkit-overflow-scrolling: touch; /* Scroll más suave en iOS */
+}
+
+/* Pie de Página de Acciones del Modal (Botones Fijos) */
+.form-modal-actions { 
+    padding: var(--space-m) var(--space-l);
+    border-top: 1px solid var(--color-borde-sutil);
+    flex-shrink: 0; /* CLAVE: No se encoge, se mantiene abajo */
+    display: flex;
+    justify-content: flex-end; /* Botones a la derecha por defecto */
+    gap: var(--space-s);
+    background-color: var(--color-fondo-pagina);
+    border-bottom-left-radius: var(--radius-m); /* Heredar radios del modal */
+    border-bottom-right-radius: var(--radius-m);
+}
+
+/* --- Elementos de Formulario Dentro del Modal --- */
+.form-modal label { display: block; margin-bottom: var(--space-xs); font-weight: 500; color: var(--color-texto-secundario-oscuro); font-size: 0.9rem; }
+.form-modal input[type="text"], 
+.form-modal input[type="date"], 
+.form-modal textarea, 
+.form-modal select { 
+    width: 100%; 
+    padding: var(--space-s); 
+    margin-bottom: var(--space-m); 
+    border: 1px solid var(--color-borde-input); 
+    border-radius: var(--radius-s); 
+    font-size: 0.95rem; 
+    color: var(--color-texto-principal-oscuro); 
+    background: var(--color-fondo-input); 
+    box-shadow: var(--sombra-xs); 
+    transition: var(--transition-fast);
+}
+.form-modal input[type="text"]:focus, 
+.form-modal input[type="date"]:focus, 
+.form-modal textarea:focus, 
+.form-modal select:focus {
+    outline: none;
+    border-color: var(--color-primario);
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+}
+.form-modal textarea { resize: vertical; min-height: 80px; line-height: 1.5; }
+.form-modal fieldset { border: 1px solid var(--color-borde-sutil); border-radius: var(--radius-s); padding: var(--space-s) var(--space-m); margin-bottom: var(--space-m); }
+.form-modal legend { font-weight: 600; color: var(--color-fondo-secundario); padding: 0 var(--space-xs); font-size: 0.95rem; }
+
+.form-modal #days-of-week-selector { display: flex; flex-wrap: wrap; gap: var(--space-xs); margin-top: var(--space-xs); padding: var(--space-xs) var(--space-s); background-color: var(--color-fondo-pagina); border-radius: var(--radius-s); }
+.form-modal #days-of-week-selector label { font-weight: normal; font-size: 0.8rem; }
+.form-modal #days-of-week-selector input[type="checkbox"] { margin-right: 2px; transform: scale(0.9); }
+
+/* Botones principales del modal (Guardar, Cancelar) */
+.form-modal-actions button { 
+    padding: calc(var(--space-s) - 1px) var(--space-l); 
+    border: 1px solid transparent; 
+    border-radius: var(--radius-s); 
+    cursor: pointer; 
+    font-size: 0.9rem; 
+    font-weight: 600; 
+    transition: var(--transition-medium); 
+    margin-top: 0; 
+    min-width: 100px;
+}
+.form-modal-actions button#modalGuardarBtn { /* Botón principal de guardado */
+    background: var(--color-primario); 
+    border-color: var(--color-primario);
+    color: white; 
+}
+.form-modal-actions button#modalGuardarBtn:hover, 
+.form-modal-actions button#modalGuardarBtn:focus { 
+    background: var(--color-primario-hover); 
+    border-color: var(--color-primario-hover);
+    transform: translateY(-1px); 
+    box-shadow: var(--sombra-m); 
+}
+.form-modal-actions button.cancel-btn { /* Botón "Cancelar" o "Cerrar" - con estilo rojo claro */
+    background: var(--color-cancel-bg); 
+    color: var(--color-cancel-text);
+    border-color: var(--color-cancel-border);
+}
+.form-modal-actions button.cancel-btn:hover, 
+.form-modal-actions button.cancel-btn:focus { 
+    background: var(--color-cancel-hover-bg); 
+    color: var(--color-cancel-hover-text);
+    border-color: var(--color-cancel-hover-border);
+    transform: translateY(-1px); 
+}
+
+/* --- MINI CALENDARIO EN MODAL --- */
+#mini-calendar-container-dynamic { margin-top: var(--space-xs); margin-bottom: var(--space-s); padding: var(--space-s); border: 1px solid var(--color-borde-sutil); border-radius: var(--radius-s); background-color: #fdfdfd; }
+.mini-calendario-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-xs); }
+.mini-calendario-nav button { background: var(--color-fondo-secundario); color: var(--color-texto-claro); border: none; padding: 2px 6px; font-size: 0.85em; border-radius: var(--radius-s); cursor: pointer; transition: var(--transition-fast); }
+.mini-calendario-nav button:hover { background: var(--color-primario); }
+.mini-calendario-nav #mini-cal-mes-anio { font-weight: 600; color: var(--color-fondo-principal); font-size: 0.9em; }
+.mini-cal-dias-semana, .mini-cal-dias-mes { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; text-align: center; }
+.mini-cal-dias-semana span { font-size: 0.7em; font-weight: 600; color: var(--color-texto-secundario); padding: 2px 0; }
+.mini-cal-dia { font-size: 0.8em; padding: 4px 0; border-radius: var(--radius-s); cursor: pointer; border: 1px solid transparent; transition: var(--transition-fast); }
+.mini-cal-dia:hover { background-color: #eef1f2; border-color: #d1d8db; }
+.mini-cal-dia.otro-mes { color: var(--color-texto-secundario); opacity: 0.5; cursor: default; pointer-events: none;}
+.mini-cal-dia.seleccionado { background-color: var(--color-exito) !important; color: white !important; font-weight: bold; border-color: var(--color-exito); }
+.mini-cal-dia.hoy { border: 1px solid var(--color-alerta); font-weight: bold; color: var(--color-alerta); }
+#selected-dates-display { margin-top: var(--space-xs); font-size: 0.75em; color: var(--color-texto-medio); padding: var(--space-xs) var(--space-s); background-color: var(--color-fondo-pagina); border-radius: var(--radius-s); min-height: 18px; word-break: break-all; }
+
+/* --- CAMPOS DE SUBTAREAS DINÁMICAS EN MODAL --- */
+.form-modal .subtask-entry { display: flex; align-items: center; margin-bottom: var(--space-s); }
+.form-modal .subtask-entry input[type="text"] { flex-grow: 1; margin-right: var(--space-s); margin-bottom: 0; } 
+.form-modal button#addMoreSubtasksBtn {
+    font-size: 0.8rem !important; 
+    padding: var(--space-xs) var(--space-s) !important;
+    margin-top: var(--space-xs) !important;
+    background-color: var(--color-secundario) !important;
+    color: white !important;
+    text-transform: none !important;
+    letter-spacing: normal !important;
+    border: none !important;
+}
+.form-modal button#addMoreSubtasksBtn:hover { background-color: var(--color-secundario-hover) !important; }
+.form-modal .quitar-subtarea-btn {
+    background: var(--color-error); color: white; border: none;
+    border-radius: 50%; width: 24px; height: 24px; 
+    font-size: 0.85em; line-height: 24px; text-align: center;
+    cursor: pointer; padding: 0; flex-shrink: 0;
+    transition: var(--transition-fast);
+}
+.form-modal .quitar-subtarea-btn:hover { background: var(--color-error-hover); transform: scale(1.05); }
+
+/* --- PANEL DE ACCIONES FLOTANTE Y SU BOTÓN DE TOGGLE --- */
+/* Botón "⋮" (tres puntitos) que abre el panel de acciones */
+.action-toggle-btn { 
+    position: absolute; 
+    top: var(--space-s); 
+    right: var(--space-s); 
+    background: transparent; 
+    border: 1px solid transparent; 
+    color: var(--color-texto-secundario-oscuro); 
+    opacity: 0.6; 
+    font-size: clamp(1.3rem, 3.8vw, 1.5rem); 
+    font-weight: bold; 
+    line-height: 1;
+    padding: var(--space-xs); 
+    cursor: pointer; 
+    z-index: 20; 
+    border-radius: 50%; 
+    width: 32px; 
+    height: 32px;
+    display: flex; 
+    align-items: center; 
+    justify-content: center;
+    transition: var(--transition-fast);
+}
+.action-toggle-btn:hover, 
+.action-toggle-btn:focus,
+.action-toggle-btn[aria-expanded="true"] { 
+    background-color: rgba(0, 0, 0, 0.06); 
+    opacity: 1;
+    border-color: rgba(0, 0, 0, 0.1);
+    outline: none;
+}
+
+/* Colores específicos para el botón toggle según el fondo del ítem padre */
+.seccion-objetivo.cal-estado-0 .action-toggle-btn, .seccion-objetivo.cal-estado-1 .action-toggle-btn, 
+.seccion-objetivo.cal-estado-3 .action-toggle-btn, .seccion-objetivo.cal-estado-4 .action-toggle-btn, 
+.seccion-objetivo.cal-estado-5 .action-toggle-btn { 
+    color: var(--color-texto-claro); 
+    opacity: 0.75;
+}
+.seccion-objetivo.cal-estado-0 .action-toggle-btn:hover, .seccion-objetivo.cal-estado-1 .action-toggle-btn:hover,
+.seccion-objetivo.cal-estado-3 .action-toggle-btn:hover, .seccion-objetivo.cal-estado-4 .action-toggle-btn:hover,
+.seccion-objetivo.cal-estado-5 .action-toggle-btn:hover,
+.seccion-objetivo.cal-estado-0 .action-toggle-btn[aria-expanded="true"], .seccion-objetivo.cal-estado-1 .action-toggle-btn[aria-expanded="true"],
+.seccion-objetivo.cal-estado-3 .action-toggle-btn[aria-expanded="true"], .seccion-objetivo.cal-estado-4 .action-toggle-btn[aria-expanded="true"],
+.seccion-objetivo.cal-estado-5 .action-toggle-btn[aria-expanded="true"] {
+    background-color: rgba(255, 255, 255, 0.2); 
+    border-color: rgba(255, 255, 255, 0.3);
+    opacity: 1;
+}
+/* Para fondos claros como .seccion-objetivo.cal-estado-2 (amarillo) y tareas */
+.seccion-objetivo.cal-estado-2 .action-toggle-btn,
+#tareasDiariasLista .action-toggle-btn,
+#lista-tareas-inactivas .action-toggle-btn { 
+    color: var(--color-texto-secundario-oscuro); 
+    opacity: 0.6;
+}
+.seccion-objetivo.cal-estado-2 .action-toggle-btn:hover,
+#tareasDiariasLista .action-toggle-btn:hover,
+#lista-tareas-inactivas .action-toggle-btn:hover,
+.seccion-objetivo.cal-estado-2 .action-toggle-btn[aria-expanded="true"],
+#tareasDiariasLista .action-toggle-btn[aria-expanded="true"],
+#lista-tareas-inactivas .action-toggle-btn[aria-expanded="true"] {
+    background-color: rgba(0, 0, 0, 0.07); 
+    opacity: 1;
+}
+
+/* Panel de Acciones Flotante (se mueve al body con JS) */
+.actions-panel-floating { 
+    position: fixed; /* Crucial para posicionamiento por JS relativo al viewport */
+    /* 'top' y 'left' serán establecidos por JavaScript */
+    
+    opacity: 0;
+    visibility: hidden; 
+    /* El transform inicial para la animación se aplica con JS ANTES de añadir .actions-visible */
+    transform-origin: center center; /* Origen de transformación por defecto, JS puede añadir una clase para cambiarlo */
+    transition: opacity 0.2s ease-out, 
+                transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), /* Efecto "muelle" */
+                visibility 0s linear 0.2s; /* Ocultar después de la transición */
+    
+    display: flex; 
+    flex-direction: column;
+    gap: 4px; 
+    background-color: var(--color-superficie-clara); 
+    padding: var(--space-xs); 
+    border-radius: var(--radius-m);
+    box-shadow: var(--sombra-l); 
+    z-index: 1050; /* Muy alto, por encima de modales (1001) y nav (1000) */
+    min-width: 170px; 
+    border: 1px solid var(--color-borde);
+    pointer-events: none; 
+}
+/* Clases para que JS controle el origen de la animación */
+.actions-panel-floating.animate-from-left { transform-origin: left center; }
+.actions-panel-floating.animate-from-right { transform-origin: right center; }
+.actions-panel-floating.animate-from-top { transform-origin: top center; }
+.actions-panel-floating.animate-from-bottom { transform-origin: bottom center; }
+
+.actions-panel-floating.actions-visible {
+    opacity: 1;
+    visibility: visible;
+    transform: scale(1) translateX(0) translateY(0); /* Estado final de la animación */
+    pointer-events: auto; 
+    transition-delay: 0s; 
+}
+
+.actions-panel-floating button {
+    width: 100%; 
+    padding: var(--space-s) var(--space-m); 
+    font-size: 0.875rem; 
+    font-weight: 500; 
+    text-align: left;
+    background: transparent; 
+    color: var(--color-texto-principal-oscuro);
+    border: none; 
+    border-radius: var(--radius-s); 
+    transition: var(--transition-fast); 
+    cursor: pointer;
+}
+.actions-panel-floating button:hover, 
+.actions-panel-floating button:focus { 
+    background-color: #e9ecef; 
+    color: var(--color-primario); 
+    outline: none; 
+}
+.actions-panel-floating button.delete-btn,
+.actions-panel-floating button.delete-permanente-btn { color: var(--color-error); } 
+
+.actions-panel-floating button.delete-btn:hover, 
+.actions-panel-floating button.delete-btn:focus,
+.actions-panel-floating button.delete-permanente-btn:hover,
+.actions-panel-floating button.delete-permanente-btn:focus { 
+    background-color: rgba(220, 53, 69, 0.1); 
+}
+.actions-panel-floating button.restore-btn { color: var(--color-exito); }
+.actions-panel-floating button.restore-btn:hover,
+.actions-panel-floating button.restore-btn:focus { 
+    background-color: rgba(40, 167, 69, 0.1);  
+}
+.actions-panel-floating button.add-sub-btn,
+.actions-panel-floating button.add-sub-objetivo-btn-panel { 
+    color: var(--color-primario); 
+}
+.actions-panel-floating button.add-sub-btn:hover,
+.actions-panel-floating button.add-sub-objetivo-btn-panel:focus { 
+    background-color: rgba(0, 123, 255, 0.08); 
+}
+
+
+/* --- BARRA DE NAVEGACIÓN INFERIOR (FIJA) --- */
+.bottom-nav {
+    position: fixed; /* ¡CRUCIAL! Esto fija la barra al viewport */
+    bottom: 0; 
+    left: 0; 
+    right: 0;
+    
+    display: flex;
+    justify-content: space-around; 
+    align-items: stretch; /* Estirar botones para que ocupen altura */
+    background: rgba(255, 255, 255, 0.9); 
+    backdrop-filter: blur(10px) saturate(180%);
+    -webkit-backdrop-filter: blur(10px) saturate(180%);
+    box-shadow: 0 -2px 10px rgba(0,0,0,0.08); 
+    /* Padding considera áreas seguras en móviles con notch/barra de gestos */
+    padding-left: env(safe-area-inset-left, var(--space-s));
+    padding-right: env(safe-area-inset-right, var(--space-s));
+    padding-top: var(--space-xs);
+    padding-bottom: calc(var(--space-xs) + env(safe-area-inset-bottom, var(--space-s)));
+    z-index: 1000;
+    width: 100%; 
+    height: calc(56px + env(safe-area-inset-bottom, 0px)); 
+    overflow-x: auto; 
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; 
+    white-space: nowrap; 
+}
+.bottom-nav::-webkit-scrollbar { display: none; }
+
+.nav-button { 
+    display: flex; 
+    flex-direction: column; 
+    justify-content: center; 
+    align-items: center; 
+    flex-grow: 1; 
+    flex-basis: 0; 
+    border-radius: var(--radius-m); 
+    cursor: pointer; 
+    background: transparent; 
+    color: var(--color-texto-secundario-oscuro); 
+    font-size: clamp(0.7rem, 2vw, 0.8rem); 
+    font-weight: 500; 
+    text-align: center; 
+    line-height: 1.2; 
+    padding: var(--space-xs) 2px; 
+    border: none; 
+    transition: var(--transition-medium);
+    -webkit-appearance: none;
+    appearance: none;
+    position: relative; 
+}
+.nav-button:hover, .nav-button:focus { 
+    color: var(--color-primario);
+    background-color: rgba(0, 123, 255, 0.05);
+    outline: none; 
+}
+.nav-button.active-mode { 
+    color: var(--color-primario);
+    font-weight: 600;
+}
+/* Indicador visual para el modo activo */
+.nav-button.active-mode::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 24px; 
+    height: 3px; 
+    background-color: var(--color-primario);
+    border-radius: 0 0 3px 3px;
+}
+
+/* --- ESTILOS DE OBJETIVOS (DETALLES COMPLETOS) --- */
+.objetivos-listado {
+    display: grid;
+    gap: var(--space-l); /* Espacio entre objetivos */
+}
+
+.seccion-objetivo { 
+    /* El fondo se aplica con .cal-estado-X desde Parte 1, usando --estado-X-obj-bg */
+    /* Ejemplo: .seccion-objetivo.cal-estado-0 { background: var(--estado-0-obj-bg); color: var(--color-texto-claro); } */
+    padding: var(--space-m); 
+    padding-right: calc(var(--space-m) + 28px); /* Espacio extra a la derecha para el botón de acción */
+    border-radius: var(--radius-m); 
+    box-shadow: var(--sombra-m); 
+    transition: var(--transition-medium);
+    cursor: default; 
+    position: relative; 
+    overflow: hidden; 
+}
+.seccion-objetivo:hover { 
+    transform: translateY(-2px); 
+    box-shadow: var(--sombra-l); 
+}
+
+/* Colores de texto para objetivos según su fondo (definidos en Parte 1) */
+.seccion-objetivo.cal-estado-0,
+.seccion-objetivo.cal-estado-1,
+.seccion-objetivo.cal-estado-3,
+.seccion-objetivo.cal-estado-4,
+.seccion-objetivo.cal-estado-5 {
+    color: var(--color-texto-claro);
+}
+.seccion-objetivo.cal-estado-2 { /* Fondo amarillo */
+    color: var(--color-texto-principal-oscuro); 
+}
+/* Estilos para el botón de acción "⋮" ya están definidos en Parte 3 del CSS */
+
+.cabecera-objetivo { 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: flex-start; 
+    font-weight: 500; 
+    font-size: clamp(1.05rem, 3.2vw, 1.2rem); 
+    color: inherit; 
+    padding-bottom: var(--space-xs); 
+    position: relative; 
+    cursor: pointer; 
+    user-select: none; 
+}
+.cabecera-objetivo-izquierda { 
+    display: flex; 
+    flex-direction: column; 
+    flex-grow: 1; 
+    margin-right: var(--space-s); 
+}
+.titulo-objetivo { 
+    font-weight: 600; 
+    line-height: 1.25;
+    margin-bottom: 2px; 
+}
+.porcentaje-progreso { 
+    font-size: 0.85em; 
+    color: inherit; 
+    font-weight: 400; 
+    opacity: 0.9; 
+}
+.cabecera-objetivo::after { /* Icono para expandir/colapsar */
+    content: '▸'; 
+    font-size: 0.9em; 
+    font-weight: normal;
+    transition: var(--transition-medium); 
+    color: inherit; 
+    margin-left: var(--space-s);
+    opacity: 0.7;
+    align-self: center; 
+}
+.cabecera-objetivo.expandido::after { 
+    transform: rotate(90deg); 
+    opacity: 0.95;
+}
+.fecha-estimada { 
+    font-size: clamp(0.7rem, 2vw, 0.8rem); 
+    color: inherit; 
+    font-weight: 400; 
+    min-width: 65px; 
+    text-align: right; 
+    opacity: 0.8; 
+    flex-shrink: 0; 
+    padding-top: 0.1em; 
+}
+
+.contenido-objetivo { 
+    max-height: 0; 
+    opacity: 0; 
+    transition: max-height 0.4s ease-in-out, opacity 0.3s 0.05s ease-in-out, 
+                padding-top 0.4s ease-in-out, margin-top 0.4s ease-in-out,
+                border-top-width 0.4s ease-in-out; 
+    overflow: hidden; 
+    padding-top: 0; 
+    margin-top: 0; 
+    border-top: 0px solid currentColor; 
+    color: inherit; 
+    font-size: clamp(0.85rem, 2.2vw, 0.95rem);
+}
+.contenido-objetivo.expandido { 
+    max-height: 1200px; 
+    opacity: 1; 
+    padding-top: var(--space-s); 
+    margin-top: var(--space-s); 
+    border-top-width: 1px; 
+    border-top-style: dashed;
+    opacity: 0.75; 
+}
+.seccion-objetivo.cal-estado-2 .contenido-objetivo.expandido { border-top-color: rgba(0, 0, 0, 0.25); } 
+.contenido-objetivo p { 
+    color: inherit; 
+    text-align: left; 
+    margin-bottom: var(--space-m); 
+    line-height: 1.5;
+    opacity: 0.9; 
+}
+.contenido-objetivo ul { list-style: none; padding-left: 0; }
+.contenido-objetivo ul li { 
+    display: flex; 
+    align-items: center; 
+    margin-bottom: var(--space-xxs); 
+    color: inherit; 
+    padding: var(--space-xs) 0;
+    padding-right: 30px; 
+    position: relative;
+    border-bottom: 1px solid rgba(128, 128, 128, 0.1); 
+}
+.contenido-objetivo ul li:last-child { border-bottom: none; }
+.contenido-objetivo ul li input[type="checkbox"] { 
+    margin-right: var(--space-xs); 
+    min-width: 16px; 
+    min-height: 16px; 
+    cursor: pointer; 
+    transform: scale(1); 
+    accent-color: var(--color-exito); 
+    border-radius: var(--radius-s);
+    vertical-align: middle;
+}
+li.sub-objetivo-completado label { 
+    text-decoration: line-through; 
+    opacity: 0.6; 
+}
+
+.barra-progreso { 
+    position: absolute; 
+    bottom: 0; left: 0; 
+    height: 4px; 
+    transition: width 0.45s cubic-bezier(0.25, 0.8, 0.25, 1); 
+    border-radius: 0 0 var(--radius-m) var(--radius-m); 
+}
+/* Colores de barra de progreso */
+.seccion-objetivo.cal-estado-0 .barra-progreso,
+.seccion-objetivo.cal-estado-1 .barra-progreso,
+.seccion-objetivo.cal-estado-2 .barra-progreso {
+    background-color: rgba(0,0,0,0.2); 
+}
+.seccion-objetivo.cal-estado-3 .barra-progreso,
+.seccion-objetivo.cal-estado-4 .barra-progreso,
+.seccion-objetivo.cal-estado-5 .barra-progreso {
+    background-color: rgba(255,255,255,0.5); 
+}
+
+
+/* --- CALENDARIO PRINCIPAL (CONTENEDOR Y NAVEGACIÓN) --- */
+#calendario-contenedor { 
+    background: var(--color-superficie-clara); 
+    padding: var(--space-m); 
+    border-radius: var(--radius-m); 
+    box-shadow: var(--sombra-m); 
+    margin-bottom: var(--space-l); 
+    color: var(--color-texto-principal-oscuro); 
+}
+.calendario-nav { 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    margin-bottom: var(--space-m); 
+}
+.calendario-nav h3#mes-anio { 
+    margin: 0; 
+    font-size: clamp(1.15rem, 3.5vw, 1.5rem); 
+    font-weight: 600;
+    color: var(--color-fondo-principal); 
+}
+.calendario-nav button { 
+    background: var(--color-primario); 
+    color: white; border: none; 
+    border-radius: var(--radius-s); 
+    padding: var(--space-xs) var(--space-m); 
+    cursor: pointer; 
+    font-size: 1rem; 
+    font-weight: 500;
+    transition: var(--transition-fast); 
+    line-height: 1.5; 
+}
+.calendario-nav button:hover, .calendario-nav button:focus { 
+    background: var(--color-primario-hover); 
+    box-shadow: var(--sombra-s);
+    outline:none; 
+}
+.dias-semana { 
+    display: grid; 
+    grid-template-columns: repeat(7, 1fr); 
+    text-align: center; 
+    font-weight: 500; 
+    color: var(--color-texto-secundario); 
+    margin-bottom: var(--space-xs); 
+    gap: 2px; 
+    font-size: 0.8rem;
+    padding-bottom: var(--space-xs);
+    border-bottom: 1px solid var(--color-borde-sutil);
+}
+.dias-semana span { 
+    padding: var(--space-s) 0; 
+}
+.dias-mes { 
+    display: grid; 
+    grid-template-columns: repeat(7, 1fr); 
+    gap: 4px; 
+    text-align: center; 
+}
+
+/* --- CELDAS DEL CALENDARIO PRINCIPAL (DETALLES Y RESPONSIVIDAD EMOJI) --- */
+.dia-calendario { 
+    padding: 3px; 
+    border-radius: var(--radius-s); 
+    font-weight: 500; 
+    cursor: pointer; 
+    transition: var(--transition-medium); 
+    color: var(--color-texto-principal-oscuro); 
+    display: flex; 
+    flex-direction: column;
+    align-items: center; 
+    justify-content: flex-start; 
+    aspect-ratio: 1 / 1; 
+    position: relative; 
+    overflow: hidden; 
+    border: 1px solid var(--color-borde-sutil);
+    min-height: 50px; 
+}
+.dia-calendario:hover, .dia-calendario:focus-visible { 
+    transform: scale(1.04) translateY(-1px); 
+    box-shadow: var(--sombra-m); 
+    outline: 2px solid var(--color-primario);
+    outline-offset: 1px;
+    border-color: transparent; 
+    z-index: 5; 
+}
+.dia-calendario .dia-numero { 
+    font-size: clamp(0.7rem, 2.2vw, 0.9rem); 
+    font-weight: 600; 
+    line-height: 1.1; 
+    margin-bottom: 2px;
+    flex-shrink: 0; 
+    text-align: center;
+    width: 100%;
+}
+.dia-calendario .emoji-anotacion { 
+    /* Emojis muy pequeños en pantallas chicas para que no rompan el layout */
+    font-size: clamp(0.45rem, 2vw, 0.85rem); 
+    line-height: 1; 
+    opacity: 0.95; 
+    display: flex; 
+    justify-content: center;
+    align-items: center; 
+    flex-grow: 1; 
+    width: 100%;
+    overflow: hidden; 
+    white-space: nowrap; 
+    text-overflow: clip; 
+    gap: 0.05em; 
+    max-height: 1.1em; /* Limitar altura para no empujar el número */
+    color: inherit; 
+}
+
+/* Clases de estado para los días del calendario (colores de :root en Parte 1) */
+.dia-calendario.cal-estado-0 { background-color: var(--cal-estado-0-bg); color: var(--cal-estado-0-text); }
+.dia-calendario.cal-estado-1 { background-color: var(--cal-estado-1-bg); color: var(--cal-estado-1-text); }
+.dia-calendario.cal-estado-2 { background-color: var(--cal-estado-2-bg); color: var(--cal-estado-2-text); }
+.dia-calendario.cal-estado-3 { background-color: var(--cal-estado-3-bg); color: var(--cal-estado-3-text); }
+.dia-calendario.cal-estado-4 { background-color: var(--cal-estado-4-bg); color: var(--cal-estado-4-text); }
+.dia-calendario.cal-estado-5 { background-color: var(--cal-estado-5-bg); color: var(--cal-estado-5-text); font-weight: bold; }
+.dia-calendario.cal-estado-sin-datos { background-color: var(--cal-estado-sin-datos-bg); color: var(--cal-estado-sin-datos-text); }
+.dia-calendario.dia-actual { 
+    border-width: 2px;
+    border-color: var(--color-primario); 
+    box-shadow: 0 0 0 2px var(--color-primario), var(--sombra-m); 
+}
+.dia-calendario.dia-actual .dia-numero {
+    color: var(--color-primario);
+    font-weight: 700;
+}
+
+/* --- MODAL DE DETALLE DEL DÍA (#tareasDetalleDia) - ESTILOS ESPECÍFICOS --- */
+/* Esta clase se usa para que el modal de detalle use la estructura flex con footer fijo */
+#tareasDetalleDia .form-modal {
+    /* Hereda display:flex, flex-direction:column de los estilos generales de modal */
+    padding: 0; /* Sin padding general, cada sección lo maneja */
+}
+#tareasDetalleDia .form-modal-header#detalle-dia-titulo { 
+    padding: var(--space-m) var(--space-l);
+    font-size: clamp(1.1rem, 3.5vw, 1.3rem); 
+    margin-bottom: 0;
+}
+/* Este es el div que contendrá la lista de tareas Y los campos del editor de anotaciones */
+#listaDetalleTareasScroll { 
+    padding: var(--space-s) var(--space-l); 
+    overflow-y: auto;  
+    flex-grow: 1;      
+    min-height: 0;     
+    -webkit-overflow-scrolling: touch;
+}
+/* Contenedor para los botones "Guardar Anotación" y "Quitar Anotación" */
+#tareasDetalleDia #anotacionActionsFooter {
+    /* Hereda .form-modal-actions */
+    padding: var(--space-s) var(--space-l);
+    justify-content: center; 
+    gap: var(--space-m);
+}
+#tareasDetalleDia #anotacionActionsFooter button { min-width: 140px; font-size: 0.8rem; padding: var(--space-xs) var(--space-s); }
+#anotacionActionsFooter button#guardarAnotacionBtnModal { background-color: var(--color-exito); color: white; border: none; }
+#anotacionActionsFooter button#guardarAnotacionBtnModal:hover { background-color: var(--color-exito-hover); }
+#anotacionActionsFooter button.cancel-btn { background-color: var(--color-cancel-bg); color: var(--color-cancel-text); border: 1px solid var(--color-cancel-border); }
+#anotacionActionsFooter button.cancel-btn:hover { background-color: var(--color-cancel-hover-bg); border-color: var(--color-cancel-hover-border); }
+
+/* Contenedor para el botón "Cerrar" principal del modal de detalles */
+#tareasDetalleDia .form-modal-actions.main-close-action {
+    padding: var(--space-s) var(--space-l) calc(var(--space-s) + env(safe-area-inset-bottom, 0px));
+    border-top: none; /* No necesita doble borde si hay botones de anotación arriba */
+    background-color: var(--color-fondo-pagina);
+    justify-content: center; 
+}
+#tareasDetalleDia .main-close-action button#cerrarDetalleDia { width: auto; min-width: 150px; }
+
+
+/* --- LISTA DE TAREAS DIARIAS (VISTA PRINCIPAL) --- */
+#tareasDiariasLista { padding: 0 var(--space-xs); } 
+#tareasDiariasLista ul { list-style: none; padding: 0; }
+#tareasDiariasLista .tarea-titulo-item, #tareasDiariasLista .tarea-item { padding-right: 35px; position: relative; }
+#tareasDiariasLista .tarea-titulo-item { font-weight: 600; margin-top: var(--space-m); margin-bottom: var(--space-xs); font-size: 1rem; display: flex; align-items: center; justify-content: space-between; color: var(--color-fondo-principal); background: rgba(0, 123, 255, 0.07); padding: var(--space-s) var(--space-m); border-radius: var(--radius-s); border-left: 3px solid var(--color-primario); }
+#tareasDiariasLista .tarea-titulo-item .texto-titulo { flex-grow: 1; margin-right: var(--space-s); }
+#tareasDiariasLista .tarea-item, #tareasDiariasLista ul.subtareas-listado li { display: flex; align-items: center; margin-bottom: var(--space-xs); background-color: var(--color-superficie-clara); padding: var(--space-s); border-radius: var(--radius-s); color: var(--color-texto-principal-oscuro); border-left: 3px solid var(--color-borde); box-shadow: var(--sombra-xs); }
+#tareasDiariasLista ul.subtareas-listado { padding-left: var(--space-m); margin-top: var(--space-xs); margin-bottom: var(--space-s); border-left: 1px solid var(--color-borde-sutil); margin-left: var(--space-xs); }
+#tareasDiariasLista input[type="checkbox"] { margin-right: var(--space-s); transform: scale(1.1); accent-color: var(--color-exito); cursor: pointer; flex-shrink: 0; }
+#tareasDiariasLista input[type="checkbox"]:disabled { opacity: 0.5; cursor: not-allowed; }
+#tareasDiariasLista label { flex-grow: 1; font-size: 0.9rem; margin-right: var(--space-s); }
+#tareasDiariasLista label.sub-objetivo-completado { text-decoration: line-through; opacity: 0.65; }
+
+.add-elemento-diario-btn { display: inline-block; margin: var(--space-m) auto; padding: var(--space-s) var(--space-l); font-size: 0.95rem; font-weight: 500; color: var(--color-texto-claro); background-color: var(--color-secundario); border: none; border-radius: var(--radius-s); cursor: pointer; transition: var(--transition-fast); box-shadow: var(--sombra-sutil); }
+.add-elemento-diario-btn:hover, .add-elemento-diario-btn:focus { background-color: var(--color-secundario-hover); transform: translateY(-1px); box-shadow: var(--sombra-m); outline: none; }
+
+/* --- TAREAS INACTIVAS --- */
+#tareas-inactivas-contenedor { margin-top: var(--space-l); border-top: 1px solid var(--color-borde-claro); padding-top: var(--space-m); }
+#tareas-inactivas-contenedor h3 { cursor: pointer; color: var(--color-texto-secundario-oscuro); display: flex; justify-content: space-between; align-items: center; padding: var(--space-s); background-color: var(--color-fondo-pagina); border-radius: var(--radius-s); margin-bottom: var(--space-m); font-size: 0.95rem; transition: background-color 0.2s; font-weight: 500; }
+#tareas-inactivas-contenedor h3:hover { background-color: #e9ecef; }
+#tareas-inactivas-contenedor h3::after { content: '▼'; font-size: 0.8em; transition: var(--transition-medium); margin-left: var(--space-s); }
+#tareas-inactivas-contenedor h3.expandido::after { transform: rotate(180deg); }
+#lista-tareas-inactivas { max-height: 0; overflow-y: hidden; transition: max-height 0.35s ease-in-out; }
+#lista-tareas-inactivas.expandido { max-height: 500px; overflow-y: auto; }
+.tarea-inactiva { opacity: 0.7; } 
+.tarea-inactiva .texto-titulo, .tarea-inactiva label { text-decoration: line-through; color: var(--color-texto-secundario-oscuro) !important; }
+
+/* --- MEDIA QUERIES GENERALES (CONSOLIDACIÓN Y REFINAMIENTOS) --- */
+@media (max-width: 768px) { /* Tablets y móviles grandes en landscape */
+    body { padding: var(--space-xs); } 
+    .contenedor-principal { 
+        padding: var(--space-s); 
+        margin-left: 0; margin-right: 0;
+        margin-bottom: calc(44px + var(--space-s) + env(safe-area-inset-bottom, var(--space-xs)));
+        border-radius: var(--radius-m); 
+    }
+    .seccion-objetivo { padding: var(--space-m) calc(var(--space-m) + 28px) var(--space-m) var(--space-s); }
+    .bottom-nav { height: calc(48px + env(safe-area-inset-bottom, 0px)); }
+    .nav-button { min-width: 42px; height: 42px; font-size: 0.7rem; }
+    #calendario-contenedor { padding: var(--space-s); }
+    .calendario-nav h3 { font-size: clamp(1.1rem, 4vw, 1.3rem); }
+    .calendario-nav button { padding: 1px 6px; font-size: 0.85rem; }
+    .dias-semana span { font-size: 0.7rem; }
+    .dia-calendario { padding: 1px 2px; gap: 0; min-height: 45px; } 
+    .dia-calendario .dia-numero { font-size: 0.75rem; }
+    .dia-calendario .emoji-anotacion { font-size: 0.7rem; max-height: 0.9em; }
+}
+
+@media (max-width: 480px) { /* Móviles pequeños */
+    .contenedor-principal { padding: var(--space-s); border-radius: var(--radius-s); margin-bottom: 50px; }
+    .dia-calendario { min-height: 40px; }
+    .dia-calendario .dia-numero { font-size: 0.65rem; }
+    .dia-calendario .emoji-anotacion { font-size: 0.5rem; max-height: 0.8em; } /* Emojis diminutos */
+    
+    .action-toggle-btn { font-size: 1.1rem; width: 28px; height: 28px; right: 2px; top: 2px; } 
+    
+    #tareasDiariasLista .tarea-titulo-item, 
+    #tareasDiariasLista .tarea-item, 
+    .contenido-objetivo ul li { 
+        padding-right: 32px; 
+        font-size: 0.8rem;
+    } 
+    /* Ajustes específicos para el modal de detalle del día en móviles pequeños */
+    #tareasDetalleDia .form-modal-header { padding: var(--space-s); font-size: 1rem; }
+    #listaDetalleTareasScroll { padding: var(--space-s); }
+    #tareasDetalleDia #anotacionActionsFooter, #tareasDetalleDia .main-close-action { padding-left: var(--space-m); padding-right: var(--space-m); }
+}
+
+/* --- CLASE DE UTILIDAD PARA ACCESIBILIDAD --- */
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border-width: 0; }
