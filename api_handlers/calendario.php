@@ -39,11 +39,13 @@ if ($handler_http_method === 'GET') {
         $result_completadas = $stmt_completadas->get_result();
         while($row_comp = $result_completadas->fetch_assoc()){ 
             if (!isset($tareas_completadas_en_mes[$row_comp['fecha']])) { $tareas_completadas_en_mes[$row_comp['fecha']] = []; } 
-            $tareas_completadas_en_mes[$row_comp['fecha']][$row_comp['tarea_id']] = true; 
+            $tareas_completadas_en_mes[$row_comp['fecha']][] = $row_comp['tarea_id']; 
         }
         $stmt_completadas->close();
 
+        $day_of_week_map = ['Sunday' => 'SUN', 'Monday' => 'MON', 'Tuesday' => 'TUE', 'Wednesday' => 'WED', 'Thursday' => 'THU', 'Friday' => 'FRI', 'Saturday' => 'SAT'];
         $dias_del_mes_data = [];
+
         for ($i = 1; $i <= $num_dias_mes; $i++) {
             $current_date_obj = new DateTimeImmutable("$anio-$mes-$i", new DateTimeZone('UTC')); 
             $current_date_str = $current_date_obj->format("Y-m-d");
@@ -75,20 +77,17 @@ if ($handler_http_method === 'GET') {
                         $parts = explode(':', $regla);
                         if (count($parts) === 2) {
                             $days_of_week_abbr = explode(',', $parts[1]);
-                            $day_map_php_to_abbr = [1=>'MON', 2=>'TUE', 3=>'WED', 4=>'THU', 5=>'FRI', 6=>'SAT', 7=>'SUN'];
-                            $current_day_abbr_php = $day_map_php_to_abbr[$current_date_obj->format('N')] ?? '';
+                            $current_day_abbr_php = $day_of_week_map[$current_date_obj->format('l')] ?? '';
                             if (in_array($current_day_abbr_php, $days_of_week_abbr)) $es_dia_de_tarea = true;
                         }
                     }
                 } elseif ($regla === 'MONTHLY_DAY') {
                     if ($current_date_obj >= $fecha_inicio_tarea_obj && $current_date_obj->format('d') == $fecha_inicio_tarea_obj->format('d')) $es_dia_de_tarea = true;
-                } else {
-                    if ($fecha_inicio_tarea_obj->format('Y-m-d') == $current_date_str) $es_dia_de_tarea = true;
                 }
 
                 if ($es_dia_de_tarea) { 
                     $total_tareas_dia++; 
-                    if (isset($tareas_completadas_en_mes[$current_date_str][$tarea_id])) {
+                    if (isset($tareas_completadas_en_mes[$current_date_str]) && in_array($tarea_id, $tareas_completadas_en_mes[$current_date_str])) {
                         $completadas_dia++; 
                     }
                 }
@@ -98,8 +97,8 @@ if ($handler_http_method === 'GET') {
         }
         jsonResponse($dias_del_mes_data);
 
-    } catch (Throwable $e) { // Captura Errores y Excepciones
-        error_log("Error en GET /calendario-dia-a-dia (user $usuario_id): " . $e->getMessage());
+    } catch (Throwable $e) {
+        error_log("Error en GET /calendario-dia-a-dia (user $usuario_id): " . $e->getMessage() . " on line " . $e->getLine());
         jsonResponse(["error" => "No se pudo generar los datos del calendario."], 500);
     }
 } else {

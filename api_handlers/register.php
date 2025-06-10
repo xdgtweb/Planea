@@ -8,9 +8,17 @@ $username = $data_for_handler['username'] ?? null;
 $email = $data_for_handler['email'] ?? null;
 $password = $data_for_handler['password'] ?? null;
 
-if (!$username || !$email || !$password) { jsonResponse(["error" => "Nombre de usuario, email y contraseña son requeridos."], 400); }
-if (strlen($password) < 6) { jsonResponse(["error" => "La contraseña debe tener al menos 6 caracteres."], 400); }
-if (!filter_var($email, FILTER_VALIDATE_EMAIL)) { jsonResponse(["error" => "Formato de email inválido."], 400); }
+if (!$username || !$email || !$password) {
+    jsonResponse(["error" => "Nombre de usuario, email y contraseña son requeridos."], 400);
+}
+
+if (strlen($password) < 6) {
+    jsonResponse(["error" => "La contraseña debe tener al menos 6 caracteres."], 400);
+}
+
+if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+    jsonResponse(["error" => "Formato de email inválido."], 400);
+}
 
 $password_hash = password_hash($password, PASSWORD_DEFAULT);
 

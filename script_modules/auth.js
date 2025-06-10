@@ -21,28 +21,25 @@ export async function checkLoginStatus() {
         }
     } catch (error) {
         console.error("Error checking login status:", error);
-        alert("No se pudo conectar con el servidor. Por favor, recarga la página.");
         showLoginScreen();
     }
 }
 
 export async function login(email, password) {
-    const response = await fetchData('login', {
+    await fetchData('login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
     });
     await checkLoginStatus();
-    return response;
 }
 
 export async function register(username, email, password) {
-    const response = await fetchData('register', {
+    return fetchData('register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, email, password })
     });
-    return response;
 }
 
 export async function logout() {
@@ -54,4 +51,13 @@ export async function logout() {
         currentUser = null;
         checkLoginStatus();
     }
+}
+
+export async function loginWithGoogle(googleToken) {
+    await fetchData('google-signin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: googleToken })
+    });
+    await checkLoginStatus();
 }

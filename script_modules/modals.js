@@ -1,30 +1,24 @@
 // script_modules/modals.js
 
-import { API_BASE_URL, EMOJIS_PREDEFINIDOS } from './config.js';
+import { EMOJIS_PREDEFINIDOS } from './config.js';
 import { fetchData } from './utils.js';
-// Importar la NUEVA versión de mostrarFormulario que maneja sus propios botones.
-// También uiMiniCalSelectedDates para que este módulo pueda inicializarlo.
 import { 
     mostrarFormulario, 
     ocultarFormulario, 
     renderMiniCalendar, 
     miniCalSelectedDates as uiMiniCalSelectedDates
 } from './ui.js'; 
-// Funciones de recarga de vistas y estado de la app (se definirán/importarán en sus respectivos módulos)
 import { cargarTareasDiaADia, renderizarCalendario as appRenderizarCalendario, cargarObjetivos } from './views.js'; 
-// Importar estado y funciones de app.js
 import { 
-    fechaCalendarioActual, // Importar directamente el nombre exportado desde app.js
+    fechaCalendarioActual,
     setFechaCalendarioActual,
-    modoActivo,
-    modosDisponibles 
+    modoActivo
 } from './app.js'; 
 
 
 export function abrirModalParaNuevoElemento(contexto = null, fechaPreseleccionada = null) {
-    console.log("abrirModalParaNuevoElemento (modals.js):", contexto, "fechaPreseleccionada:", fechaPreseleccionada);
     let formHtmlCampos = '', formTitle = "Añadir Elemento";
-    let guardarBtnText = "Guardar"; // Texto por defecto para el botón de guardar
+    let guardarBtnText = "Guardar";
     
     let emojiSelectorHTML = `<div class="emoji-selector-container" id="emojiSelectorAddTask">${EMOJIS_PREDEFINIDOS.map(e => `<span class="emoji-option" data-emoji="${e}" role="button" tabindex="0" aria-label="Seleccionar ${e}">${e}</span>`).join('')}</div>`;
 
@@ -32,13 +26,11 @@ export function abrirModalParaNuevoElemento(contexto = null, fechaPreseleccionad
         formTitle = "Añadir Título, Subtareas y Programación";
         guardarBtnText = "Guardar Programación";
         
-        // Limpiar y preparar el array de fechas seleccionadas del módulo ui.js
         uiMiniCalSelectedDates.length = 0; 
         if (fechaPreseleccionada) {
             uiMiniCalSelectedDates.push(fechaPreseleccionada);
         }
         
-        // El HTML ahora solo contiene los campos. Los botones de acción se añaden por mostrarFormulario.
         formHtmlCampos = `
             <div id="camposTituloDiario">
                 <label for="nuevoTituloTexto">Texto del Título Diario:</label>
@@ -47,22 +39,15 @@ export function abrirModalParaNuevoElemento(contexto = null, fechaPreseleccionad
 
             <fieldset id="programacionFechas">
                 <legend>Programación de Fechas</legend>
-                <label for="fechaInicioInputDisplay">Fecha(s) (clic en calendario):</label>
-                <input type="text" id="fechaInicioInputDisplay" value="${uiMiniCalSelectedDates.join(', ')}" readonly placeholder="Seleccionar del calendario...">
                 <div id="mini-calendar-container-dynamic"></div>
                 <div id="selected-dates-display">Fechas: ${uiMiniCalSelectedDates.length > 0 ? uiMiniCalSelectedDates.join(', ') : 'Ninguna'}</div>
                 
-                <label for="tipoRecurrencia">Opciones Periodo/Repetición:</label>
+                <label for="tipoRecurrencia">Opciones de Repetición:</label>
                 <select id="tipoRecurrencia">
-                    <option value="SPECIFIC_DATES">Días específicos (del calendario)</option>
-                    <option value="NONE">Solo una vez (primera/única fecha)</option>
-                    <option value="DAILY">Diariamente (desde primera/única fecha)</option>
-                    <option value="WEEKLY">Semanalmente (desde primera/única fecha)</option>
-                    <option value="MONTHLY_DAY">Mensualmente (mismo día, desde primera/única fecha)</option>
-                    <option value="PERIOD_CURRENT_MONTH">Todo el mes (de primera/única fecha)</option>
-                    <option value="PERIOD_1_MONTH">Durante 1 mes (desde primera/única fecha)</option>
-                    <option value="PERIOD_2_MONTHS">Durante 2 meses (desde primera/única fecha)</option>
-                    <option value="PERIOD_3_MONTHS">Durante 3 meses (desde primera/única fecha)</option>
+                    <option value="NONE">Solo una vez (en las fechas seleccionadas)</option>
+                    <option value="DAILY">Diariamente (desde la primera fecha)</option>
+                    <option value="WEEKLY">Semanalmente (en los días de la semana de las fechas)</option>
+                    <option value="MONTHLY_DAY">Mensualmente (mismo día del mes)</option>
                 </select>
                 <div id="days-of-week-selector" style="display:none;">
                     <small>Selecciona días de la semana:</small><br>
@@ -91,8 +76,8 @@ export function abrirModalParaNuevoElemento(contexto = null, fechaPreseleccionad
             </div>
             <button type="button" id="addMoreSubtasksBtn">+ Subtarea</button>
             `; 
-    } else if (contexto === 'corto-medio-plazo') {
-        formTitle = "Añadir Objetivo a Corto/Medio Plazo";
+    } else if (contexto === 'corto-medio-plazo' || contexto === 'largo-plazo') {
+        formTitle = `Añadir Objetivo a ${contexto === 'corto-medio-plazo' ? 'Corto/Medio' : 'Largo'} Plazo`;
         guardarBtnText = "Guardar Objetivo";
         formHtmlCampos = `
             <div id="camposObjetivo">
@@ -103,263 +88,178 @@ export function abrirModalParaNuevoElemento(contexto = null, fechaPreseleccionad
                 <label for="nuevoObjetivoDescripcion">Descripción:</label>
                 <textarea id="nuevoObjetivoDescripcion" placeholder="Pasos, recursos..."></textarea>
             </div>`;
-    } else if (contexto === 'largo-plazo') {
-        formTitle = "Añadir Objetivo a Largo Plazo";
-        guardarBtnText = "Guardar Objetivo";
-        formHtmlCampos = `
-            <div id="camposObjetivo">
-                <label for="nuevoObjetivoTitulo">Título del Objetivo:</label>
-                <input type="text" id="nuevoObjetivoTitulo" placeholder="Ej. Comprar una casa">
-                <label for="nuevoObjetivoFecha">Fecha Estimada:</label>
-                <input type="text" id="nuevoObjetivoFecha" placeholder="Ej. 5 años, 2028">
-                <label for="nuevoObjetivoDescripcion">Descripción:</label>
-                <textarea id="nuevoObjetivoDescripcion" placeholder="Plan de ahorro, investigación..."></textarea>
-            </div>`;
     } else { 
-        console.error("abrirModalParaNuevoElemento: Contexto desconocido o nulo:", contexto);
-        alert("Error: No se puede determinar qué tipo de elemento añadir.");
+        console.error("Contexto desconocido:", contexto);
         return; 
     }
     
     const onGuardarCallback = async () => {
-        let urlEndpoint, options, payload = {}, successMessage, reloadFunction;
         const tipoOp = contexto;
         
         if (tipoOp === 'dia-a-dia') {
             const tituloTexto = document.getElementById('nuevoTituloTexto').value.trim();
             if (!tituloTexto) { alert('El texto del título es obligatorio.'); throw new Error("Título vacío"); }
-            payload = { 
+            
+            const subtareas = Array.from(document.querySelectorAll('#subtasks-inputs-container .subtask-text-input')).map(i=>i.value.trim()).filter(t=>t);
+            if (subtareas.length === 0) { alert('Al menos una subtarea es obligatoria.'); throw new Error("Subtarea vacía"); }
+            
+            const tipoRecurrencia = document.getElementById('tipoRecurrencia').value;
+            if (uiMiniCalSelectedDates.length === 0) { alert('Debe seleccionar al menos una fecha del calendario.'); throw new Error("Fechas no seleccionadas"); }
+
+            let regla_recurrencia_final = tipoRecurrencia;
+            if (tipoRecurrencia === 'WEEKLY') {
+                const dias = Array.from(document.querySelectorAll('#days-of-week-selector input[name="recurrenciaDia"]:checked')).map(cb => cb.value);
+                if (dias.length === 0) { alert("Seleccione días para repetición semanal."); throw new Error("Días semanales no seleccionados"); }
+                regla_recurrencia_final = `WEEKLY:${dias.join(',')}`;
+            }
+
+            const payload = { 
                 texto: tituloTexto, 
                 tipo: 'titulo', 
-                subtareas_textos: Array.from(document.querySelectorAll('#subtasks-inputs-container .subtask-text-input')).map(i=>i.value.trim()).filter(t=>t) 
+                subtareas_textos: subtareas,
+                regla_recurrencia: regla_recurrencia_final,
+                fecha_inicio: uiMiniCalSelectedDates[0],
+                emoji_anotacion: document.getElementById('emojiAnotacionTareaInput').value, 
+                descripcion_anotacion: document.getElementById('descripcionAnotacionTarea').value.trim(),
             };
-            if (payload.subtareas_textos.length === 0) { alert('Al menos una subtarea es obligatoria.'); throw new Error("Subtarea vacía"); }
-            const tipoRecurrencia = document.getElementById('tipoRecurrencia').value;
-            payload.regla_recurrencia = tipoRecurrencia;
-            const primeraFechaDeReferencia = uiMiniCalSelectedDates.length > 0 ? uiMiniCalSelectedDates[0] : (fechaPreseleccionada || fechaCalendarioActual.toISOString().split('T')[0]);
 
-            if (tipoRecurrencia === 'SPECIFIC_DATES') {
-                if (uiMiniCalSelectedDates.length === 0) { alert('Debe seleccionar al menos una fecha específica.'); throw new Error("Fechas específicas no seleccionadas"); }
-                payload.fechas_seleccionadas = [...uiMiniCalSelectedDates]; 
-                payload.regla_recurrencia = 'NONE'; 
-                payload.fecha_inicio = uiMiniCalSelectedDates[0]; 
-            } else { 
-                payload.fecha_inicio = primeraFechaDeReferencia;
-                if (!payload.fecha_inicio) { alert('Debe seleccionar una fecha de inicio.'); throw new Error("Fecha de inicio no seleccionada"); }
-                if (tipoRecurrencia.startsWith('PERIOD_')) {
-                    if(tipoRecurrencia === 'PERIOD_CURRENT_MONTH') payload.periodo_meses = "CURRENT_MONTH";
-                    else { payload.periodo_meses = parseInt(tipoRecurrencia.split('_')[1]); }
-                } else if (tipoRecurrencia === "WEEKLY") {
-                    const dias = Array.from(document.querySelectorAll('#days-of-week-selector input[name="recurrenciaDia"]:checked')).map(cb => cb.value);
-                    if (dias.length === 0) { alert("Seleccione días para repetición semanal."); throw new Error("Días semanales no seleccionados"); }
-                    payload.regla_recurrencia = `WEEKLY:${dias.join(',')}`;
-                }
-            }
-            payload.emoji_anotacion = document.getElementById('emojiAnotacionTareaInput').value; 
-            payload.descripcion_anotacion = document.getElementById('descripcionAnotacionTarea').value.trim();
+            await fetchData('tareas-dia-a-dia', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
             
-            urlEndpoint = `tareas-dia-a-dia`;
-            options = { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) };
-            successMessage = 'Programación guardada.'; 
-            reloadFunction = async () => { 
-                const refDate = payload.fecha_inicio || (payload.fechas_seleccionadas && payload.fechas_seleccionadas[0]) || fechaCalendarioActual.toISOString().split('T')[0];
-                let newBaseDate = new Date(refDate + 'T00:00:00Z'); 
-                setFechaCalendarioActual(newBaseDate); 
-            };
-            await fetchData(urlEndpoint, options); 
-        
+            alert('Programación guardada.');
+            ocultarFormulario();
+            
+            const fechaDeRecarga = new Date(uiMiniCalSelectedDates[0] + 'T00:00:00Z');
+            setFechaCalendarioActual(fechaDeRecarga);
+            await cargarTareasDiaADia(fechaDeRecarga);
+            await appRenderizarCalendario(fechaDeRecarga.getFullYear(), fechaDeRecarga.getMonth(), setFechaCalendarioActual);
+
         } else if (tipoOp === 'corto-medio-plazo' || tipoOp === 'largo-plazo') {
             const titulo = document.getElementById('nuevoObjetivoTitulo').value.trim();
-            const fecha = document.getElementById('nuevoObjetivoFecha').value.trim();
-            const descripcion = document.getElementById('nuevoObjetivoDescripcion').value.trim();
             if (!titulo) { alert('El título del objetivo no puede estar vacío.'); throw new Error("Título vacío"); }
-            urlEndpoint = `objetivos`;
-            payload = { titulo, fecha_estimada: fecha, descripcion, mode_id: tipoOp };
-            options = { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) };
-            successMessage = 'Objetivo añadido.';
-            reloadFunction = async () => { await cargarObjetivos(tipoOp); };
-            await fetchData(urlEndpoint, options);
-        } else { 
-            throw new Error("Operación de guardado no reconocida."); 
+            
+            const payload = { 
+                titulo, 
+                fecha_estimada: document.getElementById('nuevoObjetivoFecha').value.trim(), 
+                descripcion: document.getElementById('nuevoObjetivoDescripcion').value.trim(), 
+                mode_id: tipoOp 
+            };
+
+            await fetchData('objetivos', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+            
+            alert('Objetivo añadido.');
+            ocultarFormulario();
+            await cargarObjetivos(tipoOp);
         }
-        
-        alert(successMessage);
-        ocultarFormulario(); 
-        if (reloadFunction) await reloadFunction();
     };
     
     mostrarFormulario(formHtmlCampos, onGuardarCallback, formTitle, guardarBtnText);
 
     if (contexto === 'dia-a-dia') {
-        const fechaInputDisplayEl = document.getElementById('fechaInicioInputDisplay');
         const initialDateForMiniCal = fechaPreseleccionada ? new Date(fechaPreseleccionada + "T00:00:00Z") : new Date();
-        renderMiniCalendar(initialDateForMiniCal.getUTCFullYear(), initialDateForMiniCal.getUTCMonth(), fechaInputDisplayEl, true); 
+        renderMiniCalendar(initialDateForMiniCal.getUTCFullYear(), initialDateForMiniCal.getUTCMonth(), true); 
         
         const tipoRecSelect = document.getElementById('tipoRecurrencia');
         const daysOfWeekSel = document.getElementById('days-of-week-selector');
-        const miniCalCont = document.getElementById('mini-calendar-container-dynamic');
+        tipoRecSelect.onchange = () => {
+            daysOfWeekSel.style.display = (tipoRecSelect.value === 'WEEKLY') ? 'block' : 'none';
+        };
+        
+        document.getElementById('addMoreSubtasksBtn').onclick = () => {
+            const container = document.getElementById('subtasks-inputs-container');
+            const newEntry = document.createElement('div');
+            newEntry.className = 'subtask-entry';
+            newEntry.innerHTML = `<input type="text" class="subtask-text-input" placeholder="Siguiente subtarea..."><button type="button" class="quitar-subtarea-btn" title="Quitar">&times;</button>`;
+            container.appendChild(newEntry);
+            newEntry.querySelector('.quitar-subtarea-btn').onclick = () => newEntry.remove();
+            newEntry.querySelector('.subtask-text-input').focus();
+        };
 
-        if(tipoRecSelect) {
-            tipoRecSelect.onchange = function() {
-                daysOfWeekSel.style.display = (this.value === 'WEEKLY') ? 'block' : 'none';
-                const isSpecific = this.value === 'SPECIFIC_DATES';
-                if (miniCalCont) miniCalCont.style.display = isSpecific ? 'block' : 'none';
-                
-                if(!isSpecific) { 
-                    const primeraFecha = uiMiniCalSelectedDates.length > 0 ? uiMiniCalSelectedDates[0] : (fechaPreseleccionada || new Date().toISOString().split('T')[0]);
-                    const tempDate = primeraFecha ? new Date(primeraFecha+"T00:00:00Z") : new Date();
-                    renderMiniCalendar(tempDate.getUTCFullYear(), tempDate.getUTCMonth(), fechaInputDisplayEl, false); 
-                    if (miniCalCont) miniCalCont.style.display = 'none'; 
-                } else {
-                    const tempDate = uiMiniCalSelectedDates.length > 0 ? new Date(uiMiniCalSelectedDates[0]+"T00:00:00Z") : initialDateForMiniCal;
-                    renderMiniCalendar(tempDate.getUTCFullYear(), tempDate.getUTCMonth(), fechaInputDisplayEl, true);
+        const emojiDisplay = document.getElementById('currentEmojiAnotacionDisplay');
+        const emojiInput = document.getElementById('emojiAnotacionTareaInput');
+        let selectedEmojisModalArray = []; 
+        document.querySelectorAll('#emojiSelectorAddTask .emoji-option').forEach(opt => { 
+            opt.onclick = () => {
+                const emoji = opt.dataset.emoji;
+                const index = selectedEmojisModalArray.indexOf(emoji);
+                if (index > -1) {
+                    selectedEmojisModalArray.splice(index, 1);
+                    opt.classList.remove('selected');
+                } else if (selectedEmojisModalArray.length < 3) {
+                    selectedEmojisModalArray.push(emoji);
+                    opt.classList.add('selected');
                 }
-            };
-            tipoRecSelect.onchange(); 
-        }
-        const addMoreSubtasksBtn = document.getElementById('addMoreSubtasksBtn');
-        const subtasksContainer = document.getElementById('subtasks-inputs-container');
-        if (addMoreSubtasksBtn && subtasksContainer) {
-            addMoreSubtasksBtn.onclick = () => {
-                const newEntry = document.createElement('div');
-                newEntry.className = 'subtask-entry';
-                newEntry.innerHTML = `<input type="text" class="subtask-text-input" placeholder="Siguiente subtarea..."><button type="button" class="quitar-subtarea-btn" title="Quitar">&times;</button>`;
-                subtasksContainer.appendChild(newEntry);
-                newEntry.querySelector('.quitar-subtarea-btn').onclick = () => newEntry.remove();
-                newEntry.querySelector('.subtask-text-input').focus();
-             };
-        }
-        const emojiOptsAddTask = document.querySelectorAll('#emojiSelectorAddTask .emoji-option');
-        if(emojiOptsAddTask.length) {
-            const emojiDisplay = document.getElementById('currentEmojiAnotacionDisplay');
-            const emojiInput = document.getElementById('emojiAnotacionTareaInput');
-            let selectedEmojisModalArray = []; 
-            emojiOptsAddTask.forEach(opt => { 
-                opt.onclick = () => {
-                    const emoji = opt.dataset.emoji;
-                    const index = selectedEmojisModalArray.indexOf(emoji);
-                    if (index > -1) {
-                        selectedEmojisModalArray.splice(index, 1);
-                        opt.classList.remove('selected');
-                    } else if (selectedEmojisModalArray.length < 3) {
-                        selectedEmojisModalArray.push(emoji);
-                        opt.classList.add('selected');
-                    } else {
-                        alert("Máximo 3 emojis.");
-                    }
-                    emojiDisplay.textContent = selectedEmojisModalArray.join(' ');
-                    emojiInput.value = selectedEmojisModalArray.join('');
-                }; 
-                opt.onkeydown = e => { if(e.key==='Enter'||e.key===' ') opt.click();};
-            });
-        }
+                emojiDisplay.textContent = selectedEmojisModalArray.join(' ');
+                emojiInput.value = selectedEmojisModalArray.join('');
+            }; 
+        });
     }
 }
+
 export function mostrarFormularioAddSubTarea(parentId, fechaObjRecarga) {
-    const formHtmlCampos = `
-        <label for="nuevaSubTareaTexto">Texto de la Sub-Tarea:</label>
-        <input type="text" id="nuevaSubTareaTexto" placeholder="Ej. Comprar leche">
-    `;
+    const formHtmlCampos = `<label for="nuevaSubTareaTexto">Texto de la Sub-Tarea:</label><input type="text" id="nuevaSubTareaTexto" placeholder="Ej. Comprar leche">`;
     
     const onGuardarSubTarea = async () => { 
         const texto = document.getElementById('nuevaSubTareaTexto').value.trim();
-        if (!texto) { 
-            alert('El texto no puede estar vacío.'); 
-            throw new Error("Texto vacío para subtarea"); 
-        }
+        if (!texto) { alert('El texto no puede estar vacío.'); throw new Error("Texto vacío"); }
         
-        const urlEndpoint = `tareas-dia-a-dia`; 
-        const payload = { 
-            texto, 
-            tipo: 'subtarea', 
-            parent_id: parentId,
-            fecha_inicio: fechaObjRecarga.toISOString().split('T')[0], 
-            regla_recurrencia: 'NONE' 
-        };
-        const options = { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) };
+        const payload = { texto, tipo: 'subtarea', parent_id: parentId, fecha_inicio: fechaObjRecarga.toISOString().split('T')[0], regla_recurrencia: 'NONE' };
+        await fetchData('tareas-dia-a-dia', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
         
-        try {
-            await fetchData(urlEndpoint, options); 
-            alert('Sub-tarea añadida.'); 
-            ocultarFormulario();
-            
-            const fechaParaRecargar = new Date(fechaCalendarioActual.getTime() || fechaObjRecarga.getTime());
-            await cargarTareasDiaADia(fechaParaRecargar); 
-            await appRenderizarCalendario(fechaParaRecargar.getFullYear(), fechaParaRecargar.getMonth(), setFechaCalendarioActual);
-        } catch (error) {
-            console.error("Error al añadir subtarea:", error);
-            alert(`Error al añadir subtarea: ${error.message}`);
-            throw error;
-        }
+        alert('Sub-tarea añadida.'); 
+        ocultarFormulario();
+        
+        await cargarTareasDiaADia(fechaObjRecarga); 
+        await appRenderizarCalendario(fechaObjRecarga.getFullYear(), fechaObjRecarga.getMonth(), setFechaCalendarioActual);
     };
     
-    mostrarFormulario(formHtmlCampos, onGuardarSubTarea, "Añadir Sub-Tarea", "Guardar Sub-Tarea");
+    mostrarFormulario(formHtmlCampos, onGuardarSubTarea, "Añadir Sub-Tarea", "Guardar");
 }
 
 export function mostrarFormularioAddSubObjetivo(objetivoPrincipalId, mode_id_recarga) {
-    const formHtmlCampos = `
-        <label for="nuevoSubObjetivoModalTexto">Texto del Sub-Objetivo:</label>
-        <input type="text" id="nuevoSubObjetivoModalTexto" placeholder="Ej. Investigar opciones">
-    `;
+    const formHtmlCampos = `<label for="nuevoSubObjetivoModalTexto">Texto del Sub-Objetivo:</label><input type="text" id="nuevoSubObjetivoModalTexto" placeholder="Ej. Investigar opciones">`;
     
     const onGuardarSubObjetivo = async () => {
         const texto = document.getElementById('nuevoSubObjetivoModalTexto').value.trim();
-        if (!texto) { 
-            alert('El texto no puede estar vacío.'); 
-            throw new Error("Texto vacío para sub-objetivo"); 
-        }
+        if (!texto) { alert('El texto no puede estar vacío.'); throw new Error("Texto vacío"); }
         
-        const urlEndpoint = `sub_objetivos`; 
-        const payload = { objetivo_id: objetivoPrincipalId, texto: texto };
-        const options = { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) };
+        await fetchData('sub_objetivos', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ objetivo_id: objetivoPrincipalId, texto }) });
         
-        try {
-            await fetchData(urlEndpoint, options);
-            alert('Sub-objetivo añadido.');
-            ocultarFormulario();
-            await cargarObjetivos(mode_id_recarga);
-        } catch (error) {
-            console.error("Error al añadir sub-objetivo:", error);
-            alert(`Error al añadir sub-objetivo: ${error.message}`);
-            throw error; 
-        }
+        alert('Sub-objetivo añadido.');
+        ocultarFormulario();
+        await cargarObjetivos(mode_id_recarga);
     };
 
-    mostrarFormulario(formHtmlCampos, onGuardarSubObjetivo, "Añadir Nuevo Sub-Objetivo", "Guardar Sub-Objetivo");
+    mostrarFormulario(formHtmlCampos, onGuardarSubObjetivo, "Añadir Sub-Objetivo", "Guardar");
 }
-export function mostrarFormularioEditarTarea(tarea, fechaObjRecarga, tipoOriginal = 'subtarea') {
-    if (!tarea.activo && (tipoOriginal === 'titulo' || tipoOriginal === 'subtarea')) {
+
+export function mostrarFormularioEditarTarea(tarea, fechaObjRecarga, tipoOriginal) {
+    if (!tarea.activo) {
         alert("No se pueden editar elementos inactivos. Restaure primero el elemento si desea editarlo.");
         return;
     }
     let formHtmlCampos = `<label for="editTareaTexto">Texto:</label>
                           <input type="text" id="editTareaTexto" value="${tarea.texto || ''}">`;
     
-    let fechaInicioActual = '';
-    let reglaRecurrenciaActual = 'NONE';
-    let diasSemanaActuales = [];
-
     if (tipoOriginal === 'titulo') {
-        fechaInicioActual = tarea.fecha_inicio || tarea.fecha_creacion || fechaCalendarioActual.toISOString().split('T')[0];
-        reglaRecurrenciaActual = tarea.regla_recurrencia || 'NONE';
-        if (reglaRecurrenciaActual.startsWith('WEEKLY:')) {
-            diasSemanaActuales = reglaRecurrenciaActual.split(':')[1].split(',');
-        }
+        const fechaInicioActual = tarea.fecha_inicio || new Date().toISOString().split('T')[0];
+        const reglaRecurrenciaActual = tarea.regla_recurrencia || 'NONE';
+        const diasSemanaActuales = reglaRecurrenciaActual.startsWith('WEEKLY:') ? reglaRecurrenciaActual.split(':')[1].split(',') : [];
+
         formHtmlCampos += `
-            <fieldset style="margin-top:15px; border: 1px solid #ccc; padding: 10px; border-radius: 5px;">
-                <legend style="font-weight: bold; padding: 0 5px;">Programación</legend>
+            <fieldset>
+                <legend>Programación</legend>
                 <label for="editFechaInicioTarea">Fecha de inicio:</label>
-                <input type="date" id="editFechaInicioTarea" value="${fechaInicioActual}" style="margin-bottom:10px;">
+                <input type="date" id="editFechaInicioTarea" value="${fechaInicioActual}">
                 <label for="editTipoRecurrencia">Repetir:</label>
-                <select id="editTipoRecurrencia" style="margin-bottom:5px;">
+                <select id="editTipoRecurrencia">
                     <option value="NONE" ${reglaRecurrenciaActual === 'NONE' ? 'selected' : ''}>Solo una vez</option>
                     <option value="DAILY" ${reglaRecurrenciaActual === 'DAILY' ? 'selected' : ''}>Diariamente</option>
                     <option value="WEEKLY" ${reglaRecurrenciaActual.startsWith('WEEKLY:') ? 'selected' : ''}>Semanalmente</option>
-                    <option value="MONTHLY_DAY" ${reglaRecurrenciaActual === 'MONTHLY_DAY' ? 'selected' : ''}>Mensualmente (mismo día)</option>
+                    <option value="MONTHLY_DAY" ${reglaRecurrenciaActual === 'MONTHLY_DAY' ? 'selected' : ''}>Mensualmente</option>
                 </select>
-                <div id="edit-days-of-week-selector" style="display:${reglaRecurrenciaActual.startsWith('WEEKLY:') ? 'block' : 'none'}; margin-top:5px; margin-bottom:10px; padding:5px; background:#f9f9f9; border-radius:3px;">
+                <div id="edit-days-of-week-selector" style="display:${reglaRecurrenciaActual.startsWith('WEEKLY:') ? 'block' : 'none'};">
                     <small>Selecciona días:</small><br>
-                    ${['MON','TUE','WED','THU','FRI','SAT','SUN'].map(d => `<label style="margin-right:5px;"><input type="checkbox" name="editRecurrenciaDia" value="${d}" ${diasSemanaActuales.includes(d) ? 'checked' : ''}> ${d.charAt(0).toUpperCase() + d.slice(1).toLowerCase().substring(0,2)}</label>`).join('')}
+                    ${['MON','TUE','WED','THU','FRI','SAT','SUN'].map(d => `<label><input type="checkbox" name="editRecurrenciaDia" value="${d}" ${diasSemanaActuales.includes(d) ? 'checked' : ''}> ${d.substring(0,3)}</label>`).join('')}
                 </div>
             </fieldset>
         `;
@@ -372,56 +272,28 @@ export function mostrarFormularioEditarTarea(tarea, fechaObjRecarga, tipoOrigina
 
         if (tipoOriginal === 'titulo') {
             payload.fecha_inicio = document.getElementById('editFechaInicioTarea').value;
-            const tipoRecurrenciaVal = document.getElementById('editTipoRecurrencia').value;
-            payload.regla_recurrencia = tipoRecurrenciaVal;
+            let tipoRecurrenciaVal = document.getElementById('editTipoRecurrencia').value;
             if (tipoRecurrenciaVal === "WEEKLY") {
-                const diasSeleccionados = Array.from(document.querySelectorAll('#edit-days-of-week-selector input[name="editRecurrenciaDia"]:checked'))
-                                            .map(cb => cb.value);
-                if (diasSeleccionados.length === 0) { alert("Si elige repetición semanal, debe seleccionar al menos un día."); throw new Error("Días semanales no seleccionados"); }
-                payload.regla_recurrencia = `WEEKLY:${diasSeleccionados.join(',')}`;
+                const dias = Array.from(document.querySelectorAll('#edit-days-of-week-selector input:checked')).map(cb => cb.value);
+                if (dias.length === 0) { alert("Debe seleccionar al menos un día para la repetición semanal."); throw new Error("Días no seleccionados"); }
+                tipoRecurrenciaVal = `WEEKLY:${dias.join(',')}`;
             }
+            payload.regla_recurrencia = tipoRecurrenciaVal;
         }
 
-        const urlEndpoint = `tareas-dia-a-dia`;
-        const options = { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) };
-        
-        try {
-            await fetchData(urlEndpoint, options); 
-            alert('Tarea actualizada.'); 
-            ocultarFormulario(); 
-            
-            let calendarioPrincipalNecesitaRecargaCompleta = false;
-            if (tipoOriginal === 'titulo' && payload.fecha_inicio) {
-                const nuevaFechaInicioTarea = new Date(payload.fecha_inicio + 'T00:00:00Z'); 
-                if (fechaCalendarioActual.getUTCFullYear() !== nuevaFechaInicioTarea.getUTCFullYear() || 
-                    fechaCalendarioActual.getUTCMonth() !== nuevaFechaInicioTarea.getUTCMonth()) {
-                    setFechaCalendarioActual(nuevaFechaInicioTarea); 
-                    calendarioPrincipalNecesitaRecargaCompleta = true; 
-                }
-            }
-
-            if (!calendarioPrincipalNecesitaRecargaCompleta) {
-                await cargarTareasDiaADia(new Date(fechaCalendarioActual)); 
-                await appRenderizarCalendario(fechaCalendarioActual.getFullYear(), fechaCalendarioActual.getMonth(), setFechaCalendarioActual);
-            }
-
-        } catch (error) {
-            console.error("Error al editar tarea:", error);
-            alert(`Error al editar tarea: ${error.message}`);
-            throw error;
-        }
+        await fetchData('tareas-dia-a-dia', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        alert('Tarea actualizada.'); 
+        ocultarFormulario(); 
+        await cargarTareasDiaADia(fechaObjRecarga); 
+        await appRenderizarCalendario(fechaObjRecarga.getFullYear(), fechaObjRecarga.getMonth(), setFechaCalendarioActual);
     };
 
-    mostrarFormulario(formHtmlCampos, onGuardarEditarTarea, `Editar ${tipoOriginal === 'titulo' ? 'Título y Programación' : 'Subtarea'}`);
+    mostrarFormulario(formHtmlCampos, onGuardarEditarTarea, `Editar ${tipoOriginal === 'titulo' ? 'Título' : 'Subtarea'}`);
 
     if (tipoOriginal === 'titulo') {
-        const editTipoRecurrenciaSelect = document.getElementById('editTipoRecurrencia');
-        const editDaysOfWeekSelector = document.getElementById('edit-days-of-week-selector');
-        if(editTipoRecurrenciaSelect && editDaysOfWeekSelector) {
-            editTipoRecurrenciaSelect.onchange = function() {
-                editDaysOfWeekSelector.style.display = (this.value === 'WEEKLY') ? 'block' : 'none';
-            }
-            editDaysOfWeekSelector.style.display = (editTipoRecurrenciaSelect.value === 'WEEKLY') ? 'block' : 'none';
+        const select = document.getElementById('editTipoRecurrencia');
+        select.onchange = () => {
+            document.getElementById('edit-days-of-week-selector').style.display = select.value === 'WEEKLY' ? 'block' : 'none';
         }
     }
 }
@@ -438,29 +310,24 @@ export function mostrarFormularioEditarObjetivo(objetivo, mode_id_recarga) {
     
     const onGuardarEditarObjetivo = async () => {
         const titulo = document.getElementById('editObjetivoTitulo').value.trim();
-        const fecha = document.getElementById('editObjetivoFecha').value.trim();
-        const descripcion = document.getElementById('editObjetivoDescripcion').value.trim();
         if (!titulo) { alert('El título no puede estar vacío.'); throw new Error("Título vacío"); }
         
-        const urlEndpoint = `objetivos`;
-        const payload = { _method: "PUT", id: objetivo.id, titulo, fecha_estimada: fecha, descripcion };
-        const options = { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) };
-        
-        try {
-            await fetchData(urlEndpoint, options); 
-            alert('Objetivo actualizado.'); 
-            ocultarFormulario();
-            await cargarObjetivos(mode_id_recarga); 
-        } catch (error) {
-            console.error("Error al editar objetivo:", error);
-            alert(`Error al editar objetivo: ${error.message}`);
-            throw error;
-        }
+        const payload = { 
+            _method: "PUT", 
+            id: objetivo.id, 
+            titulo, 
+            fecha_estimada: document.getElementById('editObjetivoFecha').value.trim(), 
+            descripcion: document.getElementById('editObjetivoDescripcion').value.trim() 
+        };
+        await fetchData('objetivos', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        alert('Objetivo actualizado.'); 
+        ocultarFormulario();
+        await cargarObjetivos(mode_id_recarga); 
     };
     mostrarFormulario(formHtmlCampos, onGuardarEditarObjetivo, "Editar Objetivo");
 }
 
-export function mostrarFormularioEditarSubObjetivo(objetivoIdPadre, subObjetivo, mode_id_recarga) {
+export function mostrarFormularioEditarSubObjetivo(subObjetivo, mode_id_recarga) {
     const formHtmlCampos = `
         <label for="editSubObjetivoTexto">Texto:</label>
         <input type="text" id="editSubObjetivoTexto" value="${subObjetivo.texto || ''}">
@@ -470,20 +337,11 @@ export function mostrarFormularioEditarSubObjetivo(objetivoIdPadre, subObjetivo,
         const texto = document.getElementById('editSubObjetivoTexto').value.trim();
         if (!texto) { alert('El texto no puede estar vacío.'); throw new Error("Texto vacío"); }
         
-        const urlEndpoint = `sub_objetivos`;
         const payload = { _method: "PUT", id: subObjetivo.id, texto }; 
-        const options = { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) };
-        
-        try {
-            await fetchData(urlEndpoint, options); 
-            alert('Sub-objetivo actualizado.'); 
-            ocultarFormulario();
-            await cargarObjetivos(mode_id_recarga); 
-        } catch (error) {
-            console.error("Error al editar sub-objetivo:", error);
-            alert(`Error al editar sub-objetivo: ${error.message}`);
-            throw error;
-        }
+        await fetchData('sub_objetivos', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        alert('Sub-objetivo actualizado.'); 
+        ocultarFormulario();
+        await cargarObjetivos(mode_id_recarga); 
     };
     mostrarFormulario(formHtmlCampos, onGuardarEditarSubObjetivo, "Editar Sub-Objetivo");
 }

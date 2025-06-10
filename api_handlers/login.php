@@ -7,7 +7,9 @@ if ($handler_http_method !== 'POST') { jsonResponse(["error" => "Method not allo
 $email = $data_for_handler['email'] ?? null;
 $password = $data_for_handler['password'] ?? null;
 
-if (!$email || !$password) { jsonResponse(["error" => "Email y contraseña son requeridos."], 400); }
+if (!$email || !$password) {
+    jsonResponse(["error" => "Email y contraseña son requeridos."], 400);
+}
 
 try {
     $sql = "SELECT id, nombre_usuario, password_hash FROM usuarios WHERE email = ?";
@@ -19,11 +21,13 @@ try {
     $stmt->close();
 
     if ($user && password_verify($password, $user['password_hash'])) {
+        // Contraseña correcta, iniciar sesión
         session_regenerate_id(true);
         $_SESSION['usuario_id'] = $user['id'];
         $_SESSION['nombre_usuario'] = $user['nombre_usuario'];
         jsonResponse(["success" => true, "message" => "Inicio de sesión correcto.", "user" => ["id" => $user['id'], "username" => $user['nombre_usuario']]]);
     } else {
+        // Credenciales incorrectas
         jsonResponse(["error" => "Credenciales inválidas."], 401);
     }
 } catch (Exception $e) {

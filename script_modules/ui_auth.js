@@ -1,6 +1,6 @@
 // script_modules/ui_auth.js
 
-import { login, register, logout } from './auth.js';
+import { login, register, logout, loginWithGoogle } from './auth.js';
 import { cargarModos, initAppModules } from './app.js';
 
 const body = document.body;
@@ -16,7 +16,6 @@ function getAuthContainer() {
     return container;
 }
 
-
 export function showLoginScreen() {
     const appContainer = document.getElementById('app-container');
     if (appContainer) appContainer.style.display = 'none';
@@ -27,6 +26,11 @@ export function showLoginScreen() {
     authContainer.innerHTML = `
         <div id="login-form">
             <h2 style="text-align:center;">Iniciar Sesión en Planea</h2>
+            
+            <div id="google-button-container" style="display: flex; justify-content: center; margin-bottom: 10px; min-height: 40px;"></div>
+            
+            <div class="auth-divider">O</div>
+
             <input type="email" id="login-email" placeholder="Email" required autocomplete="email">
             <input type="password" id="login-password" placeholder="Contraseña" required autocomplete="current-password">
             <button id="login-btn">Entrar</button>
@@ -43,50 +47,62 @@ export function showLoginScreen() {
         <div id="auth-message" style="color: red; text-align: center; margin-top: 10px; min-height: 20px;"></div>
     `;
 
+    // Lógica para inicializar el botón de Google de forma segura
+    const inicializarBotonGoogle = () => {
+        if (typeof google === 'undefined' || !google.accounts || !google.accounts.id) {
+            setTimeout(inicializarBotonGoogle, 100);
+            return;
+        }
+
+        google.accounts.id.initialize({
+            client_id: "356486997376-1ctts9tjobjh4bl2b70lcms4dq98se3l.apps.googleusercontent.com", // TU ID YA ESTÁ AQUÍ
+            callback: async (response) => {
+                const messageEl = document.getElementById('auth-message');
+                if (messageEl) messageEl.textContent = 'Verificando con Google...';
+                try {
+                    await loginWithGoogle(response.credential);
+                } catch (error) {
+                    if (messageEl) messageEl.textContent = 'Error: ' + error.message;
+                }
+            }
+        });
+
+        google.accounts.id.renderButton(
+            document.getElementById("google-button-container"),
+            { theme: "outline", size: "large", text: "signin_with", shape: "rectangular", logo_alignment: "left" }
+        );
+    };
+    
+    inicializarBotonGoogle();
+
+    // Listeners para los formularios de login/registro normal
     document.getElementById('show-register').addEventListener('click', (e) => {
         e.preventDefault();
         document.getElementById('login-form').style.display = 'none';
         document.getElementById('register-form').style.display = 'block';
-        document.getElementById('auth-message').textContent = '';
     });
-
     document.getElementById('show-login').addEventListener('click', (e) => {
         e.preventDefault();
         document.getElementById('register-form').style.display = 'none';
         document.getElementById('login-form').style.display = 'block';
-        document.getElementById('auth-message').textContent = '';
     });
-
     document.getElementById('login-btn').addEventListener('click', async () => {
         const email = document.getElementById('login-email').value;
         const password = document.getElementById('login-password').value;
-        const messageEl = document.getElementById('auth-message');
-        messageEl.style.color = 'inherit';
-        messageEl.textContent = 'Iniciando sesión...';
-        try {
-            await login(email, password);
-        } catch (error) {
-            messageEl.style.color = 'red';
-            messageEl.textContent = 'Error: ' + error.message;
-        }
+        await login(email, password).catch(err => {
+            document.getElementById('auth-message').textContent = 'Error: ' + err.message;
+        });
     });
-    
     document.getElementById('register-btn').addEventListener('click', async () => {
         const username = document.getElementById('register-username').value;
         const email = document.getElementById('register-email').value;
         const password = document.getElementById('register-password').value;
-        const messageEl = document.getElementById('auth-message');
-        messageEl.style.color = 'inherit';
-        messageEl.textContent = 'Registrando...';
-
         try {
             await register(username, email, password);
-            messageEl.style.color = 'green';
-            messageEl.textContent = '¡Registro exitoso! Ahora puedes iniciar sesión.';
+            document.getElementById('auth-message').textContent = '¡Registro exitoso! Ahora puedes iniciar sesión.';
             document.getElementById('show-login').click();
         } catch (error) {
-             messageEl.style.color = 'red';
-             messageEl.textContent = 'Error: ' + error.message;
+             document.getElementById('auth-message').textContent = 'Error: ' + error.message;
         }
     });
 }
@@ -94,7 +110,6 @@ export function showLoginScreen() {
 export function loadInitialApp(user) {
     const authContainer = document.getElementById('auth-container');
     if (authContainer) authContainer.style.display = 'none';
-
     let appContainer = document.getElementById('app-container');
     if (!appContainer) {
         appContainer = document.createElement('div');
@@ -102,13 +117,12 @@ export function loadInitialApp(user) {
         body.appendChild(appContainer);
     }
     appContainer.style.display = 'block';
-
     appContainer.innerHTML = `
         <div class="contenedor-principal">
             <header>
                 <h1 id="app-title">Nuestro Plan de Vida</h1>
                 <p class="descripcion-pagina">Bienvenid@, ${user.username}! Un espacio para vuestras metas.</p>
-                <button id="logout-btn" title="Cerrar Sesión" style="position:absolute; top: 1rem; right: 1rem; cursor:pointer; background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; padding: 0.5rem; border-radius: 50%; width: 40px; height: 40px; font-weight: bold; font-size: 1.2rem; line-height:1; display:flex; align-items:center; justify-content:center;">&#x2715;</button>
+                <button id="logout-btn" title="Cerrar Sesión">&#x2715;</button>
             </header>
             <nav id="nav-modes-container" class="bottom-nav"></nav>
             <main id="modo-contenido"><p>Cargando...</p></main>
@@ -117,9 +131,7 @@ export function loadInitialApp(user) {
             </div>
         </div>
     `;
-    
     document.getElementById('logout-btn').addEventListener('click', logout);
-    
     initAppModules();
     cargarModos(); 
 }

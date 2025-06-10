@@ -844,3 +844,71 @@ li.sub-objetivo-completado label {
 }
 
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border-width: 0; }
+
+/* --- Estilos para el botón de Iniciar Sesión con Google --- */
+
+/* Contenedor del botón de Google para centrarlo */
+.g_id_signin {
+    display: flex !important;
+    justify-content: center !important;
+    margin-bottom: 10px !important;
+    width: 100%;
+}
+
+/* Divisor "O" entre el botón de Google y el formulario normal */
+.auth-divider {
+    text-align: center;
+    margin: 15px 0;
+    color: #888;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+    content: '';
+    flex-grow: 1;
+    height: 1px;
+    background-color: #e0e0e0;
+}
+
+/* Ajustes para el contenedor de autenticación */
+#auth-container {
+    max-width: 420px;
+    width: 90%;
+    margin: auto;
+    flex-grow: 0;
+}
+
+#auth-container input {
+    width: 100%; 
+    padding: var(--space-s); 
+    margin-bottom: var(--space-m); 
+    border: 1px solid var(--color-borde-input); 
+    border-radius: var(--radius-s); 
+    font-size: 0.95rem;
+}
+
+#auth-container button {
+    width: 100%;
+    padding: var(--space-s);
+    font-size: 1rem;
+    font-weight: 600;
+    color: white;
+    background-color: var(--color-primario);
+    border: none;
+    border-radius: var(--radius-s);
+    cursor: pointer;
+    transition: var(--transition-fast);
+}
+
+#auth-container button:hover {
+    background-color: var(--color-primario-hover);
+}
+
+#auth-container p {
+    text-align: center;
+    margin-top: var(--space-m);
+}
