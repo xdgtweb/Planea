@@ -1,37 +1,41 @@
 <?php
-// api_handlers/login.php
+// Manejar la petición POST
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $data = json_decode(file_get_contents("php://input"));
 
-if (!isset($mysqli)) { jsonResponse(["error" => "DB connection not available"], 500); exit; }
-if ($handler_http_method !== 'POST') { jsonResponse(["error" => "Method not allowed"], 405); exit; }
+    if (!isset($data->email) || !isset($data->password)) {
+        json_response(['error' => 'Faltan el correo electrónico o la contraseña'], 400);
+        return;
+    }
 
-$email = $data_for_handler['email'] ?? null;
-$password = $data_for_handler['password'] ?? null;
+    $email = $data->email;
+    $password = $data->password;
 
-if (!$email || !$password) {
-    jsonResponse(["error" => "Email y contraseña son requeridos."], 400);
-}
-
-try {
-    $sql = "SELECT id, nombre_usuario, password_hash FROM usuarios WHERE email = ?";
-    $stmt = $mysqli->prepare($sql);
+    // Buscar usuario por email
+    $stmt = $mysqli->prepare("SELECT id, username, password_hash FROM usuarios WHERE email = ?");
     $stmt->bind_param("s", $email);
     $stmt->execute();
     $result = $stmt->get_result();
-    $user = $result->fetch_assoc();
-    $stmt->close();
 
-    if ($user && password_verify($password, $user['password_hash'])) {
-        // Contraseña correcta, iniciar sesión
-        session_regenerate_id(true);
-        $_SESSION['usuario_id'] = $user['id'];
-        $_SESSION['nombre_usuario'] = $user['nombre_usuario'];
-        jsonResponse(["success" => true, "message" => "Inicio de sesión correcto.", "user" => ["id" => $user['id'], "username" => $user['nombre_usuario']]]);
+    if ($result->num_rows === 1) {
+        $user = $result->fetch_assoc();
+
+        // Verificar la contraseña
+        if (password_verify($password, $user['password_hash'])) {
+            // Contraseña correcta, iniciar sesión
+            $_SESSION['usuario_id'] = $user['id'];
+            $_SESSION['username'] = $user['username'];
+
+            json_response(['success' => true, 'message' => 'Inicio de sesión exitoso', 'username' => $user['username']]);
+        } else {
+            // Contraseña incorrecta
+            json_response(['success' => false, 'message' => 'La contraseña es incorrecta.'], 401);
+        }
     } else {
-        // Credenciales incorrectas
-        jsonResponse(["error" => "Credenciales inválidas."], 401);
+        // Usuario no encontrado
+        json_response(['success' => false, 'message' => 'No se encontró un usuario con ese correo electrónico.'], 404);
     }
-} catch (Exception $e) {
-    error_log("Error en /login: " . $e->getMessage());
-    jsonResponse(["error" => "El inicio de sesión ha fallado."], 500);
+
+    $stmt->close();
 }
 ?>

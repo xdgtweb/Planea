@@ -1,5 +1,3 @@
-// script_modules/views.js
-
 import { EMOJIS_PREDEFINIDOS } from './config.js';
 import { fetchData, obtenerClaseDeEstado, lanzarAnimacionCelebracion, obtenerValorPrioridad } from './utils.js';
 import { mostrarFormulario, ocultarFormulario, createActionToggleButton } from './ui.js';
@@ -81,7 +79,8 @@ export async function cargarTareasDiaADia(fechaObj) {
 
     const fechaParaAPI = fechaObj.toISOString().split('T')[0];
     try {
-        const todasLasTareas = await fetchData(`tareas-dia-a-dia?fecha=${fechaParaAPI}`);
+        // CORRECCIÓN: Se añade "/"
+        const todasLasTareas = await fetchData(`/tareas-dia-a-dia?fecha=${fechaParaAPI}`);
         const tareasActivas = todasLasTareas.filter(t => t.activo);
         const tareasInactivas = todasLasTareas.filter(t => !t.activo); 
 
@@ -225,7 +224,8 @@ export function crearElementoSubTareaDiaria(tarea, fechaObj, esSuelta = false) {
             fecha_actualizacion: fechaObj.toISOString().split('T')[0]
         };
         try {
-            await fetchData(`tareas-dia-a-dia`, { 
+            // CORRECCIÓN: Se añade "/"
+            await fetchData(`/tareas-dia-a-dia`, { 
                 method: 'POST', 
                 headers: { 'Content-Type': 'application/json' }, 
                 body: JSON.stringify(payload) 
@@ -249,7 +249,8 @@ export async function restaurarTarea(tareaARestaurar, fechaObjRecarga) {
     }
     if (!confirm("¿Quieres restaurar este elemento a la lista de tareas activas?")) return;
     try {
-        await fetchData('tareas-dia-a-dia', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        // CORRECCIÓN: Se añade "/"
+        await fetchData('/tareas-dia-a-dia', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
         alert('Elemento restaurado a activo.');
         await cargarTareasDiaADia(new Date(appFechaCalendarioActual.getTime() || fechaObjRecarga.getTime())); 
         await renderizarCalendario(appFechaCalendarioActual.getFullYear(), appFechaCalendarioActual.getMonth(), appSetFechaCalendarioActual);
@@ -266,7 +267,8 @@ export async function eliminarTareaDiaria(tarea, fechaObjRecarga, esActivaActual
     const operationMethod = esActivaActual ? "DELETE" : "HARD_DELETE";
     const payload = { _method: operationMethod, id: parseInt(tarea.id), tipo: tarea.tipo };
     try {
-        await fetchData('tareas-dia-a-dia', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        // CORRECCIÓN: Se añade "/"
+        await fetchData('/tareas-dia-a-dia', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
         alert(esActivaActual ? 'Elemento marcado como inactivo.' : 'Elemento eliminado permanentemente.');
         await cargarTareasDiaADia(new Date(appFechaCalendarioActual.getTime() || fechaObjRecarga.getTime()));
         await renderizarCalendario(appFechaCalendarioActual.getFullYear(), appFechaCalendarioActual.getMonth(), appSetFechaCalendarioActual);
@@ -296,7 +298,8 @@ export async function cargarObjetivos(mode_id) {
     if (!contenedorObjetivos) return;
     contenedorObjetivos.innerHTML = '<p>Cargando objetivos...</p>';
     try {
-        let objetivosData = await fetchData(`objetivos?mode=${mode_id}`); 
+        // CORRECCIÓN: Se añade "/"
+        let objetivosData = await fetchData(`/objetivos?mode=${mode_id}`); 
         objetivosData.sort((a, b) => obtenerValorPrioridad(a.fecha_estimada) - obtenerValorPrioridad(b.fecha_estimada) || a.titulo.localeCompare(b.titulo));
 
         if (objetivosData.length === 0) {
@@ -355,7 +358,8 @@ export async function cargarObjetivos(mode_id) {
                         const esMarcado = e.target.checked; 
                         if(esMarcado && myConfettiInstance) lanzarAnimacionCelebracion(myConfettiInstance, e);
                         try {
-                            await fetchData(`sub-objetivos-estado`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ idSubObjetivoDB: parseInt(sub.id), completado: esMarcado }) });
+                            // CORRECCIÓN: Se añade "/"
+                            await fetchData(`/sub-objetivos-estado`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ idSubObjetivoDB: parseInt(sub.id), completado: esMarcado }) });
                             await cargarObjetivos(mode_id);
                         } catch (error) {
                             alert(`Error al actualizar: ${error.message}`);
@@ -388,9 +392,10 @@ export async function renderizarCalendario(currentYear, currentMonth, updateGlob
     let anotacionesMes = {}; 
 
     try {
+        // CORRECCIÓN: Se añade "/"
         [estadosDias, anotacionesMes] = await Promise.all([
-            fetchData(`calendario-dia-a-dia?mes=${mesVista + 1}&anio=${anioVista}`).then(d => d.reduce((acc, dia) => ({...acc, [dia.fecha]: dia.porcentaje}), {})),
-            fetchData(`anotaciones?mes=${mesVista + 1}&anio=${anioVista}`)
+            fetchData(`/calendario-dia-a-dia?mes=${mesVista + 1}&anio=${anioVista}`).then(d => d.reduce((acc, dia) => ({...acc, [dia.fecha]: dia.porcentaje}), {})),
+            fetchData(`/anotaciones?mes=${mesVista + 1}&anio=${anioVista}`)
         ]);
     } catch (error) {
         calendarioContenedor.innerHTML = `<p class="error-mensaje">No se pudo cargar info del calendario: ${error.message}</p>`;
@@ -476,9 +481,10 @@ export async function verDetalleDia(fechaStr) {
         tareasDetalleDiaOverlay.setAttribute('inert', 'true');
     };
 
+    // CORRECCIÓN: Se añade "/"
     const [tareasResult, anotacionResult] = await Promise.allSettled([
-        fetchData(`tareas-por-fecha?fecha=${fechaStr}`),
-        fetchData(`anotaciones?fecha=${fechaStr}`)
+        fetchData(`/tareas-por-fecha?fecha=${fechaStr}`),
+        fetchData(`/anotaciones?fecha=${fechaStr}`)
     ]);
 
     let tareasHtml = '<p class="mensaje-vacio">No hay tareas para este día.</p>';
@@ -556,7 +562,8 @@ export async function verDetalleDia(fechaStr) {
 
         guardarBtn.onclick = async () => {
             try {
-                await fetchData('anotaciones', {
+                // CORRECCIÓN: Se añade "/"
+                await fetchData('/anotaciones', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ fecha: fechaStr, emoji: emojiInputHidden.value, descripcion: descInput.value })
@@ -572,7 +579,8 @@ export async function verDetalleDia(fechaStr) {
             quitarBtn.onclick = async () => {
                 if (!confirm("¿Quitar anotación?")) return;
                 try {
-                    await fetchData('anotaciones', {
+                    // CORRECCIÓN: Se añade "/"
+                    await fetchData('/anotaciones', {
                         method: 'DELETE',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ fecha: fechaStr })

@@ -1,131 +1,132 @@
-// script_modules/app.js
+// DEBUG 1: ¿Se está ejecutando este archivo?
+console.log("[app.js] PASO 1: Archivo cargado y ejecutándose.");
 
-import { fetchData } from './utils.js'; 
-import { closeAllActionPanels } from './ui.js';
-import { 
-    renderizarModoDiaADia, 
-    renderizarModoObjetivos,
-    initViewsModule
-} from './views.js';
-// CAMBIO: Importar desde el nuevo módulo de autenticación
-import { checkLoginStatus } from './auth.js';
+import { checkLoginStatus, logout } from './auth.js';
+import { showLoginScreen } from './ui_auth.js';
+import { setupEventListeners, updateUsernameInUI, closeAllActionPanels } from './ui.js';
+import { fetchData } from './utils.js';
+
+// No importamos 'views.js' aquí para evitar la dependencia circular.
 
 export let modosDisponibles = []; 
 export let modoActivo = 'dia-a-dia'; 
 export let fechaCalendarioActual = new Date(); 
-
-let modoContenido = null;
-let navModesContainer = null;
-let confettiCanvas = null; 
 export let myConfettiInstance = null; 
+
+document.addEventListener('DOMContentLoaded', () => {
+    console.log("[app.js] PASO 2: DOM listo. Llamando a checkLoginStatus...");
+    checkLoginStatus().then(status => {
+        console.log("[app.js] PASO 3: Respuesta recibida de checkLoginStatus:", status);
+        if (status && status.loggedIn) {
+            console.log("[app.js] PASO 4A: Decisión -> Usuario LOGUEADO. Llamando a cargarModos()...");
+            cargarModos();
+        } else {
+            console.log("[app.js] PASO 4B: Decisión -> Usuario NO LOGUEADO. Llamando a showLoginScreen()...");
+            showLoginScreen();
+        }
+    }).catch(error => {
+        console.error("[app.js] ERROR en la cadena de promesas de checkLoginStatus:", error);
+        showLoginScreen();
+    });
+});
 
 export function setFechaCalendarioActual(newDate) {
     if (newDate instanceof Date && !isNaN(newDate)) {
-        const nuevaFechaNormalizada = new Date(Date.UTC(newDate.getFullYear(), newDate.getMonth(), newDate.getDate()));
-        const actualNormalizada = new Date(Date.UTC(fechaCalendarioActual.getFullYear(), fechaCalendarioActual.getMonth(), fechaCalendarioActual.getDate()));
-
-        if (nuevaFechaNormalizada.getTime() !== actualNormalizada.getTime()) {
-            fechaCalendarioActual = newDate; 
-            if (modoActivo === 'dia-a-dia') {
-                activarModo('dia-a-dia'); 
-            }
+        fechaCalendarioActual = newDate;
+        if (document.querySelector('.app-container')) {
+            activarModo('dia-a-dia');
         }
-    } else {
-        console.error("setFechaCalendarioActual: Se recibió una fecha inválida:", newDate);
     }
 }
 
-// CAMBIO: Esta función se llamará después del login exitoso
 export async function cargarModos() {
-    // CAMBIO: Re-asignar contenedores aquí, porque el DOM se reconstruye tras el login
-    modoContenido = document.getElementById('modo-contenido');
-    navModesContainer = document.getElementById('nav-modes-container');
+    const mainContent = document.getElementById('main-content');
+    mainContent.innerHTML = `
+        <div id="initial-loader" class="initial-loader" style="display: none;"><div class="spinner"></div></div>
+        <div class="app-container">
+            <header class="app-header">
+                <div class="logo">
+                    <h1>Planea</h1>
+                </div>
+                <div class="user-info">
+                    <span id="username-display"></span>
+                    <button id="logout-button" class="logout-button"><i class="fas fa-sign-out-alt"></i></button>
+                </div>
+            </header>
+            <nav id="nav-modes-container" class="nav-modes"></nav>
+            <main id="modo-contenido" class="modo-contenido"></main>
+        </div>
+    `;
 
-    const urlEndpoint = `modos`; 
+    await initAppModules();
+    
     try {
-        modosDisponibles = await fetchData(urlEndpoint); 
+        modosDisponibles = await fetchData('/modos');
         renderizarBotonesModos();
-        await activarModo(modoActivo); 
+        await activarModo(modoActivo);
     } catch (error) {
         console.error("Error fatal al cargar modos.", error);
-        if (navModesContainer) navModesContainer.innerHTML = `<p class="error-mensaje-nav">Error al cargar modos.</p>`;
-        if (modoContenido) modoContenido.innerHTML = `<p class="error-mensaje">No se pudo iniciar la aplicación: ${error.message}</p>`;
     }
+
+    document.getElementById('logout-button').addEventListener('click', async () => {
+        const result = await logout();
+        if (result.success) {
+            showLoginScreen();
+        } else {
+            alert(result.message || "Error al cerrar sesión.");
+        }
+    });
 }
 
 function renderizarBotonesModos() {
-    if (!navModesContainer) { console.error("renderizarBotonesModos: Contenedor #nav-modes-container NO encontrado!"); return; }
+    const navModesContainer = document.getElementById('nav-modes-container');
+    if (!navModesContainer) return;
     navModesContainer.innerHTML = '';
-    if (!modosDisponibles || !Array.isArray(modosDisponibles) || modosDisponibles.length === 0) {
-        navModesContainer.innerHTML = `<p class="error-mensaje-nav">No hay modos.</p>`;
-        return;
-    }
     modosDisponibles.forEach(modo => {
         const button = document.createElement('button');
-        button.type = 'button'; button.classList.add('nav-button'); button.dataset.modeId = modo.id; button.textContent = modo.nombre;
-        if (modo.id === modoActivo) { button.classList.add('active-mode'); }
+        button.className = 'nav-button';
+        button.dataset.modeId = modo.id;
+        button.textContent = modo.nombre;
+        if (modo.id === modoActivo) button.classList.add('active-mode');
         button.onclick = () => activarModo(modo.id);
         navModesContainer.appendChild(button);
     });
 }
 
-async function activarModo(modeId) { 
-    closeAllActionPanels(); 
-    modoActivo = modeId; 
-    
+async function activarModo(modeId) {
+    const { renderizarModoDiaADia, renderizarModoObjetivos } = await import('./views.js');
+    closeAllActionPanels();
+    modoActivo = modeId;
+
+    const navModesContainer = document.getElementById('nav-modes-container');
     if (navModesContainer) {
-        navModesContainer.querySelectorAll('.nav-button').forEach(btn => { 
-            btn.classList.remove('active-mode');
-            if (btn.dataset.modeId === modeId) { btn.classList.add('active-mode'); }
+        navModesContainer.querySelectorAll('.nav-button').forEach(btn => {
+            btn.classList.toggle('active-mode', btn.dataset.modeId === modeId);
         });
     }
-    
-    if (!modoContenido) {
-        modoContenido = document.getElementById('modo-contenido');
-    }
-    
-    if (modosDisponibles.find(m => m.id === modeId)) { 
-        if (modeId === 'dia-a-dia') {
-            await renderizarModoDiaADia(); 
-        } else if (modeId === 'corto-medio-plazo' || modeId === 'largo-plazo') {
-            await renderizarModoObjetivos(modeId); 
-        } else {
-            if(modoContenido) modoContenido.innerHTML = `<p class="error-mensaje">Modo '${modeId}' no reconocido.</p>`;
-        }
-    } else {
-        if(modoContenido) modoContenido.innerHTML = `<p class="error-mensaje">No se pudieron cargar los datos iniciales o el modo no es válido.</p>`;
+
+    if (modeId === 'dia-a-dia') {
+        await renderizarModoDiaADia();
+    } else if (modeId === 'corto-medio-plazo' || modeId === 'largo-plazo') {
+        await renderizarModoObjetivos(modeId);
     }
 }
 
-// CAMBIO: Esta función inicializa los módulos después de que el DOM de la app se ha cargado
-export function initAppModules() {
-    confettiCanvas = document.getElementById('confetti-canvas');
-    if (confettiCanvas && typeof confetti !== 'undefined') { 
+async function initAppModules() {
+    const { initViewsModule } = await import('./views.js');
+    const confettiCanvas = document.getElementById('confetti-canvas');
+    if (confettiCanvas && typeof confetti !== 'undefined') {
         myConfettiInstance = confetti.create(confettiCanvas, { resize: true, useWorker: true });
-    } else {
-        console.error("Elemento canvas para confetti no encontrado o librería confetti no cargada.");
     }
-
-    const appContainer = document.getElementById('app-container');
-    const modoContenidoEl = appContainer ? appContainer.querySelector('#modo-contenido') : null;
 
     initViewsModule({
-        modoContenido: modoContenidoEl,
-        appFechaCalendarioActual: fechaCalendarioActual, 
-        appSetFechaCalendarioActual: setFechaCalendarioActual, 
-        modosDisponibles: modosDisponibles, 
-        appModoActivo: modoActivo, 
-        myConfettiInstance: myConfettiInstance 
+        modoContenido: document.getElementById('modo-contenido'),
+        appFechaCalendarioActual: fechaCalendarioActual,
+        appSetFechaCalendarioActual: setFechaCalendarioActual,
+        modosDisponibles: modosDisponibles,
+        myConfettiInstance: myConfettiInstance
     });
-
-    document.body.addEventListener('click', e => { 
-        const panelFlotanteActivo = document.querySelector('.actions-panel-floating.actions-visible');
-        if (panelFlotanteActivo && !panelFlotanteActivo.contains(e.target) && !e.target.closest('.action-toggle-btn')) { 
-            closeAllActionPanels(); 
-        }
-    });
+    
+    setupEventListeners();
+    updateUsernameInUI();
 }
-
-document.addEventListener('DOMContentLoaded', function() {
-    checkLoginStatus();
-});

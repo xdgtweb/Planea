@@ -1,15 +1,15 @@
 <?php
-// api_handlers/logout.php
-
-// Asegurarse de que la sesión está iniciada para poder destruirla
-if (session_status() === PHP_SESSION_NONE) {
+// CORRECCIÓN: Asegurarse de que la sesión se inicie antes de manipularla.
+// Aunque en api.php ya se inicia, es una buena práctica verificarlo.
+if (session_status() == PHP_SESSION_NONE) {
     session_start();
 }
 
-// Vaciar todas las variables de sesión
-$_SESSION = array();
+// 1. Vaciar el array de la sesión
+$_SESSION = [];
 
-// Destruir la cookie de sesión
+// 2. Si se usan cookies de sesión, eliminarlas.
+// Esto destruirá la sesión, y no solo los datos de la sesión.
 if (ini_get("session.use_cookies")) {
     $params = session_get_cookie_params();
     setcookie(session_name(), '', time() - 42000,
@@ -18,8 +18,9 @@ if (ini_get("session.use_cookies")) {
     );
 }
 
-// Finalmente, destruir la sesión.
+// 3. Finalmente, destruir la sesión.
 session_destroy();
 
-jsonResponse(["success" => true, "message" => "Sesión cerrada correctamente."]);
+// Enviar una respuesta de éxito al cliente
+json_response(['success' => true, 'message' => 'Sesión cerrada exitosamente.']);
 ?>

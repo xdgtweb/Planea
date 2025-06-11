@@ -1,137 +1,152 @@
-// script_modules/ui_auth.js
-
 import { login, register, logout, loginWithGoogle } from './auth.js';
-import { cargarModos, initAppModules } from './app.js';
+import { cargarModos } from './app.js'; // CORRECCIÓN: Se importa 'cargarModos' en lugar de 'loadInitialApp'.
 
-const body = document.body;
+let googleInitialized = false;
 
-function getAuthContainer() {
-    let container = document.getElementById('auth-container');
-    if (!container) {
-        container = document.createElement('div');
-        container.id = 'auth-container';
-        container.className = 'contenedor-principal';
-        body.appendChild(container);
-    }
-    return container;
-}
-
+// Función para mostrar la pantalla de login/registro
 export function showLoginScreen() {
-    const appContainer = document.getElementById('app-container');
-    if (appContainer) appContainer.style.display = 'none';
-
-    const authContainer = getAuthContainer();
-    authContainer.style.display = 'block';
-
-    authContainer.innerHTML = `
-        <div id="login-form">
-            <h2 style="text-align:center;">Iniciar Sesión en Planea</h2>
-            
-            <div id="google-button-container" style="display: flex; justify-content: center; margin-bottom: 10px; min-height: 40px;"></div>
-            
-            <div class="auth-divider">O</div>
-
-            <input type="email" id="login-email" placeholder="Email" required autocomplete="email">
-            <input type="password" id="login-password" placeholder="Contraseña" required autocomplete="current-password">
-            <button id="login-btn">Entrar</button>
-            <p>¿No tienes cuenta? <a href="#" id="show-register">Regístrate</a></p>
-        </div>
-        <div id="register-form" style="display:none;">
-            <h2 style="text-align:center;">Crear Cuenta</h2>
-            <input type="text" id="register-username" placeholder="Nombre de usuario" required autocomplete="username">
-            <input type="email" id="register-email" placeholder="Email" required autocomplete="email">
-            <input type="password" id="register-password" placeholder="Contraseña (mín. 6 caracteres)" required autocomplete="new-password">
-            <button id="register-btn">Registrar</button>
-            <p>¿Ya tienes cuenta? <a href="#" id="show-login">Inicia sesión</a></p>
-        </div>
-        <div id="auth-message" style="color: red; text-align: center; margin-top: 10px; min-height: 20px;"></div>
-    `;
-
-    // Lógica para inicializar el botón de Google de forma segura
-    const inicializarBotonGoogle = () => {
-        if (typeof google === 'undefined' || !google.accounts || !google.accounts.id) {
-            setTimeout(inicializarBotonGoogle, 100);
-            return;
-        }
-
-        google.accounts.id.initialize({
-            client_id: "356486997376-1ctts9tjobjh4bl2b70lcms4dq98se3l.apps.googleusercontent.com", // TU ID YA ESTÁ AQUÍ
-            callback: async (response) => {
-                const messageEl = document.getElementById('auth-message');
-                if (messageEl) messageEl.textContent = 'Verificando con Google...';
-                try {
-                    await loginWithGoogle(response.credential);
-                } catch (error) {
-                    if (messageEl) messageEl.textContent = 'Error: ' + error.message;
-                }
-            }
-        });
-
-        google.accounts.id.renderButton(
-            document.getElementById("google-button-container"),
-            { theme: "outline", size: "large", text: "signin_with", shape: "rectangular", logo_alignment: "left" }
-        );
-    };
+    const mainContent = document.getElementById('main-content');
     
-    inicializarBotonGoogle();
-
-    // Listeners para los formularios de login/registro normal
-    document.getElementById('show-register').addEventListener('click', (e) => {
-        e.preventDefault();
-        document.getElementById('login-form').style.display = 'none';
-        document.getElementById('register-form').style.display = 'block';
-    });
-    document.getElementById('show-login').addEventListener('click', (e) => {
-        e.preventDefault();
-        document.getElementById('register-form').style.display = 'none';
-        document.getElementById('login-form').style.display = 'block';
-    });
-    document.getElementById('login-btn').addEventListener('click', async () => {
-        const email = document.getElementById('login-email').value;
-        const password = document.getElementById('login-password').value;
-        await login(email, password).catch(err => {
-            document.getElementById('auth-message').textContent = 'Error: ' + err.message;
-        });
-    });
-    document.getElementById('register-btn').addEventListener('click', async () => {
-        const username = document.getElementById('register-username').value;
-        const email = document.getElementById('register-email').value;
-        const password = document.getElementById('register-password').value;
-        try {
-            await register(username, email, password);
-            document.getElementById('auth-message').textContent = '¡Registro exitoso! Ahora puedes iniciar sesión.';
-            document.getElementById('show-login').click();
-        } catch (error) {
-             document.getElementById('auth-message').textContent = 'Error: ' + error.message;
-        }
-    });
-}
-
-export function loadInitialApp(user) {
-    const authContainer = document.getElementById('auth-container');
-    if (authContainer) authContainer.style.display = 'none';
-    let appContainer = document.getElementById('app-container');
-    if (!appContainer) {
-        appContainer = document.createElement('div');
-        appContainer.id = 'app-container';
-        body.appendChild(appContainer);
+    const initialLoader = document.getElementById('initial-loader');
+    if (initialLoader) {
+        initialLoader.style.display = 'none';
     }
-    appContainer.style.display = 'block';
-    appContainer.innerHTML = `
-        <div class="contenedor-principal">
-            <header>
-                <h1 id="app-title">Nuestro Plan de Vida</h1>
-                <p class="descripcion-pagina">Bienvenid@, ${user.username}! Un espacio para vuestras metas.</p>
-                <button id="logout-btn" title="Cerrar Sesión">&#x2715;</button>
-            </header>
-            <nav id="nav-modes-container" class="bottom-nav"></nav>
-            <main id="modo-contenido"><p>Cargando...</p></main>
-            <div id="formulario-dinamico-contenedor" class="form-overlay hidden" role="dialog" aria-modal="true" aria-hidden="true">
-                <div class="form-modal"></div>
+    
+    mainContent.innerHTML = `
+        <div class="auth-container">
+            <div class="auth-form-container">
+                <div id="auth-message" class="auth-message"></div>
+                <div id="login-form">
+                    <h2>Iniciar Sesión</h2>
+                    <form id="loginForm">
+                        <input type="email" id="login-email" placeholder="Correo Electrónico" required>
+                        <input type="password" id="login-password" placeholder="Contraseña" required>
+                        <button type="submit">Entrar</button>
+                    </form>
+                     <div id="google-btn-container" class="google-btn-container"></div>
+                    <p>¿No tienes cuenta? <a href="#" id="show-register">Regístrate</a></p>
+                </div>
+                <div id="register-form" style="display: none;">
+                    <h2>Registro</h2>
+                    <form id="registerForm">
+                        <input type="text" id="register-username" placeholder="Nombre de usuario" required>
+                        <input type="email" id="register-email" placeholder="Correo Electrónico" required>
+                        <input type="password" id="register-password" placeholder="Contraseña (mín. 8 caracteres)" required minlength="8">
+                        <button type="submit">Registrarse</button>
+                    </form>
+                    <p>¿Ya tienes cuenta? <a href="#" id="show-login">Inicia sesión</a></p>
+                </div>
             </div>
         </div>
     `;
-    document.getElementById('logout-btn').addEventListener('click', logout);
-    initAppModules();
-    cargarModos(); 
+
+    setupAuthEventListeners();
+    initializeGoogleSignIn();
+}
+
+// Función para inicializar Google Sign-In
+function initializeGoogleSignIn() {
+    if (googleInitialized || typeof google === 'undefined') {
+        return;
+    }
+    try {
+        google.accounts.id.initialize({
+            // ¡ATENCIÓN! Recuerda poner tu ID de cliente real aquí.
+            client_id: '356486997376-1ctts9tjobjh4bl2b70lcms4dq98se3l.apps.googleusercontent.com',
+            callback: handleGoogleSignIn
+        });
+        const googleBtnContainer = document.getElementById('google-btn-container');
+        if (googleBtnContainer) {
+             google.accounts.id.renderButton(
+                googleBtnContainer,
+                { theme: "outline", size: "large", type: "standard", text: "signin_with", shape: "rectangular" }
+            );
+        }
+       
+        googleInitialized = true;
+    } catch (error) {
+        console.error("Error inicializando Google Sign-In:", error);
+        const googleBtnContainer = document.getElementById('google-btn-container');
+        if(googleBtnContainer) {
+            googleBtnContainer.innerHTML = 'El inicio de sesión con Google no está disponible.';
+        }
+    }
+}
+
+// Callback para manejar la respuesta de Google
+async function handleGoogleSignIn(response) {
+    const messageDiv = document.getElementById('auth-message');
+    try {
+        const result = await loginWithGoogle(response.credential);
+        if (result.success) {
+            cargarModos(); // CORRECCIÓN: Se llama a la función correcta.
+        } else {
+            messageDiv.textContent = result.message || 'Error en el inicio de sesión con Google.';
+            messageDiv.className = 'auth-message error';
+        }
+    } catch (error) {
+        messageDiv.textContent = 'Ocurrió un error inesperado. Inténtalo de nuevo.';
+        messageDiv.className = 'auth-message error';
+    }
+}
+
+
+// Configurar los event listeners para los formularios
+function setupAuthEventListeners() {
+    const loginForm = document.getElementById('loginForm');
+    const registerForm = document.getElementById('registerForm');
+    const messageDiv = document.getElementById('auth-message');
+
+    loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = document.getElementById('login-email').value;
+        const password = document.getElementById('login-password').value;
+        const result = await login(email, password);
+        if (result.success) {
+            cargarModos(); // CORRECCIÓN: Se llama a la función correcta.
+        } else {
+            messageDiv.textContent = result.message;
+            messageDiv.className = 'auth-message error';
+        }
+    });
+
+    registerForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const username = document.getElementById('register-username').value;
+        const email = document.getElementById('register-email').value;
+        const password = document.getElementById('register-password').value;
+        const result = await register(username, email, password);
+        if (result.success) {
+            messageDiv.textContent = result.message;
+            messageDiv.className = 'auth-message success';
+            showLogin();
+        } else {
+            messageDiv.textContent = result.message;
+            messageDiv.className = 'auth-message error';
+        }
+    });
+
+    document.getElementById('show-register').addEventListener('click', (e) => {
+        e.preventDefault();
+        showRegister();
+    });
+
+    document.getElementById('show-login').addEventListener('click', (e) => {
+        e.preventDefault();
+        showLogin();
+    });
+}
+
+function showLogin() {
+    document.getElementById('login-form').style.display = 'block';
+    document.getElementById('register-form').style.display = 'none';
+    document.getElementById('auth-message').textContent = '';
+    document.getElementById('auth-message').className = 'auth-message';
+}
+
+function showRegister() {
+    document.getElementById('login-form').style.display = 'none';
+    document.getElementById('register-form').style.display = 'block';
+    document.getElementById('auth-message').textContent = '';
+    document.getElementById('auth-message').className = 'auth-message';
 }

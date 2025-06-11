@@ -1,37 +1,51 @@
 <?php
-// api_handlers/sub-objetivos-estado.php
+if (!isset($_SESSION['usuario_id'])) {
+    // CORRECCIÓN: Se cambia 'jsonResponse' a 'json_response'
+    json_response(['error' => 'Acceso no autorizado'], 401);
+    exit;
+}
 
-if (!isset($_SESSION['usuario_id'])) { jsonResponse(["error" => "No autorizado."], 401); exit; }
 $usuario_id = $_SESSION['usuario_id'];
+$method = $_SERVER['REQUEST_METHOD'];
 
-if (!isset($mysqli)) { jsonResponse(["error" => "Error crítico: Conexión a base de datos no disponible."], 500); exit; }
-if (!isset($handler_http_method)) { jsonResponse(["error" => "Error crítico: Método HTTP no determinado."], 500); exit; }
+if ($method === 'POST') {
+    $data = json_decode(file_get_contents("php://input"));
 
-if ($handler_http_method === 'POST') {
-    try {
-        $sub_objetivo_db_id = $data_for_handler['idSubObjetivoDB'] ?? null;
-        $completado = $data_for_handler['completado'] ?? null;
-        if ($sub_objetivo_db_id === null || $completado === null) { jsonResponse(["error" => "Datos incompletos."], 400); }
+    $idSubObjetivo = $data->idSubObjetivoDB ?? 0;
+    $completado = isset($data->completado) ? ($data->completado ? 1 : 0) : 0;
 
-        // Actualizar estado solo si el objetivo padre pertenece al usuario
-        $sql = "UPDATE sub_objetivos s JOIN objetivos o ON s.objetivo_id = o.id SET s.completado = ? WHERE s.id = ? AND o.usuario_id = ?";
-        $stmt = $mysqli->prepare($sql);
-        $completado_bool_int = filter_var($completado, FILTER_VALIDATE_BOOLEAN) ? 1 : 0; 
-        $stmt->bind_param("iii", $completado_bool_int, $sub_objetivo_db_id, $usuario_id);
-
-        if ($stmt->execute()) {
-            if ($stmt->affected_rows > 0) {
-                jsonResponse([ "success" => true, "message" => "Estado actualizado." ]);
-            } else {
-                jsonResponse([ "success" => false, "message" => "No se actualizó (ID no encontrado o sin permiso)." ], 404);
-            }
-        } else { throw new Exception("Error al actualizar estado: " . $stmt->error); }
-        $stmt->close();
-    } catch (Exception $e) {
-        error_log("Error en POST /sub-objetivos-estado (user $usuario_id): " . $e->getMessage());
-        jsonResponse(["error" => "No se pudo actualizar el estado."], 500);
+    if ($idSubObjetivo <= 0) {
+        // CORRECCIÓN: Se cambia 'jsonResponse' a 'json_response'
+        json_response(['error' => 'ID de sub-objetivo inválido'], 400);
+        return;
     }
+
+    // Para seguridad, verificamos que el sub-objetivo que se quiere actualizar
+    // pertenece a un objetivo del usuario que ha iniciado sesión.
+    $stmt = $mysqli->prepare("
+        UPDATE sub_objetivos so
+        JOIN objetivos o ON so.objetivo_id = o.id
+        SET so.completado = ?
+        WHERE so.id = ? AND o.usuario_id = ?
+    ");
+    $stmt->bind_param("iii", $completado, $idSubObjetivo, $usuario_id);
+
+    if ($stmt->execute()) {
+        if ($stmt->affected_rows > 0) {
+            // CORRECCIÓN: Se cambia 'jsonResponse' a 'json_response'
+            json_response(['success' => true]);
+        } else {
+            // CORRECCIÓN: Se cambia 'jsonResponse' a 'json_response'
+            json_response(['error' => 'Sub-objetivo no encontrado o sin cambios necesarios'], 404);
+        }
+    } else {
+        // CORRECCIÓN: Se cambia 'jsonResponse' a 'json_response'
+        json_response(['error' => 'No se pudo actualizar el estado del sub-objetivo'], 500);
+    }
+    $stmt->close();
+
 } else {
-    jsonResponse(["error" => "Método no soportado. Solo se acepta POST."], 405);
+    // CORRECCIÓN: Se cambia 'jsonResponse' a 'json_response'
+    json_response(['error' => 'Método no permitido'], 405);
 }
 ?>

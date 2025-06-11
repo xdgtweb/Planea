@@ -1,63 +1,56 @@
-// script_modules/auth.js
-
 import { fetchData } from './utils.js';
-import { loadInitialApp, showLoginScreen } from './ui_auth.js';
+import { showLoginScreen } from './ui_auth.js';
+import { cargarModos } from './app.js';
 
-let currentUser = null;
-
-export function getCurrentUser() {
-    return currentUser;
-}
-
-export async function checkLoginStatus() {
+export async function login(email, password) {
     try {
-        const data = await fetchData('session-status');
-        if (data.loggedIn) {
-            currentUser = data.user;
-            loadInitialApp(currentUser);
-        } else {
-            currentUser = null;
-            showLoginScreen();
-        }
+        const data = await fetchData('/login', 'POST', { email, password });
+        return data;
     } catch (error) {
-        console.error("Error checking login status:", error);
-        showLoginScreen();
+        console.error('Error en el login:', error);
+        return { success: false, message: error.message || 'Error de conexión.' };
     }
 }
 
-export async function login(email, password) {
-    await fetchData('login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
-    });
-    await checkLoginStatus();
-}
-
 export async function register(username, email, password) {
-    return fetchData('register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, email, password })
-    });
+    try {
+        const data = await fetchData('/register', 'POST', { username, email, password });
+        return data;
+    } catch (error) {
+        console.error('Error en el registro:', error);
+        return { success: false, message: error.message || 'Error de conexión.' };
+    }
 }
 
 export async function logout() {
     try {
-        await fetchData('logout', { method: 'POST' });
-    } catch (e) {
-        console.error("Error during logout, proceeding anyway:", e);
-    } finally {
-        currentUser = null;
-        checkLoginStatus();
+        const data = await fetchData('/logout', 'POST');
+        return data;
+    } catch (error) {
+        console.error('Error al cerrar sesión:', error);
+        return { success: false, message: 'Error de conexión.' };
     }
 }
 
-export async function loginWithGoogle(googleToken) {
-    await fetchData('google-signin', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: googleToken })
-    });
-    await checkLoginStatus();
+export async function checkLoginStatus() {
+    console.log("[auth.js] 6. Entrando en checkLoginStatus...");
+    try {
+        const data = await fetchData('/session-status', 'GET');
+        // DEBUG: ¿Qué datos recibe esta función de fetchData?
+        console.log("[auth.js] 7. checkLoginStatus recibió de fetchData:", data);
+        return data;
+    } catch (error) {
+        console.error('[auth.js] ERROR en checkLoginStatus:', error);
+        return { loggedIn: false };
+    }
+}
+
+export async function loginWithGoogle(token) {
+    try {
+        const data = await fetchData('/google-signin', 'POST', { token });
+        return data;
+    } catch (error) {
+        console.error('Error en el login con Google:', error);
+        return { success: false, message: error.message || 'Error de conexión.' };
+    }
 }

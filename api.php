@@ -1,94 +1,103 @@
 <?php
-// api.php (VERSIÓN DE DEPURACIÓN AVANZADA)
-
-// 1. Forzar la visualización de errores (puede que el hosting lo bloquee, pero lo intentamos)
-ini_set('display_errors', 1);
-error_reporting(E_ALL);
-
-// 2. Definimos una función de respuesta JSON simple que usaremos en caso de error
-function send_json_error_and_exit($error_details, $status_code = 500) {
-    if (!headers_sent()) {
-        http_response_code($status_code);
-        header('Content-Type: application/json; charset=UTF-8');
-    }
-    // Usamos @ para suprimir cualquier error que pudiera dar json_encode
-    echo @json_encode($error_details);
-    exit();
+// Autocargador de Composer para dependencias como la biblioteca de Google
+if (file_exists('vendor/autoload.php')) {
+    require_once 'vendor/autoload.php';
 }
 
-// 3. Capturamos cualquier error fatal que ocurra en el script
-// Usamos Throwable para capturar tanto Errores como Excepciones en PHP 7+
-try {
+// Configuración de la base de datos
+require_once 'db_config.php';
+
+// ZONA HORARIA
+date_default_timezone_set('Europe/Madrid');
+
+
+// Manejo de errores centralizado
+ini_set('log_errors', 1);
+ini_set('error_log', 'error_log.log'); // Asegúrate de que este archivo tenga permisos de escritura
+// No mostrar errores en producción
+$is_production = false; // Cambiar a true en producción
+if ($is_production) {
+    ini_set('display_errors', 0);
+    ini_set('display_startup_errors', 0);
+    error_reporting(0);
+} else {
+    ini_set('display_errors', 1);
+    error_reporting(E_ALL);
+}
+
+// Iniciar la sesión en el punto de entrada de la API
+if (session_status() == PHP_SESSION_NONE) {
     session_start();
-
-    // Cargar librerías de Google (si existen)
-    if (file_exists(__DIR__ . '/vendor/autoload.php')) {
-        require_once __DIR__ . '/vendor/autoload.php';
-    }
-
-    // El resto de la lógica del enrutador
-    define('API_HANDLERS_PATH', __DIR__ . '/api_handlers/'); 
-    require_once 'db_config.php'; 
-
-    function getTodayDate() { return date("Y-m-d"); }
-    function jsonResponse($data, $statusCode = 200) {
-        send_json_error_and_exit($data, $statusCode);
-    }
-
-    $endpoint_param = $_GET['endpoint'] ?? ''; 
-    $actual_http_method = $_SERVER['REQUEST_METHOD']; 
-    $data_for_handler = []; 
-
-    if (in_array($actual_http_method, ['POST', 'PUT', 'DELETE'])) { 
-        $input_data = file_get_contents("php://input");
-        if ($input_data) {
-            $data_for_handler = json_decode($input_data, true);
-            if (json_last_error() !== JSON_ERROR_NONE && $data_for_handler === null) {
-                jsonResponse(["error" => "Cuerpo JSON inválido en la solicitud."], 400);
-            }
-        }
-    }
-    
-    $handler_http_method = $actual_http_method; 
-    if ($actual_http_method === 'POST' && isset($data_for_handler['_method'])) {
-        $handler_http_method = strtoupper($data_for_handler['_method']); 
-    }
-
-    $endpoint_map = [
-        'google-signin' => 'google_signin', 'register' => 'register', 'login' => 'login',
-        'logout' => 'logout', 'session-status' => 'session_status', 'modos' => 'modos',                 
-        'objetivos' => 'objetivos', 'sub_objetivos' => 'sub_objetivos',         
-        'sub-objetivos-estado' => 'sub_objetivos_estado', 'tareas-dia-a-dia' => 'tareas_diarias',        
-        'calendario-dia-a-dia' => 'calendario', 'tareas-por-fecha' => 'tareas_por_fecha',      
-        'anotaciones' => 'anotaciones'            
-    ];
-
-    $handler_key = strtolower($endpoint_param);
-    $handler_filename_base = $endpoint_map[$handler_key] ?? null;
-
-    if ($handler_filename_base) {
-        $handler_file = API_HANDLERS_PATH . $handler_filename_base . '.php';
-        if (file_exists($handler_file)) {
-            require_once $handler_file;
-        } else {
-            jsonResponse(["error" => "Archivo manejador no encontrado."], 404);
-        }
-    } else {
-        jsonResponse(["error" => "Endpoint no especificado o inválido."], 404);
-    }
-
-} catch (Throwable $e) {
-    // Si ocurre CUALQUIER error fatal en CUALQUIER parte, lo capturamos aquí
-    $error_details = [
-        "error" => "Ha ocurrido un error fatal en el servidor.",
-        "exception_type" => get_class($e),
-        "message" => $e->getMessage(),
-        "file" => $e->getFile(),
-        "line" => $e->getLine()
-    ];
-    // Escribimos el error en el log del servidor para tener un registro
-    error_log(print_r($error_details, true));
-    // E intentamos enviar los detalles al navegador como respuesta JSON
-    send_json_error_and_exit($error_details);
 }
+
+
+// Función para enviar respuestas JSON
+function json_response($data, $status_code = 200) {
+    http_response_code($status_code);
+    header('Content-Type: application/json');
+    echo json_encode($data);
+    exit;
+}
+
+// Enrutador simple
+$request_uri = $_SERVER['REQUEST_URI'];
+$base_path = '/'; 
+$request_path = parse_url($request_uri, PHP_URL_PATH);
+
+// Eliminar el base_path de la ruta de la solicitud
+if (strpos($request_path, 'api.php') !== false) {
+    // Si 'api.php' está en la URL, tomar el segmento después de él
+    $path_parts = explode('api.php', $request_path);
+    $endpoint = isset($path_parts[1]) ? $path_parts[1] : '/';
+} else {
+    // Fallback por si la reescritura de URL está configurada de otra manera
+    $endpoint = $request_path;
+}
+
+
+// Mapa de endpoints a sus manejadores
+$endpoint_map = [
+    '/register' => 'api_handlers/register.php',
+    '/login' => 'api_handlers/login.php',
+    '/logout' => 'api_handlers/logout.php',
+    '/session-status' => 'api_handlers/session_status.php',
+    '/google-signin' => 'api_handlers/google_signin.php',
+
+    // Rutas de la aplicación
+    '/objetivos' => 'api_handlers/objetivos.php',
+    '/sub-objetivos' => 'api_handlers/sub_objetivos.php',
+    '/sub-objetivos-estado' => 'api_handlers/sub-objetivos-estado.php', 
+    '/modos' => 'api_handlers/modos.php',
+    '/anotaciones' => 'api_handlers/anotaciones.php',
+
+    // CORRECCIÓN: Se añaden las rutas que faltaban para el calendario y las tareas.
+    '/calendario-dia-a-dia' => 'api_handlers/calendario.php',
+    '/tareas-dia-a-dia' => 'api_handlers/tareas_diarias.php',
+    '/tareas-por-fecha' => 'api_handlers/tareas_por_fecha.php',
+];
+
+try {
+    if (isset($endpoint_map[$endpoint])) {
+        require $endpoint_map[$endpoint];
+    } else {
+        json_response(['error' => 'Endpoint no encontrado'], 404);
+    }
+} catch (Throwable $e) {
+    // Captura cualquier error o excepción fatal
+    error_log($e->getMessage() . "\n" . $e->getTraceAsString());
+    
+    // Enviar una respuesta genérica al cliente
+    if ($is_production) {
+        json_response(['error' => 'Ha ocurrido un error inesperado en el servidor.'], 500);
+    } else {
+        // En desarrollo, enviar más detalles (cuidado con la información sensible)
+        json_response([
+            'error' => 'Ha ocurrido un error fatal en el servidor.',
+            'message' => $e->getMessage(),
+            'file' => $e->getFile(),
+            'line' => $e->getLine()
+        ], 500);
+    }
+}
+
 ?>

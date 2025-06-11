@@ -1,15 +1,19 @@
 <?php
-// api_handlers/session_status.php
 
-if (isset($_SESSION['usuario_id']) && isset($_SESSION['nombre_usuario'])) {
-    jsonResponse([
-        "loggedIn" => true,
-        "user" => [
-            "id" => $_SESSION['usuario_id'],
-            "username" => $_SESSION['nombre_usuario']
-        ]
+// CORRECCIÓN: Nos aseguramos de que la sesión esté iniciada, aunque api.php ya lo hace.
+if (session_status() == PHP_SESSION_NONE) {
+    session_start();
+}
+
+if (isset($_SESSION['usuario_id'])) {
+    // CORRECCIÓN: Cambiado 'jsonResponse' a 'json_response' para que coincida con la definición en api.php
+    json_response([
+        'loggedIn' => true, 
+        'username' => $_SESSION['username'], 
+        'usuario_id' => $_SESSION['usuario_id']
     ]);
 } else {
-    jsonResponse(["loggedIn" => false]);
+    // CORRECCIÓN: Cambiado 'jsonResponse' a 'json_response'
+    json_response(['loggedIn' => false]);
 }
 ?>
