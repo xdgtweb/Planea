@@ -42,8 +42,9 @@ export async function fetchData(endpoint_con_params, method = 'GET', body = null
     console.log(`[fetchData] Inicio. API_BASE_URL importado: ${API_BASE_URL}`);
     console.log(`[fetchData] Recibido endpoint_con_params: ${endpoint_con_params}`);
     
-    // CORRECCIÓN: Se une la base de la URL con el endpoint directamente para que el enrutador de PHP lo reconozca.
-    const url_final = `${API_BASE_URL}${endpoint_con_params}`;
+    // CORRECCIÓN: Se asegura que haya una única barra '/' entre la URL base y el endpoint.
+    // Elimina barras al final de API_BASE_URL y al principio de endpoint_con_params, luego las une con una única barra.
+    const url_final = `${API_BASE_URL.replace(/\/+$/, '')}/${endpoint_con_params.replace(/^\/+/, '')}`;
 
     const options = {
         method,

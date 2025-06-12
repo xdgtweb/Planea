@@ -57,7 +57,8 @@ export async function renderizarModoDiaADia() {
     toggleInactivasBtn.onclick = () => {
         const isExpanded = listaInactivasDiv.classList.toggle('expandido');
         toggleInactivasBtn.setAttribute('aria-expanded', isExpanded.toString());
-        if (isExpanded && listaInactivasDiv.innerHTML.trim() === '') { 
+        // Siempre recargar la lista si se expande, para asegurar que esté actualizada
+        if (isExpanded) { 
             cargarTareasDiaADia(new Date(appFechaCalendarioActual.getTime())); 
         }
     };
@@ -79,7 +80,6 @@ export async function cargarTareasDiaADia(fechaObj) {
 
     const fechaParaAPI = fechaObj.toISOString().split('T')[0];
     try {
-        // CORRECCIÓN: Se añade "/"
         const todasLasTareas = await fetchData(`/tareas-dia-a-dia?fecha=${fechaParaAPI}`);
         const tareasActivas = todasLasTareas.filter(t => t.activo);
         const tareasInactivas = todasLasTareas.filter(t => !t.activo); 
@@ -125,37 +125,34 @@ export function renderizarTareasInactivas(tareasInactivas, fechaObj) {
     const numInactivas = tareasInactivas ? tareasInactivas.length : 0; 
     toggleBtn.textContent = `Mostrar Tareas Archivadas/Inactivas (${numInactivas})`;
 
-    if (!listaTareasInactivasDiv.classList.contains('expandido')) {
-        listaTareasInactivasDiv.innerHTML = '';
-        return;
-    }
+    // CORRECCIÓN CLAVE: Siempre reconstruir el contenido de la lista de inactivas
+    // No salimos si no está expandido, dejamos que el CSS maneje la visibilidad
     
     if (numInactivas === 0) {
         listaTareasInactivasDiv.innerHTML = '<p class="mensaje-vacio">No hay tareas archivadas.</p>';
-        return;
-    }
-    
-    listaTareasInactivasDiv.innerHTML = '';
-    const ulInactivas = document.createElement('ul');
-    ulInactivas.className = 'tareas-listado';
-    tareasInactivas.forEach(item => {
-        const elementoTarea = item.tipo === 'titulo' 
-            ? crearElementoTituloTareaDiaria(item, fechaObj)
-            : (item.parent_id === null ? crearElementoSubTareaDiaria(item, fechaObj, true) : null);
-        
-        if (elementoTarea) {
-            ulInactivas.appendChild(elementoTarea);
-            if (item.tipo === 'titulo' && item.subtareas && item.subtareas.length > 0) {
-                const ulSubInactivas = document.createElement('ul');
-                ulSubInactivas.className = 'subtareas-listado';
-                item.subtareas.forEach(subtarea => {
-                    ulSubInactivas.appendChild(crearElementoSubTareaDiaria(subtarea, fechaObj, false));
-                });
-                ulInactivas.appendChild(ulSubInactivas);
+    } else {
+        listaTareasInactivasDiv.innerHTML = ''; // Limpiar contenido existente antes de repoblar
+        const ulInactivas = document.createElement('ul');
+        ulInactivas.className = 'tareas-listado';
+        tareasInactivas.forEach(item => {
+            const elementoTarea = item.tipo === 'titulo' 
+                ? crearElementoTituloTareaDiaria(item, fechaObj)
+                : (item.parent_id === null ? crearElementoSubTareaDiaria(item, fechaObj, true) : null);
+            
+            if (elementoTarea) {
+                ulInactivas.appendChild(elementoTarea);
+                if (item.tipo === 'titulo' && item.subtareas && item.subtareas.length > 0) {
+                    const ulSubInactivas = document.createElement('ul');
+                    ulSubInactivas.className = 'subtareas-listado';
+                    item.subtareas.forEach(subtarea => {
+                        ulSubInactivas.appendChild(crearElementoSubTareaDiaria(subtarea, fechaObj, false));
+                    });
+                    ulInactivas.appendChild(ulSubInactivas);
+                }
             }
-        }
-    });
-    listaTareasInactivasDiv.appendChild(ulInactivas);
+        });
+        listaTareasInactivasDiv.appendChild(ulInactivas);
+    }
 }
 
 export function crearElementoTituloTareaDiaria(tarea, fechaObj) {
@@ -221,15 +218,12 @@ export function crearElementoSubTareaDiaria(tarea, fechaObj, esSuelta = false) {
             _method: "PUT", 
             id: parseInt(idTareaDB), 
             completado: esMarcado, 
-            fecha_actualizacion: fechaObj.toISOString().split('T')[0]
+            fecha_actualizacion: fechaObj.toISOString().split('T')[0],
+            texto: tarea.texto || '', 
+            tipo: tarea.tipo    
         };
         try {
-            // CORRECCIÓN: Se añade "/"
-            await fetchData(`/tareas-dia-a-dia`, { 
-                method: 'POST', 
-                headers: { 'Content-Type': 'application/json' }, 
-                body: JSON.stringify(payload) 
-            }); 
+            await fetchData(`/tareas-dia-a-dia`, 'POST', payload); 
             if (tarea.activo) label.classList.toggle('sub-objetivo-completado', esMarcado);
             await renderizarCalendario(appFechaCalendarioActual.getFullYear(), appFechaCalendarioActual.getMonth(), appSetFechaCalendarioActual); 
         } catch (error) {
@@ -242,15 +236,20 @@ export function crearElementoSubTareaDiaria(tarea, fechaObj, esSuelta = false) {
 }
 
 export async function restaurarTarea(tareaARestaurar, fechaObjRecarga) {
-    const payload = { _method: "PUT", id: parseInt(tareaARestaurar.id), activo: true, tipo: tareaARestaurar.tipo };
+    const payload = { 
+        _method: "PUT", 
+        id: parseInt(tareaARestaurar.id), 
+        activo: true, 
+        tipo: tareaARestaurar.tipo,
+        texto: tareaARestaurar.texto || '' 
+    };
     if (tareaARestaurar.tipo === 'subtarea') {
         alert("Para restaurar una subtarea, primero restaura su título principal desde la lista de archivados.");
         return;
     }
     if (!confirm("¿Quieres restaurar este elemento a la lista de tareas activas?")) return;
     try {
-        // CORRECCIÓN: Se añade "/"
-        await fetchData('/tareas-dia-a-dia', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        await fetchData('/tareas-dia-a-dia', 'POST', payload); 
         alert('Elemento restaurado a activo.');
         await cargarTareasDiaADia(new Date(appFechaCalendarioActual.getTime() || fechaObjRecarga.getTime())); 
         await renderizarCalendario(appFechaCalendarioActual.getFullYear(), appFechaCalendarioActual.getMonth(), appSetFechaCalendarioActual);
@@ -258,21 +257,39 @@ export async function restaurarTarea(tareaARestaurar, fechaObjRecarga) {
 }
 
 export async function eliminarTareaDiaria(tarea, fechaObjRecarga, esActivaActual) {
+    console.log("-> eliminarTareaDiaria llamada para ID:", tarea.id); 
     const confirmMessage = esActivaActual 
         ? `¿Marcar este elemento como inactivo? ${tarea.tipo === 'titulo' ? 'Sus subtareas también se marcarán como inactivas.' : ''}`
         : "Esto eliminará la tarea PERMANENTEMENTE. ¿Continuar?";
     
-    if (!confirm(confirmMessage)) return;
+    console.log("-> Mostrando diálogo de confirmación..."); 
+    if (!confirm(confirmMessage)) {
+        console.log("-> Usuario canceló la eliminación."); 
+        return;
+    }
+    console.log("-> Usuario confirmó la eliminación. Preparando payload..."); 
 
     const operationMethod = esActivaActual ? "DELETE" : "HARD_DELETE";
-    const payload = { _method: operationMethod, id: parseInt(tarea.id), tipo: tarea.tipo };
+    const payload = { 
+        _method: operationMethod, 
+        id: parseInt(tarea.id), 
+        tipo: tarea.tipo || '', 
+        texto: tarea.texto || '' 
+    };
+    console.log("-> Payload listo:", payload); 
     try {
-        // CORRECCIÓN: Se añade "/"
-        await fetchData('/tareas-dia-a-dia', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        console.log("-> Llamando a fetchData para eliminación..."); 
+        await fetchData('/tareas-dia-a-dia', 'POST', payload); 
+        console.log("-> fetchData para eliminación completado."); 
         alert(esActivaActual ? 'Elemento marcado como inactivo.' : 'Elemento eliminado permanentemente.');
+        
+        // Recargar la lista para reflejar los cambios
         await cargarTareasDiaADia(new Date(appFechaCalendarioActual.getTime() || fechaObjRecarga.getTime()));
         await renderizarCalendario(appFechaCalendarioActual.getFullYear(), appFechaCalendarioActual.getMonth(), appSetFechaCalendarioActual);
-    } catch (error) { alert(`Error al procesar la eliminación: ${error.message}`); }
+    } catch (error) { 
+        console.error("-> Error durante fetchData para eliminación:", error); 
+        alert(`Error al procesar la eliminación: ${error.message}`); 
+    }
 }
 
 export async function renderizarModoObjetivos(mode_id) {
@@ -298,7 +315,6 @@ export async function cargarObjetivos(mode_id) {
     if (!contenedorObjetivos) return;
     contenedorObjetivos.innerHTML = '<p>Cargando objetivos...</p>';
     try {
-        // CORRECCIÓN: Se añade "/"
         let objetivosData = await fetchData(`/objetivos?mode=${mode_id}`); 
         objetivosData.sort((a, b) => obtenerValorPrioridad(a.fecha_estimada) - obtenerValorPrioridad(b.fecha_estimada) || a.titulo.localeCompare(b.titulo));
 
@@ -313,7 +329,7 @@ export async function cargarObjetivos(mode_id) {
             divObjetivo.classList.add('seccion-objetivo');
             const totalSubObjetivos = objetivo.sub_objetivos?.length || 0;
             const subObjetivosCompletados = objetivo.sub_objetivos?.filter(sub => sub.completado).length || 0;
-            const porcentajeCompletado = totalSubObjetivos > 0 ? Math.round((subObjetivosCompletados / totalSubObjetivos) * 100) : 0;
+            const porcentajeCompletado = totalSubObjetivos > 0 ? Math.round((subObjetivosCompletados / totalSubObjetivos) * 100) : 0; 
             divObjetivo.classList.add(obtenerClaseDeEstado(porcentajeCompletado)); 
 
             const cabeceraObjetivo = document.createElement('div');
@@ -358,10 +374,10 @@ export async function cargarObjetivos(mode_id) {
                         const esMarcado = e.target.checked; 
                         if(esMarcado && myConfettiInstance) lanzarAnimacionCelebracion(myConfettiInstance, e);
                         try {
-                            // CORRECCIÓN: Se añade "/"
                             await fetchData(`/sub-objetivos-estado`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ idSubObjetivoDB: parseInt(sub.id), completado: esMarcado }) });
                             await cargarObjetivos(mode_id);
-                        } catch (error) {
+                        }
+                        catch (error) {
                             alert(`Error al actualizar: ${error.message}`);
                             e.target.checked = !esMarcado;
                         }
@@ -392,7 +408,6 @@ export async function renderizarCalendario(currentYear, currentMonth, updateGlob
     let anotacionesMes = {}; 
 
     try {
-        // CORRECCIÓN: Se añade "/"
         [estadosDias, anotacionesMes] = await Promise.all([
             fetchData(`/calendario-dia-a-dia?mes=${mesVista + 1}&anio=${anioVista}`).then(d => d.reduce((acc, dia) => ({...acc, [dia.fecha]: dia.porcentaje}), {})),
             fetchData(`/anotaciones?mes=${mesVista + 1}&anio=${anioVista}`)
@@ -481,7 +496,6 @@ export async function verDetalleDia(fechaStr) {
         tareasDetalleDiaOverlay.setAttribute('inert', 'true');
     };
 
-    // CORRECCIÓN: Se añade "/"
     const [tareasResult, anotacionResult] = await Promise.allSettled([
         fetchData(`/tareas-por-fecha?fecha=${fechaStr}`),
         fetchData(`/anotaciones?fecha=${fechaStr}`)
@@ -489,10 +503,10 @@ export async function verDetalleDia(fechaStr) {
 
     let tareasHtml = '<p class="mensaje-vacio">No hay tareas para este día.</p>';
     if (tareasResult.status === 'fulfilled' && tareasResult.value.length > 0) {
-        const tareas = tareasResult.value;
+        const tareas = tareasResult.value; 
         tareasHtml = '<ul>' + tareas.map(tarea => {
             let subtareasHtml = '';
-            if (tarea.tipo === 'titulo' && tarea.subtareas?.length > 0) {
+            if (tarea.tipo === 'titulo' && tarea.subtareas?.length > 0) { 
                 subtareasHtml = '<ul style="padding-left: 15px;">' + tarea.subtareas.map(sub => {
                     const completadoClass = sub.completado ? 'text-decoration: line-through; opacity:0.7;' : '';
                     return `<li><span style="${completadoClass}">${sub.texto}</span></li>`;
@@ -546,7 +560,7 @@ export async function verDetalleDia(fechaStr) {
         emojiOptions.forEach(option => {
             if (selectedEmojis.includes(option.dataset.emoji)) option.classList.add('selected');
             option.onclick = () => {
-                const emoji = option.dataset.emoji;
+                const emoji = opt.dataset.emoji;
                 const index = selectedEmojis.indexOf(emoji);
                 if (index > -1) {
                     selectedEmojis.splice(index, 1);
@@ -562,11 +576,10 @@ export async function verDetalleDia(fechaStr) {
 
         guardarBtn.onclick = async () => {
             try {
-                // CORRECCIÓN: Se añade "/"
-                await fetchData('/anotaciones', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ fecha: fechaStr, emoji: emojiInputHidden.value, descripcion: descInput.value })
+                await fetchData('/anotaciones', 'POST', {
+                    fecha: fechaStr,
+                    emoji: emojiInputHidden.value,
+                    descripcion: descInput.value
                 });
                 cerrarBtn.click();
                 await renderizarCalendario(appFechaCalendarioActual.getFullYear(), appFechaCalendarioActual.getMonth(), appSetFechaCalendarioActual);
@@ -579,12 +592,7 @@ export async function verDetalleDia(fechaStr) {
             quitarBtn.onclick = async () => {
                 if (!confirm("¿Quitar anotación?")) return;
                 try {
-                    // CORRECCIÓN: Se añade "/"
-                    await fetchData('/anotaciones', {
-                        method: 'DELETE',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ fecha: fechaStr })
-                    });
+                    await fetchData('/anotaciones', 'POST', { _method: 'DELETE', fecha: fechaStr }); // CORRECCIÓN
                     cerrarBtn.click();
                     await renderizarCalendario(appFechaCalendarioActual.getFullYear(), appFechaCalendarioActual.getMonth(), appSetFechaCalendarioActual);
                 } catch (error) {

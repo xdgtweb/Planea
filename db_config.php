@@ -1,10 +1,10 @@
 <?php
 // --- CREDENCIALES CORRECTAS ---
 // Datos de conexión reales proporcionados por el usuario.
-define('DB_SERVER', 'sql309.infinityfree.com');
-define('DB_USERNAME', 'if0_39074189');
-define('DB_PASSWORD', 'vJJFiXNaYGj5');
-define('DB_NAME', 'if0_39074189_proyectosdevida');
+define('DB_SERVER', 'sql309.infinityfree.com'); // Hostname actualizado
+define('DB_USERNAME', 'if0_39074189'); // Username actualizado
+define('DB_PASSWORD', 'vJJFiXNaYGj5'); // Password actualizado
+define('DB_NAME', 'if0_39074189_planea'); // Nombre de la base de datos actualizado
 define('DB_PORT', '3306'); // Puerto estándar de MySQL
 
 // Establecer conexión a la base de datos

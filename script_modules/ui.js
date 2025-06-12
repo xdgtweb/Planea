@@ -139,6 +139,10 @@ export function mostrarFormulario(camposHTML, onSaveCallback, titulo = "Formular
 
 export function ocultarFormulario() {
     const formContainer = document.getElementById('form-container');
+    // CORRECCIÓN ACCESIBILIDAD: Mover el foco a otro lugar o hacer blur del elemento enfocado
+    if (document.activeElement && formContainer.contains(document.activeElement)) {
+        document.activeElement.blur(); // Quita el foco del elemento dentro del modal
+    }
     formContainer.classList.add('hidden');
     formContainer.setAttribute('inert', 'true');
 }

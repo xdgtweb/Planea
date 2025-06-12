@@ -1,5 +1,9 @@
 // script_modules/modals.js
 
+// >>>>> INICIO DE LOG DE DEPURACIÓN <<<<<
+console.log("modals.js loaded!"); 
+// >>>>> FIN DE LOG DE DEPURACIÓN <<<<<
+
 import { EMOJIS_PREDEFINIDOS } from './config.js';
 import { fetchData } from './utils.js';
 import { 
@@ -104,7 +108,9 @@ export function abrirModalParaNuevoElemento(contexto = null, fechaPreseleccionad
             if (subtareas.length === 0) { alert('Al menos una subtarea es obligatoria.'); throw new Error("Subtarea vacía"); }
             
             const tipoRecurrencia = document.getElementById('tipoRecurrencia').value;
-            if (uiMiniCalSelectedDates.length === 0) { alert('Debe seleccionar al menos una fecha del calendario.'); throw new Error("Fechas no seleccionadas"); }
+            const fechasParaGuardar = uiMiniCalSelectedDates; 
+
+            if (fechasParaGuardar.length === 0) { alert('Debe seleccionar al menos una fecha del calendario.'); throw new Error("Fechas no seleccionadas"); }
 
             let regla_recurrencia_final = tipoRecurrencia;
             if (tipoRecurrencia === 'WEEKLY') {
@@ -113,25 +119,44 @@ export function abrirModalParaNuevoElemento(contexto = null, fechaPreseleccionad
                 regla_recurrencia_final = `WEEKLY:${dias.join(',')}`;
             }
 
-            const payload = { 
-                texto: tituloTexto, 
-                tipo: 'titulo', 
-                subtareas_textos: subtareas,
-                regla_recurrencia: regla_recurrencia_final,
-                fecha_inicio: uiMiniCalSelectedDates[0],
-                emoji_anotacion: document.getElementById('emojiAnotacionTareaInput').value, 
-                descripcion_anotacion: document.getElementById('descripcionAnotacionTarea').value.trim(),
-            };
+            let successfulSaves = 0;
+            let failedSaves = 0;
+            let errors = [];
 
-            await fetchData('tareas-dia-a-dia', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+            for (const fecha of fechasParaGuardar) {
+                const payload = { 
+                    texto: tituloTexto, 
+                    tipo: 'titulo', 
+                    subtareas_textos: subtareas,
+                    regla_recurrencia: regla_recurrencia_final,
+                    fecha_inicio: fecha, 
+                    emoji_anotacion: document.getElementById('emojiAnotacionTareaInput').value, 
+                    descripcion_anotacion: document.getElementById('descripcionAnotacionTarea').value.trim(),
+                };
+
+                try {
+                    await fetchData('tareas-dia-a-dia', 'POST', payload);
+                    successfulSaves++;
+                } catch (error) {
+                    failedSaves++;
+                    errors.push(`Error al guardar para la fecha ${fecha}: ${error.message}`);
+                    console.error(`Error al guardar para la fecha ${fecha}:`, error);
+                }
+            }
             
-            alert('Programación guardada.');
+            if (successfulSaves > 0) {
+                alert(`Programación guardada exitosamente para ${successfulSaves} día(s).`);
+            }
+            if (failedSaves > 0) {
+                alert(`Atención: Fallo al guardar para ${failedSaves} día(s). Errores: \n${errors.join('\n')}`);
+            }
+
             ocultarFormulario();
             
-            const fechaDeRecarga = new Date(uiMiniCalSelectedDates[0] + 'T00:00:00Z');
-            setFechaCalendarioActual(fechaDeRecarga);
-            await cargarTareasDiaADia(fechaDeRecarga);
-            await appRenderizarCalendario(fechaDeRecarga.getFullYear(), fechaDeRecarga.getMonth(), setFechaCalendarioActual);
+            // REFRESH UI: Recargar las tareas y el calendario para la fecha actual de visualización
+            // Esto asegura que los cambios se reflejen en el mes/día que el usuario está viendo.
+            await cargarTareasDiaADia(fechaCalendarioActual); 
+            await appRenderizarCalendario(fechaCalendarioActual.getFullYear(), fechaCalendarioActual.getMonth(), setFechaCalendarioActual);
 
         } else if (tipoOp === 'corto-medio-plazo' || tipoOp === 'largo-plazo') {
             const titulo = document.getElementById('nuevoObjetivoTitulo').value.trim();
@@ -144,7 +169,7 @@ export function abrirModalParaNuevoElemento(contexto = null, fechaPreseleccionad
                 mode_id: tipoOp 
             };
 
-            await fetchData('objetivos', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+            await fetchData('objetivos', 'POST', payload);
             
             alert('Objetivo añadido.');
             ocultarFormulario();
@@ -185,7 +210,7 @@ export function abrirModalParaNuevoElemento(contexto = null, fechaPreseleccionad
                     selectedEmojisModalArray.splice(index, 1);
                     opt.classList.remove('selected');
                 } else if (selectedEmojisModalArray.length < 3) {
-                    selectedEmojisModalArray.push(emoji);
+                    selectedEmojis.push(emoji);
                     opt.classList.add('selected');
                 }
                 emojiDisplay.textContent = selectedEmojisModalArray.join(' ');
@@ -195,43 +220,7 @@ export function abrirModalParaNuevoElemento(contexto = null, fechaPreseleccionad
     }
 }
 
-export function mostrarFormularioAddSubTarea(parentId, fechaObjRecarga) {
-    const formHtmlCampos = `<label for="nuevaSubTareaTexto">Texto de la Sub-Tarea:</label><input type="text" id="nuevaSubTareaTexto" placeholder="Ej. Comprar leche">`;
-    
-    const onGuardarSubTarea = async () => { 
-        const texto = document.getElementById('nuevaSubTareaTexto').value.trim();
-        if (!texto) { alert('El texto no puede estar vacío.'); throw new Error("Texto vacío"); }
-        
-        const payload = { texto, tipo: 'subtarea', parent_id: parentId, fecha_inicio: fechaObjRecarga.toISOString().split('T')[0], regla_recurrencia: 'NONE' };
-        await fetchData('tareas-dia-a-dia', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-        
-        alert('Sub-tarea añadida.'); 
-        ocultarFormulario();
-        
-        await cargarTareasDiaADia(fechaObjRecarga); 
-        await appRenderizarCalendario(fechaObjRecarga.getFullYear(), fechaObjRecarga.getMonth(), setFechaCalendarioActual);
-    };
-    
-    mostrarFormulario(formHtmlCampos, onGuardarSubTarea, "Añadir Sub-Tarea", "Guardar");
-}
-
-export function mostrarFormularioAddSubObjetivo(objetivoPrincipalId, mode_id_recarga) {
-    const formHtmlCampos = `<label for="nuevoSubObjetivoModalTexto">Texto del Sub-Objetivo:</label><input type="text" id="nuevoSubObjetivoModalTexto" placeholder="Ej. Investigar opciones">`;
-    
-    const onGuardarSubObjetivo = async () => {
-        const texto = document.getElementById('nuevoSubObjetivoModalTexto').value.trim();
-        if (!texto) { alert('El texto no puede estar vacío.'); throw new Error("Texto vacío"); }
-        
-        await fetchData('sub_objetivos', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ objetivo_id: objetivoPrincipalId, texto }) });
-        
-        alert('Sub-objetivo añadido.');
-        ocultarFormulario();
-        await cargarObjetivos(mode_id_recarga);
-    };
-
-    mostrarFormulario(formHtmlCampos, onGuardarSubObjetivo, "Añadir Sub-Objetivo", "Guardar");
-}
-
+// Esta función estaba faltando en el archivo modals.js que me pegaste previamente
 export function mostrarFormularioEditarTarea(tarea, fechaObjRecarga, tipoOriginal) {
     if (!tarea.activo) {
         alert("No se pueden editar elementos inactivos. Restaure primero el elemento si desea editarlo.");
@@ -268,7 +257,7 @@ export function mostrarFormularioEditarTarea(tarea, fechaObjRecarga, tipoOrigina
     const onGuardarEditarTarea = async () => { 
         const texto = document.getElementById('editTareaTexto').value.trim();
         if (!texto) { alert('El texto no puede estar vacío.'); throw new Error("Texto vacío"); }
-        const payload = { _method: "PUT", id: tarea.id, texto };
+        const payload = { _method: "PUT", id: tarea.id, texto, tipo: tarea.tipo }; // Added tipo
 
         if (tipoOriginal === 'titulo') {
             payload.fecha_inicio = document.getElementById('editFechaInicioTarea').value;
@@ -281,7 +270,7 @@ export function mostrarFormularioEditarTarea(tarea, fechaObjRecarga, tipoOrigina
             payload.regla_recurrencia = tipoRecurrenciaVal;
         }
 
-        await fetchData('tareas-dia-a-dia', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        await fetchData('tareas-dia-a-dia', 'POST', payload);
         alert('Tarea actualizada.'); 
         ocultarFormulario(); 
         await cargarTareasDiaADia(fechaObjRecarga); 
@@ -296,6 +285,44 @@ export function mostrarFormularioEditarTarea(tarea, fechaObjRecarga, tipoOrigina
             document.getElementById('edit-days-of-week-selector').style.display = select.value === 'WEEKLY' ? 'block' : 'none';
         }
     }
+}
+
+
+export function mostrarFormularioAddSubTarea(parentId, fechaObjRecarga) {
+    const formHtmlCampos = `<label for="nuevaSubTareaTexto">Texto de la Sub-Tarea:</label><input type="text" id="nuevaSubTareaTexto" placeholder="Ej. Comprar leche">`;
+    
+    const onGuardarSubTarea = async () => { 
+        const texto = document.getElementById('nuevaSubTareaTexto').value.trim();
+        if (!texto) { alert('El texto no puede estar vacío.'); throw new Error("Texto vacío"); }
+        
+        const payload = { texto, tipo: 'subtarea', parent_id: parentId, fecha_inicio: fechaObjRecarga.toISOString().split('T')[0], regla_recurrencia: 'NONE' };
+        await fetchData('tareas-dia-a-dia', 'POST', payload);
+        
+        alert('Sub-tarea añadida.'); 
+        ocultarFormulario();
+        
+        await cargarTareasDiaADia(fechaObjRecarga); 
+        await appRenderizarCalendario(fechaObjRecarga.getFullYear(), fechaObjRecarga.getMonth(), setFechaCalendarioActual);
+    };
+    
+    mostrarFormulario(formHtmlCampos, onGuardarSubTarea, "Añadir Sub-Tarea", "Guardar");
+}
+
+export function mostrarFormularioAddSubObjetivo(objetivoPrincipalId, mode_id_recarga) {
+    const formHtmlCampos = `<label for="nuevoSubObjetivoModalTexto">Texto del Sub-Objetivo:</label><input type="text" id="nuevoSubObjetivoModalTexto" placeholder="Ej. Investigar opciones">`;
+    
+    const onGuardarSubObjetivo = async () => {
+        const texto = document.getElementById('nuevoSubObjetivoModalTexto').value.trim();
+        if (!texto) { alert('El texto no puede estar vacío.'); throw new Error("Texto vacío"); }
+        
+        await fetchData('sub_objetivos', 'POST', { objetivo_id: objetivoPrincipalId, texto });
+        
+        alert('Sub-objetivo añadido.');
+        ocultarFormulario();
+        await cargarObjetivos(mode_id_recarga);
+    };
+
+    mostrarFormulario(formHtmlCampos, onGuardarSubObjetivo, "Añadir Sub-Objetivo", "Guardar");
 }
 
 export function mostrarFormularioEditarObjetivo(objetivo, mode_id_recarga) {
@@ -319,7 +346,7 @@ export function mostrarFormularioEditarObjetivo(objetivo, mode_id_recarga) {
             fecha_estimada: document.getElementById('editObjetivoFecha').value.trim(), 
             descripcion: document.getElementById('editObjetivoDescripcion').value.trim() 
         };
-        await fetchData('objetivos', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        await fetchData('objetivos', 'POST', payload);
         alert('Objetivo actualizado.'); 
         ocultarFormulario();
         await cargarObjetivos(mode_id_recarga); 
@@ -334,11 +361,11 @@ export function mostrarFormularioEditarSubObjetivo(subObjetivo, mode_id_recarga)
     `;
     
     const onGuardarEditarSubObjetivo = async () => {
-        const texto = document.getElementById('editSubObjetivoTexto').value.trim();
+        const texto = document.getElementById('editSubObjetivoTexto').trim();
         if (!texto) { alert('El texto no puede estar vacío.'); throw new Error("Texto vacío"); }
         
         const payload = { _method: "PUT", id: subObjetivo.id, texto }; 
-        await fetchData('sub_objetivos', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        await fetchData('sub_objetivos', 'POST', payload);
         alert('Sub-objetivo actualizado.'); 
         ocultarFormulario();
         await cargarObjetivos(mode_id_recarga); 
