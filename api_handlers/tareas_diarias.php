@@ -58,6 +58,39 @@ switch ($method) {
             }
         }
 
+        // Recuperar las horas de recordatorio para cada tarea principal
+        $task_ids = array_keys($tasks_by_id);
+        if (!empty($task_ids)) {
+            $placeholders = implode(',', array_fill(0, count($task_ids), '?'));
+            $stmt_reminder_times = $mysqli->prepare("
+                SELECT r.tarea_id, rt.time_of_day 
+                FROM reminders r
+                JOIN reminder_times rt ON r.id = rt.reminder_id
+                WHERE r.tarea_id IN ($placeholders)
+            ");
+            if ($stmt_reminder_times) {
+                $types_str = str_repeat('i', count($task_ids));
+                $stmt_reminder_times->bind_param($types_str, ...$task_ids);
+                $stmt_reminder_times->execute();
+                $times_result = $stmt_reminder_times->get_result();
+                
+                $times_by_task_id = [];
+                while($row = $times_result->fetch_assoc()) {
+                    $times_by_task_id[$row['tarea_id']][] = $row['time_of_day'];
+                }
+                $stmt_reminder_times->close();
+
+                foreach($tasks_by_id as $id => &$task) {
+                    if (isset($times_by_task_id[$id])) {
+                        $task['reminder_times'] = $times_by_task_id[$id];
+                    } else {
+                        $task['reminder_times'] = [];
+                    }
+                }
+            }
+        }
+
+
         // Segunda pasada: Anidar las subtareas bajo sus padres
         foreach ($tasks_by_id as $id => &$task) {
             if ($task['parent_id'] !== null) {
@@ -121,6 +154,7 @@ switch ($method) {
             // CAMPOS DE RECORDATORIO (nuevos)
             $send_reminder = isset($data['send_reminder']) ? ($data['send_reminder'] ? 1 : 0) : null;
             $reminder_type = $data['reminder_type'] ?? null;
+            $selected_reminder_times = $data['selected_reminder_times'] ?? []; // NUEVO: Horas específicas
 
             if ($id <= 0) {
                 json_response(['error' => 'ID de tarea inválido para actualizar'], 400);
@@ -197,6 +231,17 @@ switch ($method) {
 
                 // Lógica para actualizar/eliminar recordatorios si la tarea es de tipo 'titulo'
                 if ($tipo_update === 'titulo' && $send_reminder !== null && $fecha_inicio_update !== null) {
+                    // Obtener el ID del recordatorio existente para esta tarea
+                    $existing_reminder_id = null;
+                    $stmt_get_reminder_id = $mysqli->prepare("SELECT id FROM reminders WHERE tarea_id = ? AND usuario_id = ? LIMIT 1");
+                    $stmt_get_reminder_id->bind_param("ii", $id, $usuario_id);
+                    $stmt_get_reminder_id->execute();
+                    $result_reminder_id = $stmt_get_reminder_id->get_result();
+                    if ($result_reminder_id->num_rows > 0) {
+                        $existing_reminder_id = $result_reminder_id->fetch_assoc()['id'];
+                    }
+                    $stmt_get_reminder_id->close();
+
                     if ($send_reminder == 1 && $reminder_type !== 'none') {
                         // Calcular reminder_datetime
                         $reminder_datetime = new DateTime($fecha_inicio_update);
@@ -211,17 +256,10 @@ switch ($method) {
                             $reminder_datetime->modify('-1 month');
                         }
 
-                        // Verificar si ya existe un recordatorio para esta tarea
-                        $stmt_check_reminder = $mysqli->prepare("SELECT id FROM reminders WHERE tarea_id = ?");
-                        $stmt_check_reminder->bind_param("i", $id);
-                        $stmt_check_reminder->execute();
-                        $result_check_reminder = $stmt_check_reminder->get_result();
-
-                        if ($result_check_reminder->num_rows > 0) {
+                        if ($existing_reminder_id) {
                             // Actualizar recordatorio existente
-                            $reminder_id = $result_check_reminder->fetch_assoc()['id'];
                             $stmt_update_reminder = $mysqli->prepare("UPDATE reminders SET reminder_datetime = ?, type = ?, status = 'pending' WHERE id = ?");
-                            $stmt_update_reminder->bind_param("ssi", $reminder_datetime->format('Y-m-d H:i:s'), $reminder_type, $reminder_id);
+                            $stmt_update_reminder->bind_param("ssi", $reminder_datetime->format('Y-m-d H:i:s'), $reminder_type, $existing_reminder_id);
                             $stmt_update_reminder->execute();
                             $stmt_update_reminder->close();
                         } else {
@@ -229,20 +267,47 @@ switch ($method) {
                             $stmt_insert_reminder = $mysqli->prepare("INSERT INTO reminders (usuario_id, tarea_id, reminder_datetime, type) VALUES (?, ?, ?, ?)");
                             $stmt_insert_reminder->bind_param("iiss", $usuario_id, $id, $reminder_datetime->format('Y-m-d H:i:s'), $reminder_type);
                             $stmt_insert_reminder->execute();
+                            $existing_reminder_id = $mysqli->insert_id; // Obtener el ID del nuevo recordatorio
                             $stmt_insert_reminder->close();
                         }
-                        $stmt_check_reminder->close();
+
+                        // NUEVO: Actualizar las horas de recordatorio específicas
+                        // Primero, eliminar las horas existentes para este recordatorio
+                        $stmt_delete_times = $mysqli->prepare("DELETE FROM reminder_times WHERE reminder_id = ?");
+                        if (!$stmt_delete_times) {
+                            throw new Exception("Error al preparar la eliminación de horas de recordatorio: " . $mysqli->error);
+                        }
+                        $stmt_delete_times->bind_param("i", $existing_reminder_id);
+                        $stmt_delete_times->execute();
+                        $stmt_delete_times->close();
+
+                        // Luego, insertar las nuevas horas seleccionadas
+                        if (!empty($selected_reminder_times) && is_array($selected_reminder_times)) {
+                            $stmt_insert_times = $mysqli->prepare("INSERT INTO reminder_times (reminder_id, time_of_day) VALUES (?, ?)");
+                            if (!$stmt_insert_times) {
+                                throw new Exception("Error al preparar la inserción de horas de recordatorio (PUT): " . $mysqli->error);
+                            }
+                            foreach ($selected_reminder_times as $time_str) {
+                                $stmt_insert_times->bind_param("is", $existing_reminder_id, $time_str);
+                                $stmt_insert_times->execute();
+                            }
+                            $stmt_insert_times->close();
+                        }
                     } else {
                         // Si send_reminder es 0 o type es 'none', eliminar recordatorios existentes para esta tarea
-                        $stmt_delete_reminder = $mysqli->prepare("DELETE FROM reminders WHERE tarea_id = ?");
-                        $stmt_delete_reminder->bind_param("i", $id);
-                        $stmt_delete_reminder->execute();
-                        $stmt_delete_reminder->close();
+                        // y también las horas asociadas.
+                        if ($existing_reminder_id) {
+                            $stmt_delete_reminder = $mysqli->prepare("DELETE FROM reminders WHERE id = ?");
+                            $stmt_delete_reminder->bind_param("i", $existing_reminder_id);
+                            $stmt_delete_reminder->execute();
+                            $stmt_delete_reminder->close();
+                            // Las horas se borrarán automáticamente debido a ON DELETE CASCADE si usas la Opción A.
+                        }
                     }
                 }
 
                 $mysqli->commit();
-                if ($stmt->affected_rows > 0) {
+                if ($mysqli->affected_rows > 0) { // Usar affected_rows del último statement o de la transacción general si se sigue el patrón
                     json_response(['success' => true]);
                 } else {
                     json_response(['error' => 'Tarea no encontrada o sin cambios necesarios'], 404);
@@ -282,6 +347,8 @@ switch ($method) {
                         $stmt_delete_reminders->bind_param("ii", $id, $usuario_id);
                         $stmt_delete_reminders->execute();
                         $stmt_delete_reminders->close();
+
+                        // Las horas asociadas se borrarán por ON DELETE CASCADE
 
                         $stmt_delete_subtasks = $mysqli->prepare("DELETE FROM tareas_diarias WHERE parent_id = ? AND usuario_id = ?");
                         if (!$stmt_delete_subtasks) {
@@ -335,6 +402,7 @@ switch ($method) {
                             $stmt_deactivate_reminders->bind_param("ii", $id, $usuario_id);
                             $stmt_deactivate_reminders->execute();
                             $stmt_deactivate_reminders->close();
+                            // Las horas asociadas a los recordatorios se mantienen, pero el recordatorio está deshabilitado.
                         }
                         $mysqli->commit();
                         json_response(['success' => true, 'message' => 'Elemento marcado como inactivo.']);
@@ -369,6 +437,7 @@ switch ($method) {
             // CAMPOS DE RECORDATORIO (nuevos)
             $send_reminder = isset($data['send_reminder']) ? ($data['send_reminder'] ? 1 : 0) : 0;
             $reminder_type = $data['reminder_type'] ?? 'none';
+            $selected_reminder_times = $data['selected_reminder_times'] ?? []; // NUEVO: Horas específicas
 
 
             if (empty($texto) || empty($tipo)) { // Esta validación es redundante si está al inicio, pero por seguridad
@@ -417,7 +486,21 @@ switch ($method) {
                         }
                         $stmt_insert_reminder->bind_param("iiss", $usuario_id, $new_parent_id, $reminder_datetime->format('Y-m-d H:i:s'), $reminder_type);
                         $stmt_insert_reminder->execute();
+                        $new_reminder_id = $mysqli->insert_id; // Obtener el ID del recordatorio recién insertado
                         $stmt_insert_reminder->close();
+
+                        // NUEVO: Insertar las horas de recordatorio específicas
+                        if (!empty($selected_reminder_times) && is_array($selected_reminder_times)) {
+                            $stmt_insert_times = $mysqli->prepare("INSERT INTO reminder_times (reminder_id, time_of_day) VALUES (?, ?)");
+                            if (!$stmt_insert_times) {
+                                throw new Exception("Error al preparar la inserción de horas de recordatorio: " . $mysqli->error);
+                            }
+                            foreach ($selected_reminder_times as $time_str) {
+                                $stmt_insert_times->bind_param("is", $new_reminder_id, $time_str);
+                                $stmt_insert_times->execute();
+                            }
+                            $stmt_insert_times->close();
+                        }
                     }
 
 
@@ -494,4 +577,3 @@ switch ($method) {
         json_response(['error' => 'Método no permitido'], 405);
         break;
 }
-?>

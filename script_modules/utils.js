@@ -1,3 +1,5 @@
+// script_modules/utils.js
+
 import { API_BASE_URL } from './config.js';
 
 // --- FUNCIONES DE LÓGICA DE UI ---
@@ -32,32 +34,61 @@ export function obtenerValorPrioridad(fecha_estimada) {
 
 /**
  * Función centralizada para hacer peticiones a la API.
+ * TODAS las peticiones serán POST a la ruta base de la API,
+ * incluyendo el endpoint y los parámetros en el cuerpo JSON.
  * @param {string} endpoint_con_params - El endpoint de la API, ej. '/login' o '/tareas?id=1'
- * @param {string} method - El método HTTP (GET, POST, PUT, DELETE).
- * @param {object} body - El cuerpo de la petición para POST/PUT.
+ * @param {string} method - El método HTTP ORIGINAL (GET, POST, PUT, DELETE).
+ * @param {object} body - El cuerpo de la petición ORIGINAL para POST/PUT.
  * @returns {Promise<any>} Los datos JSON de la respuesta.
  */
 export async function fetchData(endpoint_con_params, method = 'GET', body = null) {
     
     console.log(`[fetchData] Inicio. API_BASE_URL importado: ${API_BASE_URL}`);
     console.log(`[fetchData] Recibido endpoint_con_params: ${endpoint_con_params}`);
+
+    const url_final = API_BASE_URL; // La URL de destino siempre será la base de la API
+
+    let requestBody = {};
     
-    // CORRECCIÓN: Se asegura que haya una única barra '/' entre la URL base y el endpoint.
-    // Elimina barras al final de API_BASE_URL y al principio de endpoint_con_params, luego las une con una única barra.
-    const url_final = `${API_BASE_URL.replace(/\/+$/, '')}/${endpoint_con_params.replace(/^\/+/, '')}`;
+    // Extraer la ruta del endpoint y los parámetros de consulta originales
+    let endpointPath = endpoint_con_params;
+    let queryParams = {};
+    const queryIndex = endpoint_con_params.indexOf('?');
+    if (queryIndex !== -1) {
+        endpointPath = endpoint_con_params.substring(0, queryIndex);
+        const queryString = endpoint_con_params.substring(queryIndex + 1);
+        queryString.split('&').forEach(param => {
+            const parts = param.split('=');
+            if (parts.length === 2) {
+                queryParams[decodeURIComponent(parts[0])] = decodeURIComponent(parts[1]);
+            }
+        });
+    }
 
-    const options = {
-        method,
-        headers: {},
-        credentials: 'include' // Importante para que las cookies de sesión se envíen
-    };
-
-    if (method === 'POST' || method === 'PUT' || method === 'DELETE') {
-        if (body) {
-            options.headers['Content-Type'] = 'application/json';
-            options.body = JSON.stringify(body);
+    // Clonar el cuerpo de la petición original si existe
+    if (body) {
+        if (typeof body === 'object' && body !== null) {
+            requestBody = { ...body }; // Clonar el cuerpo original
+        } else {
+            // Manejar casos donde 'body' podría no ser un objeto (ej. valor primitivo)
+            requestBody._raw_body_data = body; 
         }
     }
+
+    // Añadir información de enrutamiento y parámetros originales al cuerpo de la petición
+    requestBody._api_endpoint = endpointPath.replace(/^\/+/, ''); // Ruta del endpoint sin barra inicial
+    requestBody._api_params = queryParams; // Parámetros GET originales
+    requestBody._api_original_method = method; // Método HTTP original (GET, POST, etc.)
+
+    const options = {
+        method: 'POST', // Todas las peticiones se fuerzan a POST
+        headers: {
+            'Content-Type': 'application/json' // Siempre enviar un cuerpo JSON
+        },
+        credentials: 'include'
+    };
+
+    options.body = JSON.stringify(requestBody);
     
     console.log(`fetchData URL FINAL: ${url_final} CON OPCIONES:`, options);
 

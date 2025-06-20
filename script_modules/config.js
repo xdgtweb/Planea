@@ -1,8 +1,8 @@
 // script_modules/config.js
 
 // Asegúrate de que esta sea la ruta correcta a tu api.php desde la raíz de tu sitio web.
-// Si index.html y api.php están en la misma carpeta raíz, 'api.php' es correcto.
-export const API_BASE_URL = 'api.php'; 
+// Si api.php está en la raíz de tu dominio (ej. www.tudominio.com/api.php), usa '/api.php'.
+export const API_BASE_URL = '/api.php'; // <--- RUTA AJUSTADA PARA LA RAÍZ DEL SERVIDOR
 
 export const EMOJIS_PREDEFINIDOS = Object.freeze([ 
     '📌', '❗', '🎉', '🎂', '💼', '✈️', '❤️', '💪', 

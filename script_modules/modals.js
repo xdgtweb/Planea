@@ -70,12 +70,27 @@ export function abrirModalParaNuevoElemento(contexto = null, fechaPreseleccionad
                 <div id="reminderOptions" style="display:none; margin-top: var(--space-s);">
                     <label for="tipoRecordatorio" class="form-label">¿Cuándo enviar?</label>
                     <select id="tipoRecordatorio" class="form-control">
-                        <option value="none">No</option>
                         <option value="hours_before">Unas horas antes (ej. 4h antes de la fecha de inicio)</option>
                         <option value="day_before">Un día antes</option>
                         <option value="week_before">Una semana antes</option>
                         <option value="month_before">Un mes antes</option>
                     </select>
+                </div>
+            </fieldset>
+
+            <fieldset id="reminderTimesSettings" style="display:none;">
+                <legend>Horas de Recordatorio Específicas</legend>
+                <div class="form-group">
+                    <label class="form-label">Selecciona hora(s) (Opcional):</label>
+                    <div id="reminderHoursContainer" class="time-slot-container">
+                        ${Array.from({length: 24 * 2}, (_, i) => {
+                            const hour = Math.floor(i / 2);
+                            const minute = (i % 2) * 30;
+                            const time = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+                            return `<span class="time-slot" data-time="${time}:00">${time}</span>`; // Formato HH:MM:SS para la BD
+                        }).join('')}
+                    </div>
+                    <input type="hidden" id="selectedReminderHoursInput" value="">
                 </div>
             </fieldset>
 
@@ -145,9 +160,11 @@ export function abrirModalParaNuevoElemento(contexto = null, fechaPreseleccionad
                 regla_recurrencia_final = `WEEKLY:${dias.join(',')}`;
             }
 
-            // NUEVOS CAMPOS DE RECORDATORIO
+            // CAMPOS DE RECORDATORIO
             const sendReminder = document.getElementById('activarRecordatorio').checked;
             const reminderType = document.getElementById('tipoRecordatorio').value;
+            // NUEVO: Obtener las horas seleccionadas del input oculto
+            const selectedReminderHours = document.getElementById('selectedReminderHoursInput').value.split(',').filter(time => time);
 
 
             let successfulSaves = 0;
@@ -165,7 +182,8 @@ export function abrirModalParaNuevoElemento(contexto = null, fechaPreseleccionad
                     descripcion_anotacion: document.getElementById('descripcionAnotacionTarea').value.trim(),
                     // Añadir datos de recordatorio al payload
                     send_reminder: sendReminder,
-                    reminder_type: reminderType
+                    reminder_type: reminderType,
+                    selected_reminder_times: selectedReminderHours // NUEVO: Añadir las horas seleccionadas
                 };
 
                 try {
@@ -229,11 +247,56 @@ export function abrirModalParaNuevoElemento(contexto = null, fechaPreseleccionad
         // Lógica para los campos de recordatorio
         const activarRecordatorioCheckbox = document.getElementById('activarRecordatorio');
         const reminderOptionsDiv = document.getElementById('reminderOptions');
-        activarRecordatorioCheckbox.onchange = () => {
-            reminderOptionsDiv.style.display = activarRecordatorioCheckbox.checked ? 'block' : 'none';
+        const reminderTimesSettingsFieldset = document.getElementById('reminderTimesSettings');
+        const tipoRecordatorioSelect = document.getElementById('tipoRecordatorio');
+
+        // Función para actualizar la visibilidad de las horas según el tipo de recordatorio
+        const updateReminderTimesVisibility = () => {
+            reminderTimesSettingsFieldset.style.display = (tipoRecordatorioSelect.value === 'hours_before' && activarRecordatorioCheckbox.checked) ? 'block' : 'none';
         };
-        // Asegurarse de que el div de opciones de recordatorio tenga el estado inicial correcto
-        reminderOptionsDiv.style.display = activarRecordatorioCheckbox.checked ? 'block' : 'none';
+
+        // Controlar la visibilidad de todas las opciones de recordatorio y el valor por defecto del select
+        const toggleReminderOptions = () => {
+            const isChecked = activarRecordatorioCheckbox.checked;
+            reminderOptionsDiv.style.display = isChecked ? 'block' : 'none';
+            
+            if (isChecked) {
+                // Si se activa, por defecto a "Unas horas antes" si no hay otra selección
+                if (tipoRecordatorioSelect.value === '') { // o un valor por defecto que no sea 'none'
+                     tipoRecordatorioSelect.value = 'hours_before'; 
+                }
+            } else {
+                // Si se desactiva, no se necesita cambiar el valor del select.
+                // send_reminder: false gestiona la lógica.
+            }
+            updateReminderTimesVisibility(); // Actualizar visibilidad de horas
+        };
+
+        activarRecordatorioCheckbox.onchange = toggleReminderOptions;
+        tipoRecordatorioSelect.onchange = updateReminderTimesVisibility; // Escuchar cambios en el tipo
+        
+        toggleReminderOptions(); // Ejecutar al cargar para establecer el estado inicial
+
+
+        // Lógica para la selección de horas interactivas
+        const reminderHoursContainer = document.getElementById('reminderHoursContainer');
+        const selectedReminderHoursInput = document.getElementById('selectedReminderHoursInput');
+        let currentSelectedTimes = []; // Almacena las horas seleccionadas internamente
+
+        reminderHoursContainer.addEventListener('click', (e) => {
+            if (e.target.classList.contains('time-slot')) {
+                const time = e.target.dataset.time;
+                e.target.classList.toggle('selected');
+
+                if (e.target.classList.contains('selected')) {
+                    currentSelectedTimes.push(time);
+                } else {
+                    currentSelectedTimes = currentSelectedTimes.filter(t => t !== time);
+                }
+                currentSelectedTimes.sort(); // Mantener las horas ordenadas
+                selectedReminderHoursInput.value = currentSelectedTimes.join(',');
+            }
+        });
 
 
         document.getElementById('addMoreSubtasksBtn').onclick = () => {
@@ -257,7 +320,7 @@ export function abrirModalParaNuevoElemento(contexto = null, fechaPreseleccionad
                     selectedEmojisModalArray.splice(index, 1);
                     opt.classList.remove('selected');
                 } else if (selectedEmojisModalArray.length < 3) {
-                    selectedEmojisModalArray.push(emoji); // Corregido: Usar selectedEmojisModalArray
+                    selectedEmojisModalArray.push(emoji); // Corrigido: Usar selectedEmojisModalArray
                     opt.classList.add('selected');
                 }
                 emojiDisplay.textContent = selectedEmojisModalArray.join(' ');
@@ -273,11 +336,11 @@ export function mostrarFormularioEditarTarea(tarea, fechaObjRecarga, tipoOrigina
         return;
     }
 
-    // SIMULACIÓN para cargar el estado del recordatorio si estuviera en la tarea
-    // En un sistema real, esta información debería venir del backend junto con la tarea
-    // o se haría un fetch adicional aquí para los recordatorios de esta tarea.
-    let currentReminderType = tarea.reminder_type || 'none'; // Asumiendo que el backend envía esto
-    let isReminderActive = tarea.send_reminder || false; // Asumiendo que el backend envía esto
+    // Asegurarse de que tarea.reminder_times sea un array, incluso si viene null
+    let currentReminderTimes = Array.isArray(tarea.reminder_times) ? tarea.reminder_times : [];
+    let currentReminderType = tarea.reminder_type || 'hours_before'; // Cambiar default si 'none' no existe
+    let isReminderActive = tarea.send_reminder || false;
+
 
     let formHtmlCampos = `<div class="form-group">
                             <label for="editTareaTexto" class="form-label">Texto:</label>
@@ -320,12 +383,28 @@ export function mostrarFormularioEditarTarea(tarea, fechaObjRecarga, tipoOrigina
                 <div id="editReminderOptions" style="display:${isReminderActive ? 'block' : 'none'}; margin-top: var(--space-s);">
                     <label for="editTipoRecordatorio" class="form-label">¿Cuándo enviar?</label>
                     <select id="editTipoRecordatorio" class="form-control">
-                        <option value="none" ${currentReminderType === 'none' ? 'selected' : ''}>No</option>
                         <option value="hours_before" ${currentReminderType === 'hours_before' ? 'selected' : ''}>Unas horas antes (ej. 4h)</option>
                         <option value="day_before" ${currentReminderType === 'day_before' ? 'selected' : ''}>Un día antes</option>
                         <option value="week_before" ${currentReminderType === 'week_before' ? 'selected' : ''}>Una semana antes</option>
                         <option value="month_before" ${currentReminderType === 'month_before' ? 'selected' : ''}>Un mes antes</option>
                     </select>
+                </div>
+            </fieldset>
+
+            <fieldset id="editReminderTimesSettings" style="display:none;">
+                <legend>Horas de Recordatorio Específicas</legend>
+                <div class="form-group">
+                    <label class="form-label">Selecciona hora(s) (Opcional):</label>
+                    <div id="editReminderHoursContainer" class="time-slot-container">
+                        ${Array.from({length: 24 * 2}, (_, i) => {
+                            const hour = Math.floor(i / 2);
+                            const minute = (i % 2) * 30;
+                            const time = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+                            const isSelected = currentReminderTimes.includes(`${time}:00`) ? 'selected' : '';
+                            return `<span class="time-slot ${isSelected}" data-time="${time}:00">${time}</span>`;
+                        }).join('')}
+                    </div>
+                    <input type="hidden" id="selectedEditReminderHoursInput" value="${currentReminderTimes.join(',')}">
                 </div>
             </fieldset>
         `;
@@ -349,6 +428,9 @@ export function mostrarFormularioEditarTarea(tarea, fechaObjRecarga, tipoOrigina
             // CAMPOS DE RECORDATORIO
             payload.send_reminder = document.getElementById('editActivarRecordatorio').checked;
             payload.reminder_type = document.getElementById('editTipoRecordatorio').value;
+            // NUEVO: Obtener las horas seleccionadas para la edición del input oculto
+            const selectedEditReminderHours = document.getElementById('selectedEditReminderHoursInput').value.split(',').filter(time => time);
+            payload.selected_reminder_times = selectedEditReminderHours;
         }
 
         await fetchData('tareas-dia-a-dia', 'POST', payload);
@@ -371,11 +453,55 @@ export function mostrarFormularioEditarTarea(tarea, fechaObjRecarga, tipoOrigina
         // Lógica para los campos de recordatorio en edición
         const editActivarRecordatorioCheckbox = document.getElementById('editActivarRecordatorio');
         const editReminderOptionsDiv = document.getElementById('editReminderOptions');
-        editActivarRecordatorioCheckbox.onchange = () => {
-            editReminderOptionsDiv.style.display = editActivarRecordatorioCheckbox.checked ? 'block' : 'none';
+        const editReminderTimesSettingsFieldset = document.getElementById('editReminderTimesSettings');
+        const editTipoRecordatorioSelect = document.getElementById('editTipoRecordatorio');
+
+        // Función para actualizar la visibilidad de las horas según el tipo de recordatorio
+        const updateEditReminderTimesVisibility = () => {
+            editReminderTimesSettingsFieldset.style.display = (editTipoRecordatorioSelect.value === 'hours_before' && editActivarRecordatorioCheckbox.checked) ? 'block' : 'none';
         };
-        // Asegurarse de que el div de opciones de recordatorio tenga el estado inicial correcto
-        editReminderOptionsDiv.style.display = editActivarRecordatorioCheckbox.checked ? 'block' : 'none';
+
+        // Controlar la visibilidad de todas las opciones de recordatorio en edición y el valor por defecto del select
+        const toggleEditReminderOptions = () => {
+            const isChecked = editActivarRecordatorioCheckbox.checked;
+            editReminderOptionsDiv.style.display = isChecked ? 'block' : 'none';
+            
+            if (isChecked) {
+                // Si se activa, por defecto a "Unas horas antes" si no hay otra selección
+                if (editTipoRecordatorioSelect.value === '') { // o un valor por defecto que no sea 'none'
+                    editTipoRecordatorioSelect.value = 'hours_before'; 
+                }
+            } else {
+                // Si se desactiva, no se necesita cambiar el valor del select.
+            }
+            updateEditReminderTimesVisibility(); // Actualizar visibilidad de horas
+        };
+
+        editActivarRecordatorioCheckbox.onchange = toggleEditReminderOptions;
+        editTipoRecordatorioSelect.onchange = updateEditReminderTimesVisibility; // Escuchar cambios en el tipo
+
+        toggleEditReminderOptions(); // Ejecutar al cargar para establecer el estado inicial
+
+        // Lógica para la selección de horas interactivas en edición
+        const editReminderHoursContainer = document.getElementById('editReminderHoursContainer');
+        const selectedEditReminderHoursInput = document.getElementById('selectedEditReminderHoursInput');
+        // Asegúrate de que currentSelectedEditTimes se inicializa correctamente con las horas existentes
+        let currentSelectedEditTimes = currentReminderTimes.slice(); // Usar slice para crear una copia
+
+        editReminderHoursContainer.addEventListener('click', (e) => {
+            if (e.target.classList.contains('time-slot')) {
+                const time = e.target.dataset.time;
+                e.target.classList.toggle('selected');
+
+                if (e.target.classList.contains('selected')) {
+                    currentSelectedEditTimes.push(time);
+                } else {
+                    currentSelectedEditTimes = currentSelectedEditTimes.filter(t => t !== time);
+                }
+                currentSelectedEditTimes.sort(); // Mantener las horas ordenadas
+                selectedEditReminderHoursInput.value = currentSelectedEditTimes.join(',');
+            }
+        });
     }
 }
 
@@ -467,7 +593,7 @@ export function mostrarFormularioEditarSubObjetivo(subObjetivo, mode_id_recarga)
     `;
     
     const onGuardarEditarSubObjetivo = async () => {
-        const texto = document.getElementById('editSubObjetivoTexto').value.trim(); // Corregido: .value.trim()
+        const texto = document.getElementById('editSubObjetivoTexto').value.trim(); // Corrigido: .value.trim()
         if (!texto) { alert('El texto no puede estar vacío.'); throw new Error("Texto vacío"); }
         
         const payload = { _method: "PUT", id: subObjetivo.id, texto }; 

@@ -385,6 +385,49 @@ textarea.form-control {
     border-color: var(--color-primary);
     box-shadow: 0 0 0 3px var(--focus-ring-color);
 }
+
+/* NUEVO: Estilos para el contenedor de horas seleccionables */
+.time-slot-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-xs); /* Espacio entre las "píldoras" de tiempo */
+    padding: var(--space-s);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-s);
+    background-color: var(--bg-surface-tertiary);
+    max-height: 200px; /* Limitar altura y permitir scroll si hay muchas horas */
+    overflow-y: auto;
+}
+
+/* NUEVO: Estilos para cada "píldora" de tiempo */
+.time-slot {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-xs) var(--space-s);
+    border-radius: var(--radius-m); /* Bordes más redondeados */
+    background-color: var(--bg-surface-secondary);
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: background-color var(--transition-duration-fast), color var(--transition-duration-fast), box-shadow var(--transition-duration-fast);
+    border: 1px solid var(--border-color);
+}
+
+.time-slot:hover {
+    background-color: var(--bg-surface-tertiary);
+    box-shadow: var(--shadow-small);
+}
+
+.time-slot.selected {
+    background-color: var(--color-primary);
+    color: var(--text-on-primary);
+    border-color: var(--color-primary-hover);
+    font-weight: 600;
+    box-shadow: 0 0 0 2px var(--focus-ring-color); /* Un anillo de foco sutil */
+}
+
+
 /* Estilo para los checkboxes de recordatorios (y otros) */
 input[type="checkbox"] {
     appearance: none; /* Oculta la apariencia nativa */
@@ -949,7 +992,7 @@ input[type="checkbox"]:focus {
     border-radius: initial;
     position: initial;
     cursor: initial;
-    vertical-align: initial;
+    vertical_align: initial;
     /* Eliminar el margen-right extra que pueda añadir el estilo de input[type="checkbox"] global si se superpone */
     margin-right: var(--space-s);
 }
