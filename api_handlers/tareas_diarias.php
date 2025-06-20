@@ -194,9 +194,11 @@ switch ($method) {
                 // Lógica para desactivar subtareas si un título se desactiva
                 if ($activo_update == 0 && $tipo_update === 'titulo') {
                      $stmt_deactivate_subtasks = $mysqli->prepare("UPDATE tareas_diarias SET activo = 0 WHERE parent_id = ? AND usuario_id = ?");
-                     $stmt_deactivate_subtasks->bind_param("ii", $id, $usuario_id);
-                     $stmt_deactivate_subtasks->execute();
-                     $stmt_deactivate_subtasks->close();
+                     if ($stmt_deactivate_subtasks) { // Añadida comprobación
+                        $stmt_deactivate_subtasks->bind_param("ii", $id, $usuario_id);
+                        $stmt_deactivate_subtasks->execute();
+                        $stmt_deactivate_subtasks->close();
+                     }
                 }
             }
             // Manejar la actualización de 'completado' si se envió
@@ -259,16 +261,20 @@ switch ($method) {
                         if ($existing_reminder_id) {
                             // Actualizar recordatorio existente
                             $stmt_update_reminder = $mysqli->prepare("UPDATE reminders SET reminder_datetime = ?, type = ?, status = 'pending' WHERE id = ?");
-                            $stmt_update_reminder->bind_param("ssi", $reminder_datetime->format('Y-m-d H:i:s'), $reminder_type, $existing_reminder_id);
-                            $stmt_update_reminder->execute();
-                            $stmt_update_reminder->close();
+                            if ($stmt_update_reminder) { // Añadida comprobación
+                                $stmt_update_reminder->bind_param("ssi", $reminder_datetime->format('Y-m-d H:i:s'), $reminder_type, $existing_reminder_id);
+                                $stmt_update_reminder->execute();
+                                $stmt_update_reminder->close();
+                            }
                         } else {
                             // Insertar nuevo recordatorio
                             $stmt_insert_reminder = $mysqli->prepare("INSERT INTO reminders (usuario_id, tarea_id, reminder_datetime, type) VALUES (?, ?, ?, ?)");
-                            $stmt_insert_reminder->bind_param("iiss", $usuario_id, $id, $reminder_datetime->format('Y-m-d H:i:s'), $reminder_type);
-                            $stmt_insert_reminder->execute();
-                            $existing_reminder_id = $mysqli->insert_id; // Obtener el ID del nuevo recordatorio
-                            $stmt_insert_reminder->close();
+                            if ($stmt_insert_reminder) { // Añadida comprobación
+                                $stmt_insert_reminder->bind_param("iiss", $usuario_id, $id, $reminder_datetime->format('Y-m-d H:i:s'), $reminder_type);
+                                $stmt_insert_reminder->execute();
+                                $existing_reminder_id = $mysqli->insert_id; // Obtener el ID del nuevo recordatorio
+                                $stmt_insert_reminder->close();
+                            }
                         }
 
                         // NUEVO: Actualizar las horas de recordatorio específicas
@@ -298,29 +304,30 @@ switch ($method) {
                         // y también las horas asociadas.
                         if ($existing_reminder_id) {
                             $stmt_delete_reminder = $mysqli->prepare("DELETE FROM reminders WHERE id = ?");
-                            $stmt_delete_reminder->bind_param("i", $existing_reminder_id);
-                            $stmt_delete_reminder->execute();
-                            $stmt_delete_reminder->close();
+                            if ($stmt_delete_reminder) { // Añadida comprobación
+                                $stmt_delete_reminder->bind_param("i", $existing_reminder_id);
+                                $stmt_delete_reminder->execute();
+                                $stmt_delete_reminder->close();
+                            }
                             // Las horas se borrarán automáticamente debido a ON DELETE CASCADE si usas la Opción A.
                         }
                     }
                 }
 
                 $mysqli->commit();
-                if ($mysqli->affected_rows > 0) { // Usar affected_rows del último statement o de la transacción general si se sigue el patrón
-                    json_response(['success' => true]);
+                if ($mysqli->affected_rows > 0) {
+                    json_response(['success' => true, 'message' => 'Tarea actualizada.']);
                 } else {
-                    json_response(['error' => 'Tarea no encontrada o sin cambios necesarios'], 404);
+                    json_response(['success' => true, 'message' => 'Tarea encontrada, pero sin cambios necesarios.'], 200);
                 }
             } catch (Exception $e) {
                 $mysqli->rollback();
                 json_response(['error' => 'Error en la transacción al actualizar tarea: ' . $e->getMessage()], 500);
                 return;
             }
-            break; // Terminar el caso POST después de manejar el PUT
+            break;
 
 
-        // --- MANEJO DE OPERACIONES DE ELIMINACIÓN (DELETE SIMULADO) ---
         } elseif ($_method_override === 'DELETE' || $_method_override === 'HARD_DELETE') {
             $id = $data['id'] ?? 0;
             $tipo_tarea = $data['tipo'] ?? null; 
@@ -329,7 +336,6 @@ switch ($method) {
                 json_response(['error' => 'ID de tarea inválido'], 400);
                 return;
             }
-            // Validar que tipo no esté vacío, ya que es obligatorio (para consistencia)
             if (empty($tipo_tarea)) { 
                 json_response(['error' => 'El tipo de tarea es obligatorio para la eliminación'], 400);
                 return;
@@ -338,7 +344,6 @@ switch ($method) {
             if ($_method_override === 'HARD_DELETE') {
                 $mysqli->begin_transaction();
                 try {
-                    // Eliminar recordatorios asociados si es una tarea principal
                     if ($tipo_tarea === 'titulo') {
                         $stmt_delete_reminders = $mysqli->prepare("DELETE FROM reminders WHERE tarea_id = ? AND usuario_id = ?");
                         if (!$stmt_delete_reminders) {
@@ -347,8 +352,6 @@ switch ($method) {
                         $stmt_delete_reminders->bind_param("ii", $id, $usuario_id);
                         $stmt_delete_reminders->execute();
                         $stmt_delete_reminders->close();
-
-                        // Las horas asociadas se borrarán por ON DELETE CASCADE
 
                         $stmt_delete_subtasks = $mysqli->prepare("DELETE FROM tareas_diarias WHERE parent_id = ? AND usuario_id = ?");
                         if (!$stmt_delete_subtasks) {
@@ -374,7 +377,7 @@ switch ($method) {
                     error_log("Error al eliminar permanentemente: " . $e->getMessage()); 
                     json_response(['error' => 'Error al eliminar permanentemente: ' . $e->getMessage()], 500);
                 }
-            } else { // 'DELETE' o método por defecto, marca como inactivo
+            } else {
                 $mysqli->begin_transaction();
                 try {
                     $stmt_deactivate_main = $mysqli->prepare("UPDATE tareas_diarias SET activo = 0 WHERE id = ? AND usuario_id = ?");
@@ -394,7 +397,6 @@ switch ($method) {
                             $stmt_deactivate_subtasks->execute();
                             $stmt_deactivate_subtasks->close();
 
-                            // Desactivar recordatorios asociados al archivar el título
                             $stmt_deactivate_reminders = $mysqli->prepare("UPDATE reminders SET status = 'disabled' WHERE tarea_id = ? AND usuario_id = ?");
                             if (!$stmt_deactivate_reminders) {
                                 throw new Exception("Error al preparar desactivación de recordatorios: " . $mysqli->error);
@@ -402,7 +404,6 @@ switch ($method) {
                             $stmt_deactivate_reminders->bind_param("ii", $id, $usuario_id);
                             $stmt_deactivate_reminders->execute();
                             $stmt_deactivate_reminders->close();
-                            // Las horas asociadas a los recordatorios se mantienen, pero el recordatorio está deshabilitado.
                         }
                         $mysqli->commit();
                         json_response(['success' => true, 'message' => 'Elemento marcado como inactivo.']);
@@ -419,13 +420,9 @@ switch ($method) {
                     json_response(['error' => 'Error al marcar como inactivo: ' . $e->getMessage()], 500);
                 }
             }
-            break; // Terminar el caso POST después de manejar el DELETE
+            break;
 
-        // --- CREACIÓN DE NUEVAS TAREAS (INSERT) ---
         } else { 
-            // Los campos texto y tipo ya se validaron al principio de POST.
-            // Si llega aquí, significa que es una creación nueva y no PUT/DELETE simulado.
-            // Asegúrate de que el texto y el tipo realmente sean obligatorios para INSERT aquí.
             $texto = $data['texto'] ?? null;
             $tipo = $data['tipo'] ?? null;
             $parent_id = $data['parent_id'] ?? null;
@@ -434,13 +431,12 @@ switch ($method) {
             $emoji_anotacion = $data['emoji_anotacion'] ?? null;
             $descripcion_anotacion = $data['descripcion_anotacion'] ?? null;
             
-            // CAMPOS DE RECORDATORIO (nuevos)
             $send_reminder = isset($data['send_reminder']) ? ($data['send_reminder'] ? 1 : 0) : 0;
             $reminder_type = $data['reminder_type'] ?? 'none';
-            $selected_reminder_times = $data['selected_reminder_times'] ?? []; // NUEVO: Horas específicas
+            $selected_reminder_times = $data['selected_reminder_times'] ?? [];
 
 
-            if (empty($texto) || empty($tipo)) { // Esta validación es redundante si está al inicio, pero por seguridad
+            if (empty($texto) || empty($tipo)) {
                 json_response(['error' => 'El texto y el tipo de tarea son obligatorios para la creación'], 400);
                 return;
             }
@@ -467,7 +463,6 @@ switch ($method) {
                     $new_parent_id = $mysqli->insert_id;
                     $stmt_parent->close();
 
-                    // Lógica para añadir recordatorio si está activado y es una tarea de tipo 'titulo'
                     if ($send_reminder == 1 && $reminder_type !== 'none' && $fecha_inicio) {
                         $reminder_datetime = new DateTime($fecha_inicio);
                         if ($reminder_type === 'hours_before') {
@@ -486,10 +481,9 @@ switch ($method) {
                         }
                         $stmt_insert_reminder->bind_param("iiss", $usuario_id, $new_parent_id, $reminder_datetime->format('Y-m-d H:i:s'), $reminder_type);
                         $stmt_insert_reminder->execute();
-                        $new_reminder_id = $mysqli->insert_id; // Obtener el ID del recordatorio recién insertado
+                        $new_reminder_id = $mysqli->insert_id;
                         $stmt_insert_reminder->close();
 
-                        // NUEVO: Insertar las horas de recordatorio específicas
                         if (!empty($selected_reminder_times) && is_array($selected_reminder_times)) {
                             $stmt_insert_times = $mysqli->prepare("INSERT INTO reminder_times (reminder_id, time_of_day) VALUES (?, ?)");
                             if (!$stmt_insert_times) {
@@ -550,7 +544,7 @@ switch ($method) {
                     $mysqli->rollback();
                     json_response(['error' => 'Error en la transacción: ' . $e->getMessage()], 500);
                 }
-            } else { // Crear una tarea o subtarea simple
+            } else {
                 $stmt = $mysqli->prepare("INSERT INTO tareas_diarias (usuario_id, texto, tipo, parent_id, regla_recurrencia, fecha_inicio, submission_group_id) VALUES (?, ?, ?, ?, ?, ?, ?)"); 
                 if (!$stmt) {
                      json_response(['error' => 'Error al preparar la inserción de tarea simple: ' . $mysqli->error], 500);
@@ -566,11 +560,6 @@ switch ($method) {
                 $stmt->close();
             }
         }
-        break; // Terminar el caso POST
-
-    case 'PUT': // Este caso ya no debería ser alcanzado directamente por el cliente si POST maneja _method=PUT
-    case 'DELETE': // Este caso ya no debería ser alcanzado directamente por el cliente si POST maneja _method=DELETE
-        json_response(['error' => 'Método no permitido directamente. Usa POST con _method en el cuerpo.'], 405);
         break;
 
     default:

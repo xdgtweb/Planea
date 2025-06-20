@@ -125,13 +125,11 @@ export function renderizarTareasInactivas(tareasInactivas, fechaObj) {
     const numInactivas = tareasInactivas ? tareasInactivas.length : 0; 
     toggleBtn.textContent = `Mostrar Tareas Archivadas/Inactivas (${numInactivas})`;
 
-    // CORRECCIÓN CLAVE: Siempre reconstruir el contenido de la lista de inactivas
-    // No salimos si no está expandido, dejamos que el CSS maneje la visibilidad
     
     if (numInactivas === 0) {
         listaTareasInactivasDiv.innerHTML = '<p class="mensaje-vacio">No hay tareas archivadas.</p>';
     } else {
-        listaTareasInactivasDiv.innerHTML = ''; // Limpiar contenido existente antes de repoblar
+        listaTareasInactivasDiv.innerHTML = ''; 
         const ulInactivas = document.createElement('ul');
         ulInactivas.className = 'tareas-listado';
         tareasInactivas.forEach(item => {
@@ -198,7 +196,7 @@ export function crearElementoSubTareaDiaria(tarea, fechaObj, esSuelta = false) {
     
     const hoy = new Date(); 
     hoy.setHours(0,0,0,0);
-    const fechaDeLaTareaVisualizada = new Date(fechaObj); // Variable correcta
+    const fechaDeLaTareaVisualizada = new Date(fechaObj); 
     fechaDeLaTareaVisualizada.setHours(0,0,0,0);
     const esPasado = fechaDeLaTareaVisualizada.getTime() < hoy.getTime();
 
@@ -223,9 +221,15 @@ export function crearElementoSubTareaDiaria(tarea, fechaObj, esSuelta = false) {
             tipo: tarea.tipo    
         };
         try {
-            await fetchData(`/tareas-dia-a-dia`, 'POST', payload); 
-            if (tarea.activo) label.classList.toggle('sub-objetivo-completado', esMarcado);
-            await renderizarCalendario(appFechaCalendarioActual.getFullYear(), appFechaCalendarioActual.getMonth(), appSetFechaCalendarioActual); 
+            const response = await fetchData(`/tareas-dia-a-dia`, 'POST', payload); 
+            if (response.success) {
+                if (tarea.activo) label.classList.toggle('sub-objetivo-completado', esMarcado);
+                await renderizarCalendario(appFechaCalendarioActual.getFullYear(), appFechaCalendarioActual.getMonth(), appSetFechaCalendarioActual); 
+            } else {
+                e.target.checked = !esMarcado;
+                if (tarea.activo) label.classList.toggle('sub-objetivo-completado', !esMarcado);
+                alert(`Error al actualizar tarea: ${response.message || 'Error desconocido'}`);
+            }
         } catch (error) {
             e.target.checked = !esMarcado;
             if (tarea.activo) label.classList.toggle('sub-objetivo-completado', !esMarcado);
@@ -269,7 +273,6 @@ export async function eliminarTareaDiaria(tarea, fechaObjRecarga, esActivaActual
     }
     console.log("-> Usuario confirmó la eliminación. Preparando payload..."); 
 
-    // Determinar el método HTTP a usar basado en si es soft delete (archivar) o hard delete
     const operationMethod = esActivaActual ? "DELETE" : "HARD_DELETE";
     const payload = { 
         _method: operationMethod, 
@@ -284,7 +287,6 @@ export async function eliminarTareaDiaria(tarea, fechaObjRecarga, esActivaActual
         console.log("-> fetchData para eliminación completado."); 
         alert(esActivaActual ? 'Elemento marcado como inactivo.' : 'Elemento eliminado permanentemente.');
         
-        // Recargar la lista para reflejar los cambios
         await cargarTareasDiaADia(new Date(appFechaCalendarioActual.getTime() || fechaObjRecarga.getTime()));
         await renderizarCalendario(appFechaCalendarioActual.getFullYear(), appFechaCalendarioActual.getMonth(), appSetFechaCalendarioActual);
     } catch (error) { 

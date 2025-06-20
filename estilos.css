@@ -183,7 +183,7 @@ a:hover {
     width: 100%;
     max-width: 1400px;
     margin: 0 auto;
-    padding: var(--space-l);
+    padding: var(--space-l); /* PADDING GLOBAL EN DESKTOP */
     padding-bottom: calc(80px + env(safe-area-inset-bottom)); /* Espacio para nav en móvil */
 }
 
@@ -1272,21 +1272,22 @@ input[type="checkbox"]:focus {
     gap: var(--space-xs);
 }
 .dia-calendario {
-    display: flex;           /* Convertir a flex container */
-    flex-direction: column;  /* Apilar número y emoji verticalmente */
-    align-items: center;     /* Centrar horizontalmente el contenido */
-    justify-content: flex-start; /* Alinear al inicio verticalmente */
-    padding: var(--space-xs); /* Asegurar un padding interno */
-    gap: var(--space-unit);  /* Espacio pequeño entre el número del día y el emoji */
-    aspect-ratio: 1 / 1.1; /* Slightly taller than wide */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding: calc(var(--space-unit) * 0.5); /* Sigue en 2px */
+    gap: calc(var(--space-unit) * 0.25);  /* Reducido a 1px para más espacio */
+    aspect-ratio: 1 / 1; /* HACEMOS LA CASILLA CUADRADA para optimizar espacio */
+    min-height: auto; /* IMPORTANTE: Asegurarse de que no haya una altura mínima fija si usamos aspect-ratio */
     border-radius: var(--radius-s);
     border: 1px solid var(--border-color);
     transition: var(--transition-duration-fast);
     cursor: pointer;
     font-size: 0.95rem;
     color: var(--text-primary);
-    position: relative; /* For progress bar/emoji positioning */
-    overflow: hidden;
+    position: relative;
+    overflow: hidden; /* Muy importante para que el contenido se recorte si no cabe */
 }
 .dia-calendario:hover {
     box-shadow: 0 0 0 3px var(--focus-ring-color);
@@ -1301,19 +1302,22 @@ input[type="checkbox"]:focus {
 }
 .dia-calendario .dia-numero {
     font-weight: inherit;
-    font-size: 1em;
+    font-size: 0.65em; /* REDUCIDO AÚN MÁS: 0.65em para el número del día */
     z-index: 2;
+    padding-top: var(--space-unit); 
+    line-height: 1;
 }
 
 .dia-calendario .emoji-anotacion {
-    font-size: 0.9em; /* Ligeramente más grande para mejor visibilidad */
-    line-height: 1.2; /* Altura de línea consistente */
+    font-size: 0.8em; /* REDUCIDO AÚN MÁS: 0.8em */
+    line-height: 1.0; /* Asegurar que no haya espacio extra */
     text-align: center;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     z-index: 2;
     width: 100%; /* Asegura que ocupe el ancho completo para el ellipsis */
+    padding-bottom: calc(var(--space-unit) * 0.5); /* REDUCIDO: Padding inferior para el emoji (2px) */
 }
 
 /* Calendar Day Status Indicators */
@@ -1349,6 +1353,7 @@ input[type="checkbox"]:focus {
     font-size: 0.85rem;
     padding: var(--space-unit);
     aspect-ratio: 1 / 1; /* Square days for mini cal */
+    min-height: auto; 
 }
 #mini-calendar-container-dynamic .dia-calendario.selected {
     background-color: var(--color-primary);
@@ -1400,17 +1405,17 @@ input[type="checkbox"]:focus {
 #tareasDetalleDia #listaDetalleTareasScroll {
     max-height: 40vh; /* Limit height for scrollable content */
 }
-#tareasDetalleDia #tareas-del-dia-container ul { /* Corregido: .tareas-del-dia-container, no .tareas-del_dia-container */
+#tareasDetalleDia #tareas-del-dia-container ul { 
     list-style: none;
     padding: 0;
 }
-#tareasDetalleDia #tareas-del-dia-container ul ul { /* Corregido: .tareas-del-dia-container, no .tareas-del_dia-container */
+#tareasDetalleDia #tareas-del-dia-container ul ul { 
     list-style: disc; /* Use discs for sub-subtasks */
     padding-left: var(--space-l);
     margin-top: var(--space-xs);
     margin-bottom: var(--space-xs);
 }
-#tareasDetalleDia #tareas-del-dia-container li { /* Corregido: .tareas-del-dia-container, no .tareas-del_dia-container */
+#tareasDetalleDia #tareas-del-dia-container li { 
     padding: var(--space-xs) 0;
     color: var(--text-primary);
     font-size: 0.95rem;
@@ -1435,25 +1440,75 @@ input[type="checkbox"]:focus {
    6. MEDIA QUERIES PARA RESPONSIVE
    ========================================================================== */
 
+/* Teléfonos pequeños y medianos (pantallas hasta 767px de ancho) */
+@media (max-width: 767px) {
+    .app-container {
+        padding: var(--space-xs); /* REDUCIDO: Márgenes aún más finos en móviles (8px) */
+        padding-bottom: calc(80px + env(safe-area-inset-bottom));
+    }
+
+    .calendario-container {
+        padding: var(--space-s); /* REDUCIDO: Padding del contenedor del calendario (12px) */
+    }
+
+    .dias-mes {
+        gap: calc(var(--space-unit) * 0.5); /* REDUCIDO AÚN MÁS: Gap entre celdas (2px) */
+    }
+
+    /* Ajustes específicos para los días del calendario en móvil */
+    .dia-calendario {
+        padding: calc(var(--space-unit) * 0.25); /* REDUCIDO AÚN MÁS: Padding interno (1px) */
+        gap: calc(var(--space-unit) * 0.1);  /* REDUCIDO AÚN MÁS: Espacio entre número y emoji (0.4px) */
+        aspect-ratio: 1 / 1; /* Mantener la casilla cuadrada */
+        min-height: auto; /* Asegurarse de que no haya una altura mínima fija */
+    }
+
+    .dia-calendario .dia-numero {
+        font-size: 0.6em; /* Sigue en 0.6em */
+        padding-top: var(--space-unit); /* Sigue igual */
+    }
+
+    .dia-calendario .emoji-anotacion {
+        font-size: 0.6em; /* AHORA SÍ: 0.6em para el emoji */
+        line-height: 1.0; 
+        padding-bottom: calc(var(--space-unit) * 0.25); /* REDUCIDO AÚN MÁS: Padding inferior para el emoji (1px) */
+    }
+}
+
+
 /* TABLET */
 @media (min-width: 768px) {
     .dashboard-grid {
-        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); /* Adjusted min-width for better fit */
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
     }
     .app-container {
         padding: var(--space-xl);
-        padding-bottom: calc(65px + env(safe-area-inset-bottom)); /* Adjust for larger nav height if needed */
+        padding-bottom: calc(65px + env(safe-area-inset-bottom));
     }
     .nav-button {
-        height: 70px; /* Slightly taller buttons */
+        height: 70px;
         font-size: 0.85rem;
+    }
+
+    /* Revertir o ajustar estilos del calendario para tablet y desktop */
+    .dia-calendario .dia-numero {
+        font-size: 0.9em;
+    }
+    .dia-calendario .emoji-anotacion {
+        font-size: 0.9em;
+    }
+    .dia-calendario {
+        min-height: 55px; 
+        aspect-ratio: 1 / 1.1; 
+        padding: calc(var(--space-unit) * 0.5); 
+        gap: var(--space-unit); 
     }
 }
 
 /* PC / DESKTOP */
 @media (min-width: 1024px) {
     .app-container {
-        padding-bottom: var(--space-xl); /* No bottom nav, so less padding needed */
+        padding-bottom: var(--space-xl);
         padding-top: var(--space-xl);
     }
     .app-header {
@@ -1462,13 +1517,13 @@ input[type="checkbox"]:focus {
         margin-bottom: var(--space-xl);
     }
     .nav-modes {
-        position: static; /* No longer fixed to bottom */
+        position: static;
         justify-content: flex-start;
         border-top: none;
         border-bottom: 2px solid var(--border-color-strong);
         box-shadow: none;
         padding: 0;
-        margin: var(--space-xl) 0 var(--space-xxl) 0; /* More spacing */
+        margin: var(--space-xl) 0 var(--space-xxl) 0;
         background: transparent;
         height: auto;
         border-radius: 0;
@@ -1478,28 +1533,28 @@ input[type="checkbox"]:focus {
         gap: var(--space-xs);
         padding: var(--space-s) var(--space-m);
         border-top: none;
-        border-bottom: 3px solid transparent; /* Revert to top border for active */
+        border-bottom: 3px solid transparent;
         font-size: 1rem;
         height: auto;
-        border-radius: var(--radius-s) var(--radius-s) 0 0; /* Rounded top corners */
+        border-radius: var(--radius-s) var(--radius-s) 0 0;
     }
     .nav-button.active-mode {
         border-top: none;
         border-bottom-color: var(--color-primary);
-        background-color: var(--bg-surface); /* Highlight active tab */
+        background-color: var(--bg-surface);
         color: var(--color-primary);
-        transform: translateY(0); /* No hover effect on active */
+        transform: translateY(0);
     }
     .nav-button.active-mode::after {
-        display: none; /* Hide bottom indicator on desktop */
+        display: none;
     }
     .nav-button:hover {
-        transform: none; /* No translateY on desktop nav */
+        transform: none;
         background-color: var(--bg-surface-secondary);
         box-shadow: none;
     }
     .nav-button:hover:not(.active-mode) {
-        border-bottom-color: var(--border-color); /* Subtle hover border */
+        border-bottom-color: var(--border-color);
     }
 
     .calendario-container {

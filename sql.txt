@@ -1,0 +1,109 @@
+-- Eliminar tablas existentes si ya están creadas para evitar errores y permitir la sobrescritura
+DROP TABLE IF EXISTS `reminder_times`;
+DROP TABLE IF EXISTS `reminders`;
+DROP TABLE IF EXISTS `anotaciones`;
+DROP TABLE IF EXISTS `sub_objetivos`;
+DROP TABLE IF EXISTS `tareas_diarias`;
+DROP TABLE IF EXISTS `objetivos`;
+DROP TABLE IF EXISTS `modos`;
+DROP TABLE IF EXISTS `usuarios`;
+
+-- Creación de la tabla 'usuarios'
+CREATE TABLE `usuarios` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `username` VARCHAR(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL UNIQUE,
+    `email` VARCHAR(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL UNIQUE,
+    `password_hash` VARCHAR(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+    `google_id` VARCHAR(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci UNIQUE NULL DEFAULT NULL, -- Para el inicio de sesión con Google
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- Creación de la tabla 'modos'
+CREATE TABLE `modos` (
+    `id` VARCHAR(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci PRIMARY KEY,
+    `nombre` VARCHAR(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- Insertar los modos predefinidos
+INSERT INTO `modos` (`id`, `nombre`) VALUES
+('dia-a-dia', 'Día a Día'),
+('corto-medio-plazo', 'Corto/Medio Plazo'),
+('largo-plazo', 'Largo Plazo');
+
+
+-- Creación de la tabla 'objetivos'
+CREATE TABLE `objetivos` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `usuario_id` INT NOT NULL,
+    `titulo` VARCHAR(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+    `descripcion` TEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+    `fecha_estimada` VARCHAR(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci, -- Podría ser una fecha real o un texto como "Próximos 3 meses"
+    `mode_id` VARCHAR(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (`usuario_id`) REFERENCES `usuarios`(`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`mode_id`) REFERENCES `modos`(`id`) ON DELETE RESTRICT
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- Creación de la tabla 'sub_objetivos'
+CREATE TABLE `sub_objetivos` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `objetivo_id` INT NOT NULL,
+    `texto` VARCHAR(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+    `completado` BOOLEAN DEFAULT FALSE,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (`objetivo_id`) REFERENCES `objetivos`(`id`) ON DELETE CASCADE
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- Creación de la tabla 'tareas_diarias'
+CREATE TABLE `tareas_diarias` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `usuario_id` INT NOT NULL,
+    `texto` VARCHAR(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+    `tipo` ENUM('titulo', 'subtarea') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL, -- 'titulo' para tareas principales, 'subtarea' para subtareas
+    `parent_id` INT NULL, -- ID del 'titulo' si es una 'subtarea'
+    `completado` BOOLEAN DEFAULT FALSE,
+    `fecha_inicio` DATE NOT NULL, -- Fecha para la que está programada la tarea/título
+    `regla_recurrencia` VARCHAR(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT 'NONE', -- Ej: 'NONE', 'DAILY', 'WEEKLY:MON,FRI', 'MONTHLY_DAY'
+    `activo` BOOLEAN DEFAULT TRUE, -- Para archivar tareas sin borrarlas
+    `emoji_anotacion` VARCHAR(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL, -- Emojis asociados al día (para títulos)
+    `descripcion_anotacion` TEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL, -- Descripción de la anotación del día (para títulos)
+    `submission_group_id` INT DEFAULT 0, -- Para agrupar tareas creadas en una misma operación, 0 para sueltas
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (`usuario_id`) REFERENCES `usuarios`(`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`parent_id`) REFERENCES `tareas_diarias`(`id`) ON DELETE CASCADE
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- Creación de la tabla 'anotaciones'
+CREATE TABLE `anotaciones` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `usuario_id` INT NOT NULL,
+    `fecha` DATE NOT NULL,
+    `emoji` VARCHAR(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL,
+    `descripcion` TEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (`usuario_id`) REFERENCES `usuarios`(`id`) ON DELETE CASCADE,
+    UNIQUE (`usuario_id`, `fecha`) -- Asegura una única anotación por usuario por día
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- Creación de la tabla 'reminders' (recordatorios de correo)
+CREATE TABLE `reminders` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `usuario_id` INT NOT NULL,
+    `tarea_id` INT NOT NULL,
+    `reminder_datetime` DATETIME NOT NULL, -- Fecha y hora general del recordatorio (se usa para la fecha del recordatorio)
+    `type` VARCHAR(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL, -- Ej: 'hours_before', 'day_before', 'week_before', 'month_before'
+    `status` ENUM('pending', 'sent', 'failed', 'disabled') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT 'pending', -- Estado del recordatorio
+    `sent_at` DATETIME NULL, -- Cuándo fue enviado
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (`usuario_id`) REFERENCES `usuarios`(`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`tarea_id`) REFERENCES `tareas_diarias`(`id`) ON DELETE CASCADE,
+    UNIQUE (`tarea_id`) -- Una tarea solo puede tener un recordatorio principal asociado aquí
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- Creación de la tabla 'reminder_times' para almacenar múltiples horas de recordatorio por cada entrada en 'reminders'
+CREATE TABLE `reminder_times` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `reminder_id` INT NOT NULL,
+    `time_of_day` TIME NOT NULL, -- Almacena la hora específica del día (HH:MM:SS)
+    FOREIGN KEY (`reminder_id`) REFERENCES `reminders`(`id`) ON DELETE CASCADE
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
