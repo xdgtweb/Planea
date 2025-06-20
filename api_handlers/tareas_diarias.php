@@ -90,7 +90,22 @@ switch ($method) {
 
 
     case 'POST':
-        $data = json_decode(file_get_contents("php://input"), true); // Usar 'true' para obtener un array asociativo
+        $raw_input = file_get_contents("php://input");
+        $data = json_decode($raw_input, true);
+
+        // --- INICIO DE LA CORRECCIÓN ---
+        // Verificar si la decodificación JSON falló
+        if ($data === null && json_last_error() !== JSON_ERROR_NONE) {
+            json_response(['error' => 'Entrada JSON inválida: ' . json_last_error_msg()], 400);
+            return;
+        }
+        // Verificar si $data no es un array (en caso de que la entrada sea vacía o un valor no JSON)
+        if (!is_array($data)) {
+            json_response(['error' => 'Formato de datos inválido, se esperaba un objeto/array JSON.'], 400);
+            return;
+        }
+        // --- FIN DE LA CORRECCIÓN ---
+
         $_method_override = $data['_method'] ?? $method; // Obtener el método real, por defecto es POST si no se especifica _method
 
         // --- MANEJO DE OPERACIONES DE ACTUALIZACIÓN (PUT SIMULADO) ---
@@ -102,6 +117,10 @@ switch ($method) {
             $activo_update = isset($data['activo']) ? ($data['activo'] ? 1 : 0) : null;
             $tipo_update = $data['tipo'] ?? null; // Asegurarse de obtener el tipo aquí para validaciones/lógicas
             $completado_update = isset($data['completado']) ? ($data['completado'] ? 1 : 0) : null;
+
+            // CAMPOS DE RECORDATORIO (nuevos)
+            $send_reminder = isset($data['send_reminder']) ? ($data['send_reminder'] ? 1 : 0) : null;
+            $reminder_type = $data['reminder_type'] ?? null;
 
             if ($id <= 0) {
                 json_response(['error' => 'ID de tarea inválido para actualizar'], 400);
@@ -163,23 +182,76 @@ switch ($method) {
             $bind_params[] = $usuario_id;
             $bind_types .= "ii"; // El último 'ii' es para 'id' y 'usuario_id' en la cláusula WHERE
 
-            $stmt = $mysqli->prepare($query_update);
-            if (!$stmt) {
-                json_response(['error' => 'Error al preparar la actualización general de tarea: ' . $mysqli->error], 500);
-                return;
-            }
-            $stmt->bind_param($bind_types, ...$bind_params);
+            $mysqli->begin_transaction(); // Iniciar transacción para recordatorios
+            try {
+                $stmt = $mysqli->prepare($query_update);
+                if (!$stmt) {
+                    throw new Exception('Error al preparar la actualización general de tarea: ' . $mysqli->error);
+                }
+                $stmt->bind_param($bind_types, ...$bind_params);
 
-            if ($stmt->execute()) {
+                if (!$stmt->execute()) {
+                    throw new Exception('No se pudo actualizar la tarea: ' . $stmt->error);
+                }
+                $stmt->close();
+
+                // Lógica para actualizar/eliminar recordatorios si la tarea es de tipo 'titulo'
+                if ($tipo_update === 'titulo' && $send_reminder !== null && $fecha_inicio_update !== null) {
+                    if ($send_reminder == 1 && $reminder_type !== 'none') {
+                        // Calcular reminder_datetime
+                        $reminder_datetime = new DateTime($fecha_inicio_update);
+                        if ($reminder_type === 'hours_before') {
+                            // Por defecto, 4 horas antes, se podría hacer más flexible con otro campo en el modal
+                            $reminder_datetime->modify('-4 hours'); 
+                        } elseif ($reminder_type === 'day_before') {
+                            $reminder_datetime->modify('-1 day');
+                        } elseif ($reminder_type === 'week_before') {
+                            $reminder_datetime->modify('-1 week');
+                        } elseif ($reminder_type === 'month_before') {
+                            $reminder_datetime->modify('-1 month');
+                        }
+
+                        // Verificar si ya existe un recordatorio para esta tarea
+                        $stmt_check_reminder = $mysqli->prepare("SELECT id FROM reminders WHERE tarea_id = ?");
+                        $stmt_check_reminder->bind_param("i", $id);
+                        $stmt_check_reminder->execute();
+                        $result_check_reminder = $stmt_check_reminder->get_result();
+
+                        if ($result_check_reminder->num_rows > 0) {
+                            // Actualizar recordatorio existente
+                            $reminder_id = $result_check_reminder->fetch_assoc()['id'];
+                            $stmt_update_reminder = $mysqli->prepare("UPDATE reminders SET reminder_datetime = ?, type = ?, status = 'pending' WHERE id = ?");
+                            $stmt_update_reminder->bind_param("ssi", $reminder_datetime->format('Y-m-d H:i:s'), $reminder_type, $reminder_id);
+                            $stmt_update_reminder->execute();
+                            $stmt_update_reminder->close();
+                        } else {
+                            // Insertar nuevo recordatorio
+                            $stmt_insert_reminder = $mysqli->prepare("INSERT INTO reminders (usuario_id, tarea_id, reminder_datetime, type) VALUES (?, ?, ?, ?)");
+                            $stmt_insert_reminder->bind_param("iiss", $usuario_id, $id, $reminder_datetime->format('Y-m-d H:i:s'), $reminder_type);
+                            $stmt_insert_reminder->execute();
+                            $stmt_insert_reminder->close();
+                        }
+                        $stmt_check_reminder->close();
+                    } else {
+                        // Si send_reminder es 0 o type es 'none', eliminar recordatorios existentes para esta tarea
+                        $stmt_delete_reminder = $mysqli->prepare("DELETE FROM reminders WHERE tarea_id = ?");
+                        $stmt_delete_reminder->bind_param("i", $id);
+                        $stmt_delete_reminder->execute();
+                        $stmt_delete_reminder->close();
+                    }
+                }
+
+                $mysqli->commit();
                 if ($stmt->affected_rows > 0) {
                     json_response(['success' => true]);
                 } else {
                     json_response(['error' => 'Tarea no encontrada o sin cambios necesarios'], 404);
                 }
-            } else {
-                json_response(['error' => 'No se pudo actualizar la tarea: ' . $stmt->error], 500);
+            } catch (Exception $e) {
+                $mysqli->rollback();
+                json_response(['error' => 'Error en la transacción al actualizar tarea: ' . $e->getMessage()], 500);
+                return;
             }
-            $stmt->close();
             break; // Terminar el caso POST después de manejar el PUT
 
 
@@ -201,7 +273,16 @@ switch ($method) {
             if ($_method_override === 'HARD_DELETE') {
                 $mysqli->begin_transaction();
                 try {
+                    // Eliminar recordatorios asociados si es una tarea principal
                     if ($tipo_tarea === 'titulo') {
+                        $stmt_delete_reminders = $mysqli->prepare("DELETE FROM reminders WHERE tarea_id = ? AND usuario_id = ?");
+                        if (!$stmt_delete_reminders) {
+                            throw new Exception("Error al preparar eliminación de recordatorios: " . $mysqli->error);
+                        }
+                        $stmt_delete_reminders->bind_param("ii", $id, $usuario_id);
+                        $stmt_delete_reminders->execute();
+                        $stmt_delete_reminders->close();
+
                         $stmt_delete_subtasks = $mysqli->prepare("DELETE FROM tareas_diarias WHERE parent_id = ? AND usuario_id = ?");
                         if (!$stmt_delete_subtasks) {
                              throw new Exception("Error al preparar eliminación de subtareas: " . $mysqli->error);
@@ -245,6 +326,15 @@ switch ($method) {
                             $stmt_deactivate_subtasks->bind_param("ii", $id, $usuario_id);
                             $stmt_deactivate_subtasks->execute();
                             $stmt_deactivate_subtasks->close();
+
+                            // Desactivar recordatorios asociados al archivar el título
+                            $stmt_deactivate_reminders = $mysqli->prepare("UPDATE reminders SET status = 'disabled' WHERE tarea_id = ? AND usuario_id = ?");
+                            if (!$stmt_deactivate_reminders) {
+                                throw new Exception("Error al preparar desactivación de recordatorios: " . $mysqli->error);
+                            }
+                            $stmt_deactivate_reminders->bind_param("ii", $id, $usuario_id);
+                            $stmt_deactivate_reminders->execute();
+                            $stmt_deactivate_reminders->close();
                         }
                         $mysqli->commit();
                         json_response(['success' => true, 'message' => 'Elemento marcado como inactivo.']);
@@ -268,6 +358,19 @@ switch ($method) {
             // Los campos texto y tipo ya se validaron al principio de POST.
             // Si llega aquí, significa que es una creación nueva y no PUT/DELETE simulado.
             // Asegúrate de que el texto y el tipo realmente sean obligatorios para INSERT aquí.
+            $texto = $data['texto'] ?? null;
+            $tipo = $data['tipo'] ?? null;
+            $parent_id = $data['parent_id'] ?? null;
+            $regla_recurrencia = $data['regla_recurrencia'] ?? null;
+            $fecha_inicio = $data['fecha_inicio'] ?? null;
+            $emoji_anotacion = $data['emoji_anotacion'] ?? null;
+            $descripcion_anotacion = $data['descripcion_anotacion'] ?? null;
+            
+            // CAMPOS DE RECORDATORIO (nuevos)
+            $send_reminder = isset($data['send_reminder']) ? ($data['send_reminder'] ? 1 : 0) : 0;
+            $reminder_type = $data['reminder_type'] ?? 'none';
+
+
             if (empty($texto) || empty($tipo)) { // Esta validación es redundante si está al inicio, pero por seguridad
                 json_response(['error' => 'El texto y el tipo de tarea son obligatorios para la creación'], 400);
                 return;
@@ -294,6 +397,29 @@ switch ($method) {
                     $stmt_parent->execute();
                     $new_parent_id = $mysqli->insert_id;
                     $stmt_parent->close();
+
+                    // Lógica para añadir recordatorio si está activado y es una tarea de tipo 'titulo'
+                    if ($send_reminder == 1 && $reminder_type !== 'none' && $fecha_inicio) {
+                        $reminder_datetime = new DateTime($fecha_inicio);
+                        if ($reminder_type === 'hours_before') {
+                            $reminder_datetime->modify('-4 hours'); 
+                        } elseif ($reminder_type === 'day_before') {
+                            $reminder_datetime->modify('-1 day');
+                        } elseif ($reminder_type === 'week_before') {
+                            $reminder_datetime->modify('-1 week');
+                        } elseif ($reminder_type === 'month_before') {
+                            $reminder_datetime->modify('-1 month');
+                        }
+                        
+                        $stmt_insert_reminder = $mysqli->prepare("INSERT INTO reminders (usuario_id, tarea_id, reminder_datetime, type) VALUES (?, ?, ?, ?)");
+                        if (!$stmt_insert_reminder) {
+                            throw new Exception("Error al preparar la inserción de recordatorio: " . $mysqli->error);
+                        }
+                        $stmt_insert_reminder->bind_param("iiss", $usuario_id, $new_parent_id, $reminder_datetime->format('Y-m-d H:i:s'), $reminder_type);
+                        $stmt_insert_reminder->execute();
+                        $stmt_insert_reminder->close();
+                    }
+
 
                     if (!empty($emoji_anotacion) || !empty($descripcion_anotacion)) {
                         $stmt_check_anotacion = $mysqli->prepare("SELECT id FROM anotaciones WHERE usuario_id = ? AND fecha = ?");

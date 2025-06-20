@@ -14,7 +14,7 @@ let modoContenido = null;
 let appFechaCalendarioActual = new Date(); 
 let appSetFechaCalendarioActual = (newDate) => { console.warn("setFechaCalendarioActual no inicializada en views.js"); fechaCalendarioActual = newDate; };
 let modosDisponibles = [];
-let myConfettiInstance = null;
+export let myConfettiInstance = null; // Asegurarse de que esté exportado para usarlo fuera.
 
 export function initViewsModule(appState) {
     modoContenido = appState.modoContenido;
@@ -198,7 +198,7 @@ export function crearElementoSubTareaDiaria(tarea, fechaObj, esSuelta = false) {
     
     const hoy = new Date(); 
     hoy.setHours(0,0,0,0);
-    const fechaDeLaTareaVisualizada = new Date(fechaObj); 
+    const fechaDeLaTareaVisualizada = new Date(fechaObj); // Variable correcta
     fechaDeLaTareaVisualizada.setHours(0,0,0,0);
     const esPasado = fechaDeLaTareaVisualizada.getTime() < hoy.getTime();
 
@@ -269,6 +269,7 @@ export async function eliminarTareaDiaria(tarea, fechaObjRecarga, esActivaActual
     }
     console.log("-> Usuario confirmó la eliminación. Preparando payload..."); 
 
+    // Determinar el método HTTP a usar basado en si es soft delete (archivar) o hard delete
     const operationMethod = esActivaActual ? "DELETE" : "HARD_DELETE";
     const payload = { 
         _method: operationMethod, 
@@ -531,20 +532,20 @@ export async function verDetalleDia(fechaStr) {
         <div class="anotacion-editor">
             <h4>Anotación del Día:</h4>
             <div>
-                <label>Emoji(s) (máx. 3): <span id="emojiDiaModalDisplay" class="current-emoji-display">${currentEmojisString}</span></label>
+                <label class="form-label">Emoji(s) (máx. 3): <span id="emojiDiaModalDisplay" class="current-emoji-display">${currentEmojisString}</span></label>
                 ${!esDiaPasado ? `<div id="emojiSelectorModal" class="emoji-selector-container">${emojiOptionsHTML}</div>` : ''}
                 <input type="hidden" id="emojiDiaModalInput" value="${currentEmojisString}">
             </div>
-            <div>
-                <label for="descripcionEmojiDiaModal">Descripción:</label>
-                <input type="text" id="descripcionEmojiDiaModal" value="${currentDesc}" ${esDiaPasado ? 'disabled' : ''}>
+            <div class="form-group">
+                <label for="descripcionEmojiDiaModal" class="form-label">Descripción:</label>
+                <input type="text" id="descripcionEmojiDiaModal" value="${currentDesc}" class="form-control" ${esDiaPasado ? 'disabled' : ''}>
             </div>
         </div>
     `;
     listaDetalleTareasScrollDiv.innerHTML = `<div id="tareas-del-dia-container">${tareasHtml}</div><hr>${anotacionEditorHtml}`;
 
     if (!esDiaPasado) {
-        anotacionActionsFooter.innerHTML = `<button type="button" id="guardarAnotacionBtnModal">Guardar Anotación</button>`;
+        anotacionActionsFooter.innerHTML = `<button type="button" id="guardarAnotacionBtnModal" class="save-btn">Guardar Anotación</button>`;
         if (currentEmojisString || currentDesc) {
             anotacionActionsFooter.innerHTML += `<button type="button" id="quitarAnotacionBtnModal" class="cancel-btn">Quitar Anotación</button>`;
         }
@@ -560,7 +561,7 @@ export async function verDetalleDia(fechaStr) {
         emojiOptions.forEach(option => {
             if (selectedEmojis.includes(option.dataset.emoji)) option.classList.add('selected');
             option.onclick = () => {
-                const emoji = opt.dataset.emoji;
+                const emoji = option.dataset.emoji;
                 const index = selectedEmojis.indexOf(emoji);
                 if (index > -1) {
                     selectedEmojis.splice(index, 1);
@@ -592,7 +593,7 @@ export async function verDetalleDia(fechaStr) {
             quitarBtn.onclick = async () => {
                 if (!confirm("¿Quitar anotación?")) return;
                 try {
-                    await fetchData('/anotaciones', 'POST', { _method: 'DELETE', fecha: fechaStr }); // CORRECCIÓN
+                    await fetchData('/anotaciones', 'POST', { _method: 'DELETE', fecha: fechaStr }); 
                     cerrarBtn.click();
                     await renderizarCalendario(appFechaCalendarioActual.getFullYear(), appFechaCalendarioActual.getMonth(), appSetFechaCalendarioActual);
                 } catch (error) {

@@ -36,9 +36,9 @@ export function abrirModalParaNuevoElemento(contexto = null, fechaPreseleccionad
         }
         
         formHtmlCampos = `
-            <div id="camposTituloDiario">
-                <label for="nuevoTituloTexto">Texto del Título Diario:</label>
-                <input type="text" id="nuevoTituloTexto" placeholder="Ej. Rutina de mañana">
+            <div class="form-group">
+                <label for="nuevoTituloTexto" class="form-label">Texto del Título Diario:</label>
+                <input type="text" id="nuevoTituloTexto" placeholder="Ej. Rutina de mañana" class="form-control">
             </div>
 
             <fieldset id="programacionFechas">
@@ -46,51 +46,77 @@ export function abrirModalParaNuevoElemento(contexto = null, fechaPreseleccionad
                 <div id="mini-calendar-container-dynamic"></div>
                 <div id="selected-dates-display">Fechas: ${uiMiniCalSelectedDates.length > 0 ? uiMiniCalSelectedDates.join(', ') : 'Ninguna'}</div>
                 
-                <label for="tipoRecurrencia">Opciones de Repetición:</label>
-                <select id="tipoRecurrencia">
-                    <option value="NONE">Solo una vez (en las fechas seleccionadas)</option>
-                    <option value="DAILY">Diariamente (desde la primera fecha)</option>
-                    <option value="WEEKLY">Semanalmente (en los días de la semana de las fechas)</option>
-                    <option value="MONTHLY_DAY">Mensualmente (mismo día del mes)</option>
-                </select>
+                <div class="form-group">
+                    <label for="tipoRecurrencia" class="form-label">Opciones de Repetición:</label>
+                    <select id="tipoRecurrencia" class="form-control">
+                        <option value="NONE">Solo una vez (en las fechas seleccionadas)</option>
+                        <option value="DAILY">Diariamente (desde la primera fecha)</option>
+                        <option value="WEEKLY">Semanalmente (en los días de la semana de las fechas)</option>
+                        <option value="MONTHLY_DAY">Mensualmente (mismo día del mes)</option>
+                    </select>
+                </div>
                 <div id="days-of-week-selector" style="display:none;">
                     <small>Selecciona días de la semana:</small><br>
                     ${['MON','TUE','WED','THU','FRI','SAT','SUN'].map(d=>`<label><input type="checkbox" name="recurrenciaDia" value="${d}"> ${d.charAt(0).toUpperCase() + d.slice(1).toLowerCase().substring(0,2)}</label>`).join('')}
                 </div>
             </fieldset>
 
+            <fieldset id="reminderSettings">
+                <legend>Recordatorio por Correo (Opcional)</legend>
+                <div class="form-group">
+                    <input type="checkbox" id="activarRecordatorio">
+                    <label for="activarRecordatorio" class="form-label">Enviar recordatorio por correo electrónico</label>
+                </div>
+                <div id="reminderOptions" style="display:none; margin-top: var(--space-s);">
+                    <label for="tipoRecordatorio" class="form-label">¿Cuándo enviar?</label>
+                    <select id="tipoRecordatorio" class="form-control">
+                        <option value="none">No</option>
+                        <option value="hours_before">Unas horas antes (ej. 4h antes de la fecha de inicio)</option>
+                        <option value="day_before">Un día antes</option>
+                        <option value="week_before">Una semana antes</option>
+                        <option value="month_before">Un mes antes</option>
+                    </select>
+                </div>
+            </fieldset>
+
             <fieldset id="anotacionProgramada">
                 <legend>Anotación para Fecha(s) de Inicio (Opcional)</legend>
-                <div>
-                    <label for="emojiAnotacionTareaInput">Emoji(s) (máx. 3): <span id="currentEmojiAnotacionDisplay" class="current-emoji-display"></span></label>
+                <div class="form-group">
+                    <label for="emojiAnotacionTareaInput" class="form-label">Emoji(s) (máx. 3): <span id="currentEmojiAnotacionDisplay" class="current-emoji-display"></span></label>
                     ${emojiSelectorHTML}
                     <input type="hidden" id="emojiAnotacionTareaInput" value="">
                 </div>
-                <div>
-                    <label for="descripcionAnotacionTarea">Descripción del emoji:</label>
-                    <input type="text" id="descripcionAnotacionTarea" placeholder="Ej. Importante!">
+                <div class="form-group">
+                    <label for="descripcionAnotacionTarea" class="form-label">Descripción del emoji:</label>
+                    <input type="text" id="descripcionAnotacionTarea" placeholder="Ej. Importante!" class="form-control">
                 </div>
             </fieldset>
 
             <div id="subtasks-inputs-container">
-                <label>Subtareas (al menos una obligatoria):</label>
-                <div class="subtask-entry">
-                    <input type="text" class="subtask-text-input" placeholder="Subtarea 1">
+                <label class="form-label">Subtareas (al menos una obligatoria):</label>
+                <div class="subtask-entry form-group">
+                    <input type="text" class="subtask-text-input form-control" placeholder="Subtarea 1">
                 </div>
             </div>
-            <button type="button" id="addMoreSubtasksBtn">+ Subtarea</button>
+            <button type="button" id="addMoreSubtasksBtn" class="btn btn-secondary">+ Subtarea</button>
             `; 
     } else if (contexto === 'corto-medio-plazo' || contexto === 'largo-plazo') {
         formTitle = `Añadir Objetivo a ${contexto === 'corto-medio-plazo' ? 'Corto/Medio' : 'Largo'} Plazo`;
         guardarBtnText = "Guardar Objetivo";
         formHtmlCampos = `
             <div id="camposObjetivo">
-                <label for="nuevoObjetivoTitulo">Título del Objetivo:</label>
-                <input type="text" id="nuevoObjetivoTitulo" placeholder="Ej. Terminar curso online">
-                <label for="nuevoObjetivoFecha">Fecha Estimada:</label>
-                <input type="text" id="nuevoObjetivoFecha" placeholder="Ej. Próximos 3 meses, junio 2025">
-                <label for="nuevoObjetivoDescripcion">Descripción:</label>
-                <textarea id="nuevoObjetivoDescripcion" placeholder="Pasos, recursos..."></textarea>
+                <div class="form-group">
+                    <label for="nuevoObjetivoTitulo" class="form-label">Título del Objetivo:</label>
+                    <input type="text" id="nuevoObjetivoTitulo" placeholder="Ej. Terminar curso online" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="nuevoObjetivoFecha" class="form-label">Fecha Estimada:</label>
+                    <input type="text" id="nuevoObjetivoFecha" placeholder="Ej. Próximos 3 meses, junio 2025" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="nuevoObjetivoDescripcion" class="form-label">Descripción:</label>
+                    <textarea id="nuevoObjetivoDescripcion" placeholder="Pasos, recursos..." class="form-control"></textarea>
+                </div>
             </div>`;
     } else { 
         console.error("Contexto desconocido:", contexto);
@@ -119,6 +145,11 @@ export function abrirModalParaNuevoElemento(contexto = null, fechaPreseleccionad
                 regla_recurrencia_final = `WEEKLY:${dias.join(',')}`;
             }
 
+            // NUEVOS CAMPOS DE RECORDATORIO
+            const sendReminder = document.getElementById('activarRecordatorio').checked;
+            const reminderType = document.getElementById('tipoRecordatorio').value;
+
+
             let successfulSaves = 0;
             let failedSaves = 0;
             let errors = [];
@@ -132,6 +163,9 @@ export function abrirModalParaNuevoElemento(contexto = null, fechaPreseleccionad
                     fecha_inicio: fecha, 
                     emoji_anotacion: document.getElementById('emojiAnotacionTareaInput').value, 
                     descripcion_anotacion: document.getElementById('descripcionAnotacionTarea').value.trim(),
+                    // Añadir datos de recordatorio al payload
+                    send_reminder: sendReminder,
+                    reminder_type: reminderType
                 };
 
                 try {
@@ -188,12 +222,25 @@ export function abrirModalParaNuevoElemento(contexto = null, fechaPreseleccionad
         tipoRecSelect.onchange = () => {
             daysOfWeekSel.style.display = (tipoRecSelect.value === 'WEEKLY') ? 'block' : 'none';
         };
-        
+        // Inicializar el estado de days-of-week-selector
+        daysOfWeekSel.style.display = (tipoRecSelect.value === 'WEEKLY') ? 'block' : 'none';
+
+
+        // Lógica para los campos de recordatorio
+        const activarRecordatorioCheckbox = document.getElementById('activarRecordatorio');
+        const reminderOptionsDiv = document.getElementById('reminderOptions');
+        activarRecordatorioCheckbox.onchange = () => {
+            reminderOptionsDiv.style.display = activarRecordatorioCheckbox.checked ? 'block' : 'none';
+        };
+        // Asegurarse de que el div de opciones de recordatorio tenga el estado inicial correcto
+        reminderOptionsDiv.style.display = activarRecordatorioCheckbox.checked ? 'block' : 'none';
+
+
         document.getElementById('addMoreSubtasksBtn').onclick = () => {
             const container = document.getElementById('subtasks-inputs-container');
             const newEntry = document.createElement('div');
-            newEntry.className = 'subtask-entry';
-            newEntry.innerHTML = `<input type="text" class="subtask-text-input" placeholder="Siguiente subtarea..."><button type="button" class="quitar-subtarea-btn" title="Quitar">&times;</button>`;
+            newEntry.className = 'subtask-entry form-group'; // Añadido form-group para estilos
+            newEntry.innerHTML = `<input type="text" class="subtask-text-input form-control" placeholder="Siguiente subtarea..."><button type="button" class="quitar-subtarea-btn" title="Quitar">&times;</button>`;
             container.appendChild(newEntry);
             newEntry.querySelector('.quitar-subtarea-btn').onclick = () => newEntry.remove();
             newEntry.querySelector('.subtask-text-input').focus();
@@ -210,7 +257,7 @@ export function abrirModalParaNuevoElemento(contexto = null, fechaPreseleccionad
                     selectedEmojisModalArray.splice(index, 1);
                     opt.classList.remove('selected');
                 } else if (selectedEmojisModalArray.length < 3) {
-                    selectedEmojis.push(emoji);
+                    selectedEmojisModalArray.push(emoji); // Corregido: Usar selectedEmojisModalArray
                     opt.classList.add('selected');
                 }
                 emojiDisplay.textContent = selectedEmojisModalArray.join(' ');
@@ -220,14 +267,22 @@ export function abrirModalParaNuevoElemento(contexto = null, fechaPreseleccionad
     }
 }
 
-// Esta función estaba faltando en el archivo modals.js que me pegaste previamente
 export function mostrarFormularioEditarTarea(tarea, fechaObjRecarga, tipoOriginal) {
     if (!tarea.activo) {
         alert("No se pueden editar elementos inactivos. Restaure primero el elemento si desea editarlo.");
         return;
     }
-    let formHtmlCampos = `<label for="editTareaTexto">Texto:</label>
-                          <input type="text" id="editTareaTexto" value="${tarea.texto || ''}">`;
+
+    // SIMULACIÓN para cargar el estado del recordatorio si estuviera en la tarea
+    // En un sistema real, esta información debería venir del backend junto con la tarea
+    // o se haría un fetch adicional aquí para los recordatorios de esta tarea.
+    let currentReminderType = tarea.reminder_type || 'none'; // Asumiendo que el backend envía esto
+    let isReminderActive = tarea.send_reminder || false; // Asumiendo que el backend envía esto
+
+    let formHtmlCampos = `<div class="form-group">
+                            <label for="editTareaTexto" class="form-label">Texto:</label>
+                            <input type="text" id="editTareaTexto" value="${tarea.texto || ''}" class="form-control">
+                        </div>`;
     
     if (tipoOriginal === 'titulo') {
         const fechaInicioActual = tarea.fecha_inicio || new Date().toISOString().split('T')[0];
@@ -237,18 +292,40 @@ export function mostrarFormularioEditarTarea(tarea, fechaObjRecarga, tipoOrigina
         formHtmlCampos += `
             <fieldset>
                 <legend>Programación</legend>
-                <label for="editFechaInicioTarea">Fecha de inicio:</label>
-                <input type="date" id="editFechaInicioTarea" value="${fechaInicioActual}">
-                <label for="editTipoRecurrencia">Repetir:</label>
-                <select id="editTipoRecurrencia">
-                    <option value="NONE" ${reglaRecurrenciaActual === 'NONE' ? 'selected' : ''}>Solo una vez</option>
-                    <option value="DAILY" ${reglaRecurrenciaActual === 'DAILY' ? 'selected' : ''}>Diariamente</option>
-                    <option value="WEEKLY" ${reglaRecurrenciaActual.startsWith('WEEKLY:') ? 'selected' : ''}>Semanalmente</option>
-                    <option value="MONTHLY_DAY" ${reglaRecurrenciaActual === 'MONTHLY_DAY' ? 'selected' : ''}>Mensualmente</option>
-                </select>
+                <div class="form-group">
+                    <label for="editFechaInicioTarea" class="form-label">Fecha de inicio:</label>
+                    <input type="date" id="editFechaInicioTarea" value="${fechaInicioActual}" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="editTipoRecurrencia" class="form-label">Repetir:</label>
+                    <select id="editTipoRecurrencia" class="form-control">
+                        <option value="NONE" ${reglaRecurrenciaActual === 'NONE' ? 'selected' : ''}>Solo una vez</option>
+                        <option value="DAILY" ${reglaRecurrenciaActual === 'DAILY' ? 'selected' : ''}>Diariamente</option>
+                        <option value="WEEKLY" ${reglaRecurrenciaActual.startsWith('WEEKLY:') ? 'selected' : ''}>Semanalmente</option>
+                        <option value="MONTHLY_DAY" ${reglaRecurrenciaActual === 'MONTHLY_DAY' ? 'selected' : ''}>Mensualmente</option>
+                    </select>
+                </div>
                 <div id="edit-days-of-week-selector" style="display:${reglaRecurrenciaActual.startsWith('WEEKLY:') ? 'block' : 'none'};">
                     <small>Selecciona días:</small><br>
                     ${['MON','TUE','WED','THU','FRI','SAT','SUN'].map(d => `<label><input type="checkbox" name="editRecurrenciaDia" value="${d}" ${diasSemanaActuales.includes(d) ? 'checked' : ''}> ${d.substring(0,3)}</label>`).join('')}
+                </div>
+            </fieldset>
+
+            <fieldset id="editReminderSettings">
+                <legend>Recordatorio por Correo (Opcional)</legend>
+                <div class="form-group">
+                    <input type="checkbox" id="editActivarRecordatorio" ${isReminderActive ? 'checked' : ''}>
+                    <label for="editActivarRecordatorio" class="form-label">Enviar recordatorio por correo electrónico</label>
+                </div>
+                <div id="editReminderOptions" style="display:${isReminderActive ? 'block' : 'none'}; margin-top: var(--space-s);">
+                    <label for="editTipoRecordatorio" class="form-label">¿Cuándo enviar?</label>
+                    <select id="editTipoRecordatorio" class="form-control">
+                        <option value="none" ${currentReminderType === 'none' ? 'selected' : ''}>No</option>
+                        <option value="hours_before" ${currentReminderType === 'hours_before' ? 'selected' : ''}>Unas horas antes (ej. 4h)</option>
+                        <option value="day_before" ${currentReminderType === 'day_before' ? 'selected' : ''}>Un día antes</option>
+                        <option value="week_before" ${currentReminderType === 'week_before' ? 'selected' : ''}>Una semana antes</option>
+                        <option value="month_before" ${currentReminderType === 'month_before' ? 'selected' : ''}>Un mes antes</option>
+                    </select>
                 </div>
             </fieldset>
         `;
@@ -268,6 +345,10 @@ export function mostrarFormularioEditarTarea(tarea, fechaObjRecarga, tipoOrigina
                 tipoRecurrenciaVal = `WEEKLY:${dias.join(',')}`;
             }
             payload.regla_recurrencia = tipoRecurrenciaVal;
+
+            // CAMPOS DE RECORDATORIO
+            payload.send_reminder = document.getElementById('editActivarRecordatorio').checked;
+            payload.reminder_type = document.getElementById('editTipoRecordatorio').value;
         }
 
         await fetchData('tareas-dia-a-dia', 'POST', payload);
@@ -284,12 +365,26 @@ export function mostrarFormularioEditarTarea(tarea, fechaObjRecarga, tipoOrigina
         select.onchange = () => {
             document.getElementById('edit-days-of-week-selector').style.display = select.value === 'WEEKLY' ? 'block' : 'none';
         }
+        // Inicializar el estado de edit-days-of-week-selector
+        document.getElementById('edit-days-of-week-selector').style.display = select.value === 'WEEKLY' ? 'block' : 'none';
+
+        // Lógica para los campos de recordatorio en edición
+        const editActivarRecordatorioCheckbox = document.getElementById('editActivarRecordatorio');
+        const editReminderOptionsDiv = document.getElementById('editReminderOptions');
+        editActivarRecordatorioCheckbox.onchange = () => {
+            editReminderOptionsDiv.style.display = editActivarRecordatorioCheckbox.checked ? 'block' : 'none';
+        };
+        // Asegurarse de que el div de opciones de recordatorio tenga el estado inicial correcto
+        editReminderOptionsDiv.style.display = editActivarRecordatorioCheckbox.checked ? 'block' : 'none';
     }
 }
 
 
 export function mostrarFormularioAddSubTarea(parentId, fechaObjRecarga) {
-    const formHtmlCampos = `<label for="nuevaSubTareaTexto">Texto de la Sub-Tarea:</label><input type="text" id="nuevaSubTareaTexto" placeholder="Ej. Comprar leche">`;
+    const formHtmlCampos = `<div class="form-group">
+                                <label for="nuevaSubTareaTexto" class="form-label">Texto de la Sub-Tarea:</label>
+                                <input type="text" id="nuevaSubTareaTexto" placeholder="Ej. Comprar leche" class="form-control">
+                            </div>`;
     
     const onGuardarSubTarea = async () => { 
         const texto = document.getElementById('nuevaSubTareaTexto').value.trim();
@@ -309,7 +404,10 @@ export function mostrarFormularioAddSubTarea(parentId, fechaObjRecarga) {
 }
 
 export function mostrarFormularioAddSubObjetivo(objetivoPrincipalId, mode_id_recarga) {
-    const formHtmlCampos = `<label for="nuevoSubObjetivoModalTexto">Texto del Sub-Objetivo:</label><input type="text" id="nuevoSubObjetivoModalTexto" placeholder="Ej. Investigar opciones">`;
+    const formHtmlCampos = `<div class="form-group">
+                                <label for="nuevoSubObjetivoModalTexto" class="form-label">Texto del Sub-Objetivo:</label>
+                                <input type="text" id="nuevoSubObjetivoModalTexto" placeholder="Ej. Investigar opciones" class="form-control">
+                            </div>`;
     
     const onGuardarSubObjetivo = async () => {
         const texto = document.getElementById('nuevoSubObjetivoModalTexto').value.trim();
@@ -327,12 +425,18 @@ export function mostrarFormularioAddSubObjetivo(objetivoPrincipalId, mode_id_rec
 
 export function mostrarFormularioEditarObjetivo(objetivo, mode_id_recarga) {
     const formHtmlCampos = `
-        <label for="editObjetivoTitulo">Título:</label>
-        <input type="text" id="editObjetivoTitulo" value="${objetivo.titulo || ''}">
-        <label for="editObjetivoFecha">Fecha Estimada:</label>
-        <input type="text" id="editObjetivoFecha" value="${objetivo.fecha_estimada || ''}">
-        <label for="editObjetivoDescripcion">Descripción:</label>
-        <textarea id="editObjetivoDescripcion">${objetivo.descripcion || ''}</textarea>
+        <div class="form-group">
+            <label for="editObjetivoTitulo" class="form-label">Título:</label>
+            <input type="text" id="editObjetivoTitulo" value="${objetivo.titulo || ''}" class="form-control">
+        </div>
+        <div class="form-group">
+            <label for="editObjetivoFecha" class="form-label">Fecha Estimada:</label>
+            <input type="text" id="editObjetivoFecha" value="${objetivo.fecha_estimada || ''}" class="form-control">
+        </div>
+        <div class="form-group">
+            <label for="editObjetivoDescripcion" class="form-label">Descripción:</label>
+            <textarea id="editObjetivoDescripcion" class="form-control">${objetivo.descripcion || ''}</textarea>
+        </div>
     `;
     
     const onGuardarEditarObjetivo = async () => {
@@ -356,12 +460,14 @@ export function mostrarFormularioEditarObjetivo(objetivo, mode_id_recarga) {
 
 export function mostrarFormularioEditarSubObjetivo(subObjetivo, mode_id_recarga) {
     const formHtmlCampos = `
-        <label for="editSubObjetivoTexto">Texto:</label>
-        <input type="text" id="editSubObjetivoTexto" value="${subObjetivo.texto || ''}">
+        <div class="form-group">
+            <label for="editSubObjetivoTexto" class="form-label">Texto:</label>
+            <input type="text" id="editSubObjetivoTexto" value="${subObjetivo.texto || ''}" class="form-control">
+        </div>
     `;
     
     const onGuardarEditarSubObjetivo = async () => {
-        const texto = document.getElementById('editSubObjetivoTexto').trim();
+        const texto = document.getElementById('editSubObjetivoTexto').value.trim(); // Corregido: .value.trim()
         if (!texto) { alert('El texto no puede estar vacío.'); throw new Error("Texto vacío"); }
         
         const payload = { _method: "PUT", id: subObjetivo.id, texto }; 

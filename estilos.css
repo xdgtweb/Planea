@@ -358,7 +358,10 @@ textarea.form-control {
 }
 /* Apply to select elements too if they share similar styling needs */
 #tipoRecurrencia,
-#editTipoRecurrencia {
+#editTipoRecurrencia,
+/* Nuevos select para recordatorios */
+#tipoRecordatorio,
+#editTipoRecordatorio {
     width: 100%;
     padding: var(--space-s);
     border: 1px solid var(--border-color);
@@ -374,11 +377,52 @@ textarea.form-control {
     background-size: 1.5em auto, 100%;
 }
 #tipoRecurrencia:focus,
-#editTipoRecurrencia:focus {
+#editTipoRecurrencia:focus,
+/* Foco para nuevos select de recordatorios */
+#tipoRecordatorio:focus,
+#editTipoRecordatorio:focus {
     outline: none;
     border-color: var(--color-primary);
     box-shadow: 0 0 0 3px var(--focus-ring-color);
 }
+/* Estilo para los checkboxes de recordatorios (y otros) */
+input[type="checkbox"] {
+    appearance: none; /* Oculta la apariencia nativa */
+    display: inline-block;
+    width: 18px;
+    height: 18px;
+    border: 2px solid var(--border-color-strong);
+    border-radius: var(--radius-xs);
+    position: relative;
+    cursor: pointer;
+    vertical-align: middle;
+    margin-right: 8px; /* Espacio entre checkbox y label */
+    transition: background-color var(--transition-duration-fast), border-color var(--transition-duration-fast);
+}
+
+input[type="checkbox"]:checked {
+    background-color: var(--color-success);
+    border-color: var(--color-success);
+}
+
+input[type="checkbox"]:checked::after {
+    content: '\2713'; /* Símbolo de checkmark */
+    display: block;
+    color: var(--text-on-primary);
+    font-size: 12px;
+    line-height: 14px;
+    text-align: center;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+input[type="checkbox"]:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px var(--focus-ring-color);
+}
+
 
 /* Specific button styles for login/register forms */
 #loginForm button[type="submit"],
@@ -492,21 +536,8 @@ textarea.form-control {
 }
 
 #addMoreSubtasksBtn {
-    background-color: var(--bg-surface-tertiary);
-    color: var(--text-secondary);
-    font-weight: 500;
-    padding: var(--space-unit) var(--space-s);
-    font-size: 0.9rem;
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-s);
-    cursor: pointer;
-    transition: var(--transition-duration-fast);
-    margin-top: var(--space-s);
-}
-#addMoreSubtasksBtn:hover {
-    background-color: var(--bg-surface-secondary);
-    color: var(--text-primary);
-    border-color: var(--border-color-strong);
+    /* Mantiene los estilos específicos de .btn y .btn-secondary */
+    /* Anulado aquí para evitar repeticiones y asegurar que los estilos de .btn-secondary prevalezcan */
 }
 
 /* Common Modal Action Buttons */
@@ -905,12 +936,24 @@ textarea.form-control {
 .tarea-item:last-child, .sub-objetivo-item:last-child {
     border-bottom: none;
 }
-.tarea-item input[type="checkbox"], .sub-objetivo-item input[type="checkbox"] {
+/* Revertir estilos de checkbox nativos en .tarea-item y .sub-objetivo-item para usar los estilos custom */
+.tarea-item input[type="checkbox"], 
+.sub-objetivo-item input[type="checkbox"] {
     margin-right: var(--space-s);
     min-width: 18px; /* Standardize checkbox size */
     min-height: 18px;
     accent-color: var(--color-success); /* Native checkbox color */
+    /* Anular la apariencia de 'none' para estos elementos de lista si se aplica globalmente */
+    appearance: initial; 
+    border: initial;
+    border-radius: initial;
+    position: initial;
+    cursor: initial;
+    vertical-align: initial;
+    /* Eliminar el margen-right extra que pueda añadir el estilo de input[type="checkbox"] global si se superpone */
+    margin-right: var(--space-s);
 }
+
 .tarea-item label, .sub-objetivo-item label {
     flex-grow: 1;
     cursor: pointer;
@@ -1186,7 +1229,6 @@ textarea.form-control {
     gap: var(--space-xs);
 }
 .dia-calendario {
-    /* ... tus estilos existentes para .dia-calendario ... */
     display: flex;           /* Convertir a flex container */
     flex-direction: column;  /* Apilar número y emoji verticalmente */
     align-items: center;     /* Centrar horizontalmente el contenido */
@@ -1315,17 +1357,17 @@ textarea.form-control {
 #tareasDetalleDia #listaDetalleTareasScroll {
     max-height: 40vh; /* Limit height for scrollable content */
 }
-#tareasDetalleDia #tareas-del_dia-container ul {
+#tareasDetalleDia #tareas-del-dia-container ul { /* Corregido: .tareas-del-dia-container, no .tareas-del_dia-container */
     list-style: none;
     padding: 0;
 }
-#tareasDetalleDia #tareas-del_dia-container ul ul {
+#tareasDetalleDia #tareas-del-dia-container ul ul { /* Corregido: .tareas-del-dia-container, no .tareas-del_dia-container */
     list-style: disc; /* Use discs for sub-subtasks */
     padding-left: var(--space-l);
     margin-top: var(--space-xs);
     margin-bottom: var(--space-xs);
 }
-#tareasDetalleDia #tareas-del_dia-container li {
+#tareasDetalleDia #tareas-del-dia-container li { /* Corregido: .tareas-del-dia-container, no .tareas-del_dia-container */
     padding: var(--space-xs) 0;
     color: var(--text-primary);
     font-size: 0.95rem;
