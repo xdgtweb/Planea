@@ -1,3 +1,4 @@
+// script_modules/views.js
 import { EMOJIS_PREDEFINIDOS } from './config.js';
 import { fetchData, obtenerClaseDeEstado, lanzarAnimacionCelebracion, obtenerValorPrioridad } from './utils.js';
 import { mostrarFormulario, ocultarFormulario, createActionToggleButton } from './ui.js';
@@ -6,15 +7,15 @@ import {
     mostrarFormularioEditarTarea, 
     mostrarFormularioAddSubTarea,
     mostrarFormularioEditarObjetivo,
-    mostrarFormularioAddSubObjetivo,
+    mostrarFormularioAddSubObjetivo, // ¡CORREGIDO! Antes estaba mal escrito con guion bajo.
     mostrarFormularioEditarSubObjetivo 
 } from './modals.js'; 
 
 let modoContenido = null;
-let appFechaCalendarioActual = new Date(); 
-let appSetFechaCalendarioActual = (newDate) => { console.warn("setFechaCalendarioActual no inicializada en views.js"); fechaCalendarioActual = newDate; };
-let modosDisponibles = [];
-export let myConfettiInstance = null; // Asegurarse de que esté exportado para usarlo fuera.
+export let appFechaCalendarioActual = new Date(); 
+export let appSetFechaCalendarioActual = (newDate) => { console.warn("setFechaCalendarioActual no inicializada en views.js"); appFechaCalendarioActual = newDate; }; 
+export let modosDisponibles = []; 
+export let myConfettiInstance = null; 
 
 export function initViewsModule(appState) {
     modoContenido = appState.modoContenido;
@@ -282,7 +283,6 @@ export async function eliminarTareaDiaria(tarea, fechaObjRecarga, esActivaActual
     };
     console.log("-> Payload listo:", payload); 
     try {
-        console.log("-> Llamando a fetchData para eliminación..."); 
         await fetchData('/tareas-dia-a-dia', 'POST', payload); 
         console.log("-> fetchData para eliminación completado."); 
         alert(esActivaActual ? 'Elemento marcado como inactivo.' : 'Elemento eliminado permanentemente.');
@@ -478,16 +478,22 @@ export async function verDetalleDia(fechaStr) {
     const modalInterno = tareasDetalleDiaOverlay.querySelector('.form-modal');
     if (!modalInterno) return;
 
+    // CONSOLIDADO: Un único div.form-modal-actions para todos los botones del footer
+    // Orden de los botones: Cerrar (primero), Quitar Anotación, Guardar Anotación (al final)
+    // El flex-grow: 1; entre Cerrar y los otros empujará "Quitar Anotación" y "Guardar Anotación" a la derecha.
     modalInterno.innerHTML = `
         <div class="form-modal-header"><h3 id="detalle-dia-titulo">Detalles de <span id="detalleDiaFecha"></span></h3></div>
         <div id="listaDetalleTareasScroll" class="form-modal-content"><p>Cargando...</p></div>
-        <div id="anotacionActionsFooter" class="form-modal-actions"></div>
-        <div class="form-modal-actions main-close-action"><button type="button" id="cerrarDetalleDia" class="cancel-btn">Cerrar</button></div>
+        <div class="form-modal-actions">
+            <button type="button" id="cerrarDetalleDia" class="cancel-btn">Cerrar</button>
+            <div style="flex-grow: 1;"></div> <button type="button" id="quitarAnotacionBtnModal" class="cancel-btn" style="display:none;">Quitar Anotación</button>
+            <button type="button" id="guardarAnotacionBtnModal" class="save-btn">Guardar Anotación</button>
+        </div>
     `;
 
     const detalleDiaFechaSpan = modalInterno.querySelector('#detalleDiaFecha');
     const listaDetalleTareasScrollDiv = modalInterno.querySelector('#listaDetalleTareasScroll');
-    const anotacionActionsFooter = modalInterno.querySelector('#anotacionActionsFooter');
+    const formModalActionsDiv = modalInterno.querySelector('.form-modal-actions'); // Referencia al único contenedor de acciones
     const fechaConsultadaObj = new Date(fechaStr + 'T00:00:00Z');
     detalleDiaFechaSpan.textContent = fechaConsultadaObj.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' });
 
@@ -525,16 +531,16 @@ export async function verDetalleDia(fechaStr) {
     let currentEmojisString = anotacionResult.status === 'fulfilled' ? (anotacionResult.value?.emoji || '') : '';
     let currentDesc = anotacionResult.status === 'fulfilled' ? (anotacionResult.value?.descripcion || '') : '';
     
-    const hoy = new Date();
+    const hoy = new Date(); 
     hoy.setUTCHours(0,0,0,0);
     const esDiaPasado = fechaConsultadaObj.getTime() < hoy.getTime();
-    const emojiOptionsHTML = EMOJIS_PREDEFINIDOS.map(e => `<span class="emoji-option" data-emoji="${e}" role="button" tabindex="0">${e}</span>`).join('');
+    const emojiOptionsHTML = EMOJIS_PREDEFINIDOS.map(e => `<span class="emoji-option" data-emoji="${e}" role="button" tabindex="0" aria-label="Seleccionar ${e}">${e}</span>`).join('');
     
     const anotacionEditorHtml = `
         <div class="anotacion-editor">
             <h4>Anotación del Día:</h4>
             <div>
-                <label class="form-label">Emoji(s) (máx. 3): <span id="emojiDiaModalDisplay" class="current-emoji-display">${currentEmojisString}</span></label>
+                <label for="emojiDiaModalInput" class="form-label">Emoji(s) (máx. 3): <span id="emojiDiaModalDisplay" class="current-emoji-display">${currentEmojisString}</span></label>
                 ${!esDiaPasado ? `<div id="emojiSelectorModal" class="emoji-selector-container">${emojiOptionsHTML}</div>` : ''}
                 <input type="hidden" id="emojiDiaModalInput" value="${currentEmojisString}">
             </div>
@@ -547,17 +553,43 @@ export async function verDetalleDia(fechaStr) {
     listaDetalleTareasScrollDiv.innerHTML = `<div id="tareas-del-dia-container">${tareasHtml}</div><hr>${anotacionEditorHtml}`;
 
     if (!esDiaPasado) {
-        anotacionActionsFooter.innerHTML = `<button type="button" id="guardarAnotacionBtnModal" class="save-btn">Guardar Anotación</button>`;
-        if (currentEmojisString || currentDesc) {
-            anotacionActionsFooter.innerHTML += `<button type="button" id="quitarAnotacionBtnModal" class="cancel-btn">Quitar Anotación</button>`;
-        }
-
         const guardarBtn = modalInterno.querySelector('#guardarAnotacionBtnModal');
-        const quitarBtn = modalInterno.querySelector('#quitarAnotacionBtnModal');
+        const quitarBtn = modalInterno.querySelector('#quitarAnotacionBtnModal'); // Ahora siempre existirá, aunque oculto inicialmente
+
+        if (currentEmojisString || currentDesc) {
+            quitarBtn.style.display = 'inline-block'; // Mostrar si hay contenido
+        } else {
+            quitarBtn.style.display = 'none'; // Ocultar si no hay contenido
+        }
+        
+        quitarBtn.onclick = async () => { // Adjuntar listener siempre
+            if (!confirm("¿Quitar anotación?")) return;
+            try {
+                await fetchData('/anotaciones', 'POST', { _method: 'DELETE', fecha: fechaStr }); 
+                cerrarBtn.click();
+                await renderizarCalendario(appFechaCalendarioActual.getFullYear(), appFechaCalendarioActual.getMonth(), appSetFechaCalendarioActual);
+            } catch (error) {
+                alert(`Error al quitar: ${error.message}`);
+            }
+        };
+
+        guardarBtn.onclick = async () => {
+            try {
+                await fetchData('/anotaciones', 'POST', {
+                    fecha: fechaStr,
+                    emoji: modalInterno.querySelector('#emojiDiaModalInput').value,
+                    descripcion: modalInterno.querySelector('#descripcionEmojiDiaModal').value
+                });
+                cerrarBtn.click();
+                await renderizarCalendario(appFechaCalendarioActual.getFullYear(), appFechaCalendarioActual.getMonth(), appSetFechaCalendarioActual);
+            } catch (error) {
+                alert(`Error al guardar: ${error.message}`);
+            }
+        };
+
         const emojiOptions = modalInterno.querySelectorAll('#emojiSelectorModal .emoji-option');
         const emojiDisplay = modalInterno.querySelector('#emojiDiaModalDisplay');
         const emojiInputHidden = modalInterno.querySelector('#emojiDiaModalInput');
-        const descInput = modalInterno.querySelector('#descripcionEmojiDiaModal');
 
         let selectedEmojis = emojiInputHidden.value.match(/./gu) || [];
         emojiOptions.forEach(option => {
@@ -576,32 +608,11 @@ export async function verDetalleDia(fechaStr) {
                 emojiInputHidden.value = selectedEmojis.join('');
             };
         });
-
-        guardarBtn.onclick = async () => {
-            try {
-                await fetchData('/anotaciones', 'POST', {
-                    fecha: fechaStr,
-                    emoji: emojiInputHidden.value,
-                    descripcion: descInput.value
-                });
-                cerrarBtn.click();
-                await renderizarCalendario(appFechaCalendarioActual.getFullYear(), appFechaCalendarioActual.getMonth(), appSetFechaCalendarioActual);
-            } catch (error) {
-                alert(`Error al guardar: ${error.message}`);
-            }
-        };
-
-        if (quitarBtn) {
-            quitarBtn.onclick = async () => {
-                if (!confirm("¿Quitar anotación?")) return;
-                try {
-                    await fetchData('/anotaciones', 'POST', { _method: 'DELETE', fecha: fechaStr }); 
-                    cerrarBtn.click();
-                    await renderizarCalendario(appFechaCalendarioActual.getFullYear(), appFechaCalendarioActual.getMonth(), appSetFechaCalendarioActual);
-                } catch (error) {
-                    alert(`Error al quitar: ${error.message}`);
-                }
-            };
-        }
+    } else {
+        // Si es un día pasado, ocultamos el botón de guardar y quitar
+        const guardarBtn = modalInterno.querySelector('#guardarAnotacionBtnModal');
+        const quitarBtn = modalInterno.querySelector('#quitarAnotacionBtnModal'); 
+        if (guardarBtn) guardarBtn.style.display = 'none';
+        if (quitarBtn) quitarBtn.style.display = 'none'; 
     }
 }
