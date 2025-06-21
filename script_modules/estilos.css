@@ -376,6 +376,73 @@ textarea.form-control {
     /* Restaurado a tamaño original para compacidad */
 }
 
+/* Specific inputs for login/register and modals to ensure .form-control styles apply */
+#login-email,
+#login-password,
+#register-username,
+#register-email,
+#register-password,
+#descripcionEmojiDiaModal,
+#nuevoTituloTexto,
+#descripcionAnotacionTarea,
+#nuevoObjetivoTitulo,
+#nuevoObjetivoFecha,
+#nuevoObjetivoDescripcion,
+#nuevaSubTareaTexto,
+#nuevoSubObjetivoModalTexto,
+#editTareaTexto,
+#editFechaInicioTarea,
+#editObjetivoTitulo,
+#editObjetivoFecha,
+#editObjetivoDescripcion,
+#editSubObjetivoTexto,
+.subtask-text-input,
+#tipoRecurrencia,
+#editTipoRecurrencia,
+#tipoRecordatorio,
+#editTipoRecordatorio {
+    width: 100%;
+    padding: var(--space-s);
+    /* Reducido a 's' para compacidad */
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-s);
+    font-size: 1rem;
+    color: var(--text-primary);
+    background: var(--bg-surface-tertiary);
+    transition: border-color var(--transition-duration-fast), box-shadow var(--transition-duration-fast);
+}
+
+.form-control:focus,
+.form-control select:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px var(--focus-ring-color);
+}
+
+textarea.form-control {
+    resize: vertical;
+    min-height: 80px;
+    /* Restaurado a 80px para compacidad */
+}
+
+.form-modal fieldset {
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-s);
+    padding: var(--space-m);
+    /* Reducido a 'm' para compacidad */
+    margin-bottom: var(--space-m);
+    /* Reducido a 'm' para compacidad */
+    background-color: var(--bg-surface-secondary);
+}
+
+.form-modal legend {
+    font-weight: 600;
+    padding: 0 var(--space-xs);
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    /* Restaurado a tamaño original para compacidad */
+}
+
 /* New: Styles for selectable time slots in modals */
 .time-slot-container {
     display: flex;
@@ -1682,22 +1749,16 @@ input[type="checkbox"]:focus {
 
     /* Full-screen modals for mobile app feel - CRITICAL ADJUSTMENTS FOR NO CLIPPING */
     .form-overlay {
-        position: fixed;
-        /* Ocupa el viewport */
-        top: 0; /* Aseguramos que empiece desde arriba del todo */
-        left: 0;
-        width: 100%;
-        height: 100%; /* Cubre el 100% del viewport */
-        background: rgba(0, 0, 0, 0.6);
-        /* Fondo semi-transparente */
-        z-index: 1050; /* Aumentado el z-index para asegurar que esté POR ENCIMA de TODO */
-        
-        display: flex; /* Cambiado a flex para posicionamiento y tamaño más controlados */
-        flex-direction: column; /* Apila los elementos en columna */
-        justify-content: flex-end; /* Empuja el modal a la parte inferior del overlay */
-        align-items: stretch; /* Estira el modal a lo ancho */
-        
-        padding: 0; /* Aseguramos que no haya padding en el overlay que reduzca su cobertura */
+        padding: 0;
+        /* REMOVED ALL PADDING: Ensures modal uses full viewport for positioning */
+        /* Ahora usamos flexbox para controlar la posición y el tamaño */
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        /* Alinea el contenido (el modal) a la parte inferior */
+        align-items: stretch;
+        /* Permite que el modal se estire a todo el ancho */
+        z-index: var(--z-modal-backdrop); /* z-modal-backdrop: 1000, ahora debe estar por encima de nav-modes */
         backdrop-filter: blur(5px);
         opacity: 0;
         visibility: hidden;
