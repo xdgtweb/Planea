@@ -15,12 +15,13 @@ date_default_timezone_set('Europe/Madrid');
 ini_set('log_errors', 1);
 ini_set('error_log', 'error_log.log'); // Asegúrate de que este archivo tenga permisos de escritura
 // No mostrar errores en producción
-$is_production = false; // <--- TEMPORALMENTE CAMBIA ESTO A 'false' PARA VER ERRORES DETALLADOS. ¡RECUERDA VOLVERLO A 'true' DESPUÉS DE DEPURAR!
+$is_production = true; // <--- CAMBIA ESTO A 'true' para NO mostrar errores en la salida HTTP
 if ($is_production) {
     ini_set('display_errors', 0);
     ini_set('display_startup_errors', 0);
     error_reporting(0);
 } else {
+    // Si estás depurando, puedes dejarlo en 1 temporalmente, pero para APIs, siempre 0
     ini_set('display_errors', 1); // ESTO DEBERÍA ESTAR EN 0 EN PRODUCCIÓN O EN DESARROLLO CUANDO SE ESPERA JSON
     error_reporting(E_ALL);
 }

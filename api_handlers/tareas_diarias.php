@@ -663,13 +663,23 @@ switch ($method) {
                     if (!$stmt_sub) {
                         throw new Exception("Error al preparar la inserción de subtareas: " . $mysqli->error);
                     }
+                    $subtask_errors = []; // Array para recolectar errores de subtareas individuales
                     foreach ($data['subtareas_textos'] as $subtarea_texto) { 
                         if (!empty($subtarea_texto)) {
                             $stmt_sub->bind_param("isissi", $usuario_id, $subtarea_texto, $new_parent_id, $fecha_inicio, $regla_recurrencia, $next_submission_group_id); 
-                            $stmt_sub->execute();
+                            if (!$stmt_sub->execute()) { // Se agrega el control de errores de inserción de subtareas
+                                $subtask_errors[] = "Fallo al insertar subtarea '" . htmlspecialchars($subtarea_texto) . "': " . $stmt_sub->error;
+                            }
                         }
                     }
                     $stmt_sub->close();
+
+                    if (!empty($subtask_errors)) { // Si hubo errores en alguna subtarea, se hace rollback y se retorna el error
+                        $mysqli->rollback();
+                        json_response(['error' => 'Errores al insertar subtareas: ' . implode('; ', $subtask_errors)], 500);
+                        return;
+                    }
+
                     $mysqli->commit();
                     json_response(['success' => true, 'id' => $new_parent_id, 'submission_group_id' => $next_submission_group_id], 201); 
                 } catch (Exception $e) {

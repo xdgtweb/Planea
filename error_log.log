@@ -1,0 +1,1096 @@
+[10-Jun-2025 16:37:56 Europe/Madrid] Call to undefined function jsonResponse()
+#0 /home/vol5_3/infinityfree.com/if0_39074189/htdocs/api.php(106): require()
+#1 {main}
+[10-Jun-2025 16:38:00 Europe/Madrid] Call to undefined function jsonResponse()
+#0 /home/vol5_3/infinityfree.com/if0_39074189/htdocs/api.php(106): require()
+#1 {main}
+[11-Jun-2025 11:29:41 Europe/Madrid] Call to undefined function jsonResponse()
+#0 /home/vol5_3/infinityfree.com/if0_39074189/htdocs/api.php(106): require()
+#1 {main}
+[11-Jun-2025 11:29:54 Europe/Madrid] Call to undefined function jsonResponse()
+#0 /home/vol5_3/infinityfree.com/if0_39074189/htdocs/api.php(106): require()
+#1 {main}
+[11-Jun-2025 11:30:35 Europe/Madrid] Call to undefined function jsonResponse()
+#0 /home/vol5_3/infinityfree.com/if0_39074189/htdocs/api.php(106): require()
+#1 {main}
+[11-Jun-2025 11:44:40 Europe/Madrid] Call to undefined function jsonResponse()
+#0 /home/vol5_3/infinityfree.com/if0_39074189/htdocs/api.php(106): require()
+#1 {main}
+[11-Jun-2025 11:48:44 Europe/Madrid] Call to undefined function jsonResponse()
+#0 /home/vol5_3/infinityfree.com/if0_39074189/htdocs/api.php(81): require()
+#1 {main}
+[11-Jun-2025 14:28:33 Europe/Madrid] Unknown column 'emoji_anotacion' in 'field list'
+#0 /home/vol5_3/infinityfree.com/if0_39074189/htdocs/api_handlers/tareas_diarias.php(41): mysqli->prepare('SELECT id, text...')
+#1 /home/vol5_3/infinityfree.com/if0_39074189/htdocs/api.php(81): require('/home/vol5_3/in...')
+#2 {main}
+[11-Jun-2025 14:28:53 Europe/Madrid] Unknown column 'emoji_anotacion' in 'field list'
+#0 /home/vol5_3/infinityfree.com/if0_39074189/htdocs/api_handlers/tareas_diarias.php(41): mysqli->prepare('SELECT id, text...')
+#1 /home/vol5_3/infinityfree.com/if0_39074189/htdocs/api.php(81): require('/home/vol5_3/in...')
+#2 {main}
+[14-Jun-2025 10:43:02 Europe/Madrid] Property access is not allowed yet
+#0 /home/vol5_3/infinityfree.com/if0_39074189/htdocs/api.php(81): require()
+#1 {main}
+[14-Jun-2025 10:43:05 Europe/Madrid] Property access is not allowed yet
+#0 /home/vol5_3/infinityfree.com/if0_39074189/htdocs/api.php(81): require()
+#1 {main}
+[14-Jun-2025 10:43:05 Europe/Madrid] Property access is not allowed yet
+#0 /home/vol5_3/infinityfree.com/if0_39074189/htdocs/api.php(81): require()
+#1 {main}
+[14-Jun-2025 10:43:38 Europe/Madrid] Property access is not allowed yet
+#0 /home/vol5_3/infinityfree.com/if0_39074189/htdocs/api.php(81): require()
+#1 {main}
+[14-Jun-2025 15:25:50 Europe/Madrid] Property access is not allowed yet
+#0 /home/vol5_3/infinityfree.com/if0_39074189/htdocs/api.php(81): require()
+#1 {main}
+[14-Jun-2025 15:25:51 Europe/Madrid] Property access is not allowed yet
+#0 /home/vol5_3/infinityfree.com/if0_39074189/htdocs/api.php(81): require()
+#1 {main}
+[20-Jun-2025 14:15:23 Europe/Madrid] --- API Debug START ---
+[20-Jun-2025 14:15:23 Europe/Madrid] REQUEST_URI: /api.php?endpoint=/session-status
+[20-Jun-2025 14:15:23 Europe/Madrid] QUERY_STRING: endpoint=/session-status
+[20-Jun-2025 14:15:23 Europe/Madrid] GET Array: Array
+(
+    [endpoint] => /session-status
+)
+
+[20-Jun-2025 14:15:23 Europe/Madrid] Derived Endpoint: /session-status
+[20-Jun-2025 14:15:23 Europe/Madrid] --- API Debug END ---
+[20-Jun-2025 14:15:35 Europe/Madrid] --- API Debug START ---
+[20-Jun-2025 14:15:35 Europe/Madrid] REQUEST_URI: /api.php?endpoint=/google-signin
+[20-Jun-2025 14:15:35 Europe/Madrid] QUERY_STRING: endpoint=/google-signin
+[20-Jun-2025 14:15:35 Europe/Madrid] GET Array: Array
+(
+    [endpoint] => /google-signin
+)
+
+[20-Jun-2025 14:15:35 Europe/Madrid] Derived Endpoint: /google-signin
+[20-Jun-2025 14:15:35 Europe/Madrid] --- API Debug END ---
+[20-Jun-2025 14:15:35 Europe/Madrid] --- API Debug START ---
+[20-Jun-2025 14:15:35 Europe/Madrid] REQUEST_URI: /api.php?endpoint=/modos
+[20-Jun-2025 14:15:35 Europe/Madrid] QUERY_STRING: endpoint=/modos
+[20-Jun-2025 14:15:35 Europe/Madrid] GET Array: Array
+(
+    [endpoint] => /modos
+)
+
+[20-Jun-2025 14:15:35 Europe/Madrid] Derived Endpoint: /modos
+[20-Jun-2025 14:15:35 Europe/Madrid] --- API Debug END ---
+[20-Jun-2025 14:15:35 Europe/Madrid] --- API Debug START ---
+[20-Jun-2025 14:15:35 Europe/Madrid] REQUEST_URI: /api.php?endpoint=/calendario-dia-a-dia&mes=6&anio=2025
+[20-Jun-2025 14:15:35 Europe/Madrid] QUERY_STRING: endpoint=/calendario-dia-a-dia&mes=6&anio=2025
+[20-Jun-2025 14:15:35 Europe/Madrid] GET Array: Array
+(
+    [endpoint] => /calendario-dia-a-dia
+    [mes] => 6
+    [anio] => 2025
+)
+
+[20-Jun-2025 14:15:35 Europe/Madrid] Derived Endpoint: /calendario-dia-a-dia
+[20-Jun-2025 14:15:35 Europe/Madrid] --- API Debug END ---
+[20-Jun-2025 14:15:35 Europe/Madrid] --- API Debug START ---
+[20-Jun-2025 14:15:35 Europe/Madrid] REQUEST_URI: /api.php?endpoint=/anotaciones&mes=6&anio=2025
+[20-Jun-2025 14:15:35 Europe/Madrid] QUERY_STRING: endpoint=/anotaciones&mes=6&anio=2025
+[20-Jun-2025 14:15:35 Europe/Madrid] GET Array: Array
+(
+    [endpoint] => /anotaciones
+    [mes] => 6
+    [anio] => 2025
+)
+
+[20-Jun-2025 14:15:35 Europe/Madrid] Derived Endpoint: /anotaciones
+[20-Jun-2025 14:15:35 Europe/Madrid] --- API Debug END ---
+[20-Jun-2025 14:15:35 Europe/Madrid] --- API Debug START ---
+[20-Jun-2025 14:15:35 Europe/Madrid] REQUEST_URI: /api.php?endpoint=/tareas-dia-a-dia&fecha=2025-06-20
+[20-Jun-2025 14:15:35 Europe/Madrid] QUERY_STRING: endpoint=/tareas-dia-a-dia&fecha=2025-06-20
+[20-Jun-2025 14:15:35 Europe/Madrid] GET Array: Array
+(
+    [endpoint] => /tareas-dia-a-dia
+    [fecha] => 2025-06-20
+)
+
+[20-Jun-2025 14:15:35 Europe/Madrid] Derived Endpoint: /tareas-dia-a-dia
+[20-Jun-2025 14:15:35 Europe/Madrid] --- API Debug END ---
+[20-Jun-2025 14:15:38 Europe/Madrid] --- API Debug START ---
+[20-Jun-2025 14:15:38 Europe/Madrid] REQUEST_URI: /api.php?endpoint=/tareas-dia-a-dia
+[20-Jun-2025 14:15:38 Europe/Madrid] QUERY_STRING: endpoint=/tareas-dia-a-dia
+[20-Jun-2025 14:15:38 Europe/Madrid] GET Array: Array
+(
+    [endpoint] => /tareas-dia-a-dia
+)
+
+[20-Jun-2025 14:15:38 Europe/Madrid] Derived Endpoint: /tareas-dia-a-dia
+[20-Jun-2025 14:15:38 Europe/Madrid] --- API Debug END ---
+[20-Jun-2025 14:17:52 Europe/Madrid] --- API Debug START ---
+[20-Jun-2025 14:17:52 Europe/Madrid] REQUEST_URI: /api.php?endpoint=/session-status
+[20-Jun-2025 14:17:52 Europe/Madrid] QUERY_STRING: endpoint=/session-status
+[20-Jun-2025 14:17:52 Europe/Madrid] GET Array: Array
+(
+    [endpoint] => /session-status
+)
+
+[20-Jun-2025 14:17:52 Europe/Madrid] Derived Endpoint: /session-status
+[20-Jun-2025 14:17:52 Europe/Madrid] --- API Debug END ---
+[20-Jun-2025 14:18:04 Europe/Madrid] --- API Debug START ---
+[20-Jun-2025 14:18:04 Europe/Madrid] REQUEST_URI: /api.php?endpoint=/google-signin
+[20-Jun-2025 14:18:04 Europe/Madrid] QUERY_STRING: endpoint=/google-signin
+[20-Jun-2025 14:18:04 Europe/Madrid] GET Array: Array
+(
+    [endpoint] => /google-signin
+)
+
+[20-Jun-2025 14:18:04 Europe/Madrid] Derived Endpoint: /google-signin
+[20-Jun-2025 14:18:04 Europe/Madrid] --- API Debug END ---
+[20-Jun-2025 14:18:04 Europe/Madrid] --- API Debug START ---
+[20-Jun-2025 14:18:04 Europe/Madrid] REQUEST_URI: /api.php?endpoint=/modos
+[20-Jun-2025 14:18:04 Europe/Madrid] QUERY_STRING: endpoint=/modos
+[20-Jun-2025 14:18:04 Europe/Madrid] GET Array: Array
+(
+    [endpoint] => /modos
+)
+
+[20-Jun-2025 14:18:04 Europe/Madrid] Derived Endpoint: /modos
+[20-Jun-2025 14:18:04 Europe/Madrid] --- API Debug END ---
+[20-Jun-2025 14:18:04 Europe/Madrid] --- API Debug START ---
+[20-Jun-2025 14:18:04 Europe/Madrid] REQUEST_URI: /api.php?endpoint=/calendario-dia-a-dia&mes=6&anio=2025
+[20-Jun-2025 14:18:04 Europe/Madrid] QUERY_STRING: endpoint=/calendario-dia-a-dia&mes=6&anio=2025
+[20-Jun-2025 14:18:04 Europe/Madrid] GET Array: Array
+(
+    [endpoint] => /calendario-dia-a-dia
+    [mes] => 6
+    [anio] => 2025
+)
+
+[20-Jun-2025 14:18:04 Europe/Madrid] Derived Endpoint: /calendario-dia-a-dia
+[20-Jun-2025 14:18:04 Europe/Madrid] --- API Debug END ---
+[20-Jun-2025 14:18:04 Europe/Madrid] --- API Debug START ---
+[20-Jun-2025 14:18:04 Europe/Madrid] REQUEST_URI: /api.php?endpoint=/anotaciones&mes=6&anio=2025
+[20-Jun-2025 14:18:04 Europe/Madrid] QUERY_STRING: endpoint=/anotaciones&mes=6&anio=2025
+[20-Jun-2025 14:18:04 Europe/Madrid] GET Array: Array
+(
+    [endpoint] => /anotaciones
+    [mes] => 6
+    [anio] => 2025
+)
+
+[20-Jun-2025 14:18:04 Europe/Madrid] Derived Endpoint: /anotaciones
+[20-Jun-2025 14:18:04 Europe/Madrid] --- API Debug END ---
+[20-Jun-2025 14:18:05 Europe/Madrid] --- API Debug START ---
+[20-Jun-2025 14:18:05 Europe/Madrid] REQUEST_URI: /api.php?endpoint=/tareas-dia-a-dia&fecha=2025-06-20
+[20-Jun-2025 14:18:05 Europe/Madrid] QUERY_STRING: endpoint=/tareas-dia-a-dia&fecha=2025-06-20
+[20-Jun-2025 14:18:05 Europe/Madrid] GET Array: Array
+(
+    [endpoint] => /tareas-dia-a-dia
+    [fecha] => 2025-06-20
+)
+
+[20-Jun-2025 14:18:05 Europe/Madrid] Derived Endpoint: /tareas-dia-a-dia
+[20-Jun-2025 14:18:05 Europe/Madrid] --- API Debug END ---
+[20-Jun-2025 14:18:08 Europe/Madrid] --- API Debug START ---
+[20-Jun-2025 14:18:08 Europe/Madrid] REQUEST_URI: /api.php?endpoint=/tareas-dia-a-dia
+[20-Jun-2025 14:18:08 Europe/Madrid] QUERY_STRING: endpoint=/tareas-dia-a-dia
+[20-Jun-2025 14:18:08 Europe/Madrid] GET Array: Array
+(
+    [endpoint] => /tareas-dia-a-dia
+)
+
+[20-Jun-2025 14:18:08 Europe/Madrid] Derived Endpoint: /tareas-dia-a-dia
+[20-Jun-2025 14:18:08 Europe/Madrid] --- API Debug END ---
+[20-Jun-2025 14:20:36 Europe/Madrid] --- API Debug START ---
+[20-Jun-2025 14:20:36 Europe/Madrid] REQUEST_URI: /api.php?endpoint=/session-status
+[20-Jun-2025 14:20:36 Europe/Madrid] QUERY_STRING: endpoint=/session-status
+[20-Jun-2025 14:20:36 Europe/Madrid] GET Array: Array
+(
+    [endpoint] => /session-status
+)
+
+[20-Jun-2025 14:20:36 Europe/Madrid] Derived Endpoint: /session-status
+[20-Jun-2025 14:20:36 Europe/Madrid] --- API Debug END ---
+[20-Jun-2025 14:20:48 Europe/Madrid] --- API Debug START ---
+[20-Jun-2025 14:20:48 Europe/Madrid] REQUEST_URI: /api.php?endpoint=/google-signin
+[20-Jun-2025 14:20:48 Europe/Madrid] QUERY_STRING: endpoint=/google-signin
+[20-Jun-2025 14:20:48 Europe/Madrid] GET Array: Array
+(
+    [endpoint] => /google-signin
+)
+
+[20-Jun-2025 14:20:48 Europe/Madrid] Derived Endpoint: /google-signin
+[20-Jun-2025 14:20:48 Europe/Madrid] --- API Debug END ---
+[20-Jun-2025 14:20:48 Europe/Madrid] --- API Debug START ---
+[20-Jun-2025 14:20:48 Europe/Madrid] REQUEST_URI: /api.php?endpoint=/modos
+[20-Jun-2025 14:20:48 Europe/Madrid] QUERY_STRING: endpoint=/modos
+[20-Jun-2025 14:20:48 Europe/Madrid] GET Array: Array
+(
+    [endpoint] => /modos
+)
+
+[20-Jun-2025 14:20:48 Europe/Madrid] Derived Endpoint: /modos
+[20-Jun-2025 14:20:48 Europe/Madrid] --- API Debug END ---
+[20-Jun-2025 14:20:48 Europe/Madrid] --- API Debug START ---
+[20-Jun-2025 14:20:48 Europe/Madrid] REQUEST_URI: /api.php?endpoint=/anotaciones&mes=6&anio=2025
+[20-Jun-2025 14:20:48 Europe/Madrid] QUERY_STRING: endpoint=/anotaciones&mes=6&anio=2025
+[20-Jun-2025 14:20:48 Europe/Madrid] GET Array: Array
+(
+    [endpoint] => /anotaciones
+    [mes] => 6
+    [anio] => 2025
+)
+
+[20-Jun-2025 14:20:48 Europe/Madrid] Derived Endpoint: /anotaciones
+[20-Jun-2025 14:20:48 Europe/Madrid] --- API Debug END ---
+[20-Jun-2025 14:20:48 Europe/Madrid] --- API Debug START ---
+[20-Jun-2025 14:20:48 Europe/Madrid] REQUEST_URI: /api.php?endpoint=/calendario-dia-a-dia&mes=6&anio=2025
+[20-Jun-2025 14:20:48 Europe/Madrid] QUERY_STRING: endpoint=/calendario-dia-a-dia&mes=6&anio=2025
+[20-Jun-2025 14:20:48 Europe/Madrid] GET Array: Array
+(
+    [endpoint] => /calendario-dia-a-dia
+    [mes] => 6
+    [anio] => 2025
+)
+
+[20-Jun-2025 14:20:48 Europe/Madrid] Derived Endpoint: /calendario-dia-a-dia
+[20-Jun-2025 14:20:48 Europe/Madrid] --- API Debug END ---
+[20-Jun-2025 14:20:48 Europe/Madrid] --- API Debug START ---
+[20-Jun-2025 14:20:48 Europe/Madrid] REQUEST_URI: /api.php?endpoint=/tareas-dia-a-dia&fecha=2025-06-20
+[20-Jun-2025 14:20:48 Europe/Madrid] QUERY_STRING: endpoint=/tareas-dia-a-dia&fecha=2025-06-20
+[20-Jun-2025 14:20:48 Europe/Madrid] GET Array: Array
+(
+    [endpoint] => /tareas-dia-a-dia
+    [fecha] => 2025-06-20
+)
+
+[20-Jun-2025 14:20:48 Europe/Madrid] Derived Endpoint: /tareas-dia-a-dia
+[20-Jun-2025 14:20:48 Europe/Madrid] --- API Debug END ---
+[20-Jun-2025 14:20:54 Europe/Madrid] --- API Debug START ---
+[20-Jun-2025 14:20:54 Europe/Madrid] REQUEST_URI: /api.php?endpoint=/tareas-dia-a-dia
+[20-Jun-2025 14:20:54 Europe/Madrid] QUERY_STRING: endpoint=/tareas-dia-a-dia
+[20-Jun-2025 14:20:54 Europe/Madrid] GET Array: Array
+(
+    [endpoint] => /tareas-dia-a-dia
+)
+
+[20-Jun-2025 14:20:54 Europe/Madrid] Derived Endpoint: /tareas-dia-a-dia
+[20-Jun-2025 14:20:54 Europe/Madrid] --- API Debug END ---
+[20-Jun-2025 14:30:51 Europe/Madrid] --- API Debug START (EXTENDED) ---
+[20-Jun-2025 14:30:51 Europe/Madrid] METHOD: GET
+[20-Jun-2025 14:30:51 Europe/Madrid] REQUEST_URI: /api.php?endpoint=/session-status
+[20-Jun-2025 14:30:51 Europe/Madrid] SCRIPT_NAME: /api.php
+[20-Jun-2025 14:30:51 Europe/Madrid] PHP_SELF: /api.php
+[20-Jun-2025 14:30:51 Europe/Madrid] QUERY_STRING: endpoint=/session-status
+[20-Jun-2025 14:30:51 Europe/Madrid] GET Array: Array
+(
+    [endpoint] => /session-status
+)
+
+[20-Jun-2025 14:30:51 Europe/Madrid] POST Array: Array
+(
+)
+
+[20-Jun-2025 14:30:51 Europe/Madrid] Raw POST Data: No raw POST data
+[20-Jun-2025 14:30:51 Europe/Madrid] Derived Endpoint: /session-status
+[20-Jun-2025 14:30:51 Europe/Madrid] --- API Debug END (EXTENDED) ---
+[20-Jun-2025 14:31:04 Europe/Madrid] --- API Debug START (EXTENDED) ---
+[20-Jun-2025 14:31:04 Europe/Madrid] METHOD: POST
+[20-Jun-2025 14:31:04 Europe/Madrid] REQUEST_URI: /api.php?endpoint=/google-signin
+[20-Jun-2025 14:31:04 Europe/Madrid] SCRIPT_NAME: /api.php
+[20-Jun-2025 14:31:04 Europe/Madrid] PHP_SELF: /api.php
+[20-Jun-2025 14:31:04 Europe/Madrid] QUERY_STRING: endpoint=/google-signin
+[20-Jun-2025 14:31:04 Europe/Madrid] GET Array: Array
+(
+    [endpoint] => /google-signin
+)
+
+[20-Jun-2025 14:31:04 Europe/Madrid] POST Array: Array
+(
+)
+
+[20-Jun-2025 14:31:04 Europe/Madrid] Raw POST Data: {"token":"eyJhbGciOiJSUzI1NiIsImtpZCI6IjFiYjc3NGJkODcyOWVhMzhlOWMyZmUwYzY0ZDJjYTk0OGJmNjZmMGYiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL2FjY291bnRzLmdvb2dsZS5jb20iLCJhenAiOiIzNTY0ODY5OTczNzYtMWN0dHM5dGpvYmpoNGJsMmI3MGxjbXM0ZHE5OHNlM2wuYXBwcy5nb29nbGV1c2VyY29udGVudC5jb20iLCJhdWQiOiIzNTY0ODY5OTczNzYtMWN0dHM5dGpvYmpoNGJsMmI3MGxjbXM0ZHE5OHNlM2wuYXBwcy5nb29nbGV1c2VyY29udGVudC5jb20iLCJzdWIiOiIxMTYwOTUxMzU0ODQ3MzU4NDgwMzgiLCJlbWFpbCI6ImRhZ2FydG8uY3Zjb0BnbWFpbC5jb20iLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwibmJmIjoxNzUwNDIyMzYzLCJuYW1lIjoiSmF2aWVyIEdhcmNpYSIsInBpY3R1cmUiOiJodHRwczovL2xoMy5nb29nbGV1c2VyY29udGVudC5jb20vYS9BQ2c4b2NJS0xxSEUzbTl2N1BzaVJYWDBiWWlZdVZ2S1FIWDBaX3F3bTdjNjd3UlluQWJWU1hNPXM5Ni1jIiwiZ2l2ZW5fbmFtZSI6IkphdmllciIsImZhbWlseV9uYW1lIjoiR2FyY2lhIiwiaWF0IjoxNzUwNDIyNjYzLCJleHAiOjE3NTA0MjYyNjMsImp0aSI6ImE0MTVlODVhMWZhZThmZjAxZDM5NTlhMDMxNDMwNDVmMWM1YzBjM2EifQ.NGmVJA6nOZBE9qRTIiXKsBVS8BH-M2A2LnHChxFZoWW3PtjLW5SQIE9-a9iet2ILj0OLm6jUr4HoFLkSJe7qn1dNUfHzKWdHimcuCwJ6KtC5ygvvhWP0bDpZS4aEz62jj2y09BNix0S9yL-wBuWGxIEP5h8ZsiZK_kCZpJ_SSv9JqzGJa3b8EHc-nOZpUqyE7vTzkk6syx_-fCG-XaVJj10oPnV-ztUotwEZxyxHnGsqtRjme1GTuyKfB43rmUXtRFAxDYZnxp3U7t_UWH5o9hQeDMEIiFuvAdV4JxsfB9yCqUkjEhhiE0yIteer-VFFrKKS98zq10Dax2xtyB6sDQ"}
+[20-Jun-2025 14:31:04 Europe/Madrid] Derived Endpoint: /google-signin
+[20-Jun-2025 14:31:04 Europe/Madrid] --- API Debug END (EXTENDED) ---
+[20-Jun-2025 14:31:04 Europe/Madrid] --- API Debug START (EXTENDED) ---
+[20-Jun-2025 14:31:04 Europe/Madrid] METHOD: GET
+[20-Jun-2025 14:31:04 Europe/Madrid] REQUEST_URI: /api.php?endpoint=/modos
+[20-Jun-2025 14:31:04 Europe/Madrid] SCRIPT_NAME: /api.php
+[20-Jun-2025 14:31:04 Europe/Madrid] PHP_SELF: /api.php
+[20-Jun-2025 14:31:04 Europe/Madrid] QUERY_STRING: endpoint=/modos
+[20-Jun-2025 14:31:04 Europe/Madrid] GET Array: Array
+(
+    [endpoint] => /modos
+)
+
+[20-Jun-2025 14:31:04 Europe/Madrid] POST Array: Array
+(
+)
+
+[20-Jun-2025 14:31:04 Europe/Madrid] Raw POST Data: No raw POST data
+[20-Jun-2025 14:31:04 Europe/Madrid] Derived Endpoint: /modos
+[20-Jun-2025 14:31:04 Europe/Madrid] --- API Debug END (EXTENDED) ---
+[20-Jun-2025 14:31:04 Europe/Madrid] --- API Debug START (EXTENDED) ---
+[20-Jun-2025 14:31:04 Europe/Madrid] METHOD: GET
+[20-Jun-2025 14:31:04 Europe/Madrid] REQUEST_URI: /api.php?endpoint=/anotaciones&mes=6&anio=2025
+[20-Jun-2025 14:31:04 Europe/Madrid] SCRIPT_NAME: /api.php
+[20-Jun-2025 14:31:04 Europe/Madrid] PHP_SELF: /api.php
+[20-Jun-2025 14:31:04 Europe/Madrid] QUERY_STRING: endpoint=/anotaciones&mes=6&anio=2025
+[20-Jun-2025 14:31:04 Europe/Madrid] GET Array: Array
+(
+    [endpoint] => /anotaciones
+    [mes] => 6
+    [anio] => 2025
+)
+
+[20-Jun-2025 14:31:04 Europe/Madrid] POST Array: Array
+(
+)
+
+[20-Jun-2025 14:31:04 Europe/Madrid] Raw POST Data: No raw POST data
+[20-Jun-2025 14:31:04 Europe/Madrid] Derived Endpoint: /anotaciones
+[20-Jun-2025 14:31:04 Europe/Madrid] --- API Debug END (EXTENDED) ---
+[20-Jun-2025 14:31:04 Europe/Madrid] --- API Debug START (EXTENDED) ---
+[20-Jun-2025 14:31:04 Europe/Madrid] METHOD: GET
+[20-Jun-2025 14:31:04 Europe/Madrid] REQUEST_URI: /api.php?endpoint=/calendario-dia-a-dia&mes=6&anio=2025
+[20-Jun-2025 14:31:04 Europe/Madrid] SCRIPT_NAME: /api.php
+[20-Jun-2025 14:31:04 Europe/Madrid] PHP_SELF: /api.php
+[20-Jun-2025 14:31:04 Europe/Madrid] QUERY_STRING: endpoint=/calendario-dia-a-dia&mes=6&anio=2025
+[20-Jun-2025 14:31:04 Europe/Madrid] GET Array: Array
+(
+    [endpoint] => /calendario-dia-a-dia
+    [mes] => 6
+    [anio] => 2025
+)
+
+[20-Jun-2025 14:31:04 Europe/Madrid] POST Array: Array
+(
+)
+
+[20-Jun-2025 14:31:04 Europe/Madrid] Raw POST Data: No raw POST data
+[20-Jun-2025 14:31:04 Europe/Madrid] Derived Endpoint: /calendario-dia-a-dia
+[20-Jun-2025 14:31:04 Europe/Madrid] --- API Debug END (EXTENDED) ---
+[20-Jun-2025 14:31:04 Europe/Madrid] --- API Debug START (EXTENDED) ---
+[20-Jun-2025 14:31:04 Europe/Madrid] METHOD: GET
+[20-Jun-2025 14:31:04 Europe/Madrid] REQUEST_URI: /api.php?endpoint=/tareas-dia-a-dia&fecha=2025-06-20
+[20-Jun-2025 14:31:04 Europe/Madrid] SCRIPT_NAME: /api.php
+[20-Jun-2025 14:31:04 Europe/Madrid] PHP_SELF: /api.php
+[20-Jun-2025 14:31:04 Europe/Madrid] QUERY_STRING: endpoint=/tareas-dia-a-dia&fecha=2025-06-20
+[20-Jun-2025 14:31:04 Europe/Madrid] GET Array: Array
+(
+    [endpoint] => /tareas-dia-a-dia
+    [fecha] => 2025-06-20
+)
+
+[20-Jun-2025 14:31:04 Europe/Madrid] POST Array: Array
+(
+)
+
+[20-Jun-2025 14:31:04 Europe/Madrid] Raw POST Data: No raw POST data
+[20-Jun-2025 14:31:04 Europe/Madrid] Derived Endpoint: /tareas-dia-a-dia
+[20-Jun-2025 14:31:04 Europe/Madrid] --- API Debug END (EXTENDED) ---
+[20-Jun-2025 14:31:11 Europe/Madrid] --- API Debug START (EXTENDED) ---
+[20-Jun-2025 14:31:11 Europe/Madrid] METHOD: POST
+[20-Jun-2025 14:31:11 Europe/Madrid] REQUEST_URI: /api.php?endpoint=/tareas-dia-a-dia
+[20-Jun-2025 14:31:11 Europe/Madrid] SCRIPT_NAME: /api.php
+[20-Jun-2025 14:31:11 Europe/Madrid] PHP_SELF: /api.php
+[20-Jun-2025 14:31:11 Europe/Madrid] QUERY_STRING: endpoint=/tareas-dia-a-dia
+[20-Jun-2025 14:31:11 Europe/Madrid] GET Array: Array
+(
+    [endpoint] => /tareas-dia-a-dia
+)
+
+[20-Jun-2025 14:31:11 Europe/Madrid] POST Array: Array
+(
+)
+
+[20-Jun-2025 14:31:11 Europe/Madrid] Raw POST Data: {"_method":"PUT","id":3,"completado":true,"fecha_actualizacion":"2025-06-20","texto":"444","tipo":"subtarea"}
+[20-Jun-2025 14:31:11 Europe/Madrid] Derived Endpoint: /tareas-dia-a-dia
+[20-Jun-2025 14:31:11 Europe/Madrid] --- API Debug END (EXTENDED) ---
+[22-Jun-2025 23:53:15 Europe/Madrid] Unknown column 'email_verified_at' in 'field list'
+#0 /home/vol5_3/infinityfree.com/if0_39074189/htdocs/api_handlers/login.php(15): mysqli->prepare('SELECT id, user...')
+#1 /home/vol5_3/infinityfree.com/if0_39074189/htdocs/api.php(111): require('/home/vol5_3/in...')
+#2 {main}
+[22-Jun-2025 23:53:18 Europe/Madrid] Unknown column 'email_verified_at' in 'field list'
+#0 /home/vol5_3/infinityfree.com/if0_39074189/htdocs/api_handlers/login.php(15): mysqli->prepare('SELECT id, user...')
+#1 /home/vol5_3/infinityfree.com/if0_39074189/htdocs/api.php(111): require('/home/vol5_3/in...')
+#2 {main}
+[23-Jun-2025 01:33:20 Europe/Madrid] Unknown column 'verification_token' in 'field list'
+#0 /home/vol5_3/infinityfree.com/if0_39074189/htdocs/api_handlers/register.php(40): mysqli->prepare('INSERT INTO usu...')
+#1 /home/vol5_3/infinityfree.com/if0_39074189/htdocs/api.php(111): require('/home/vol5_3/in...')
+#2 {main}
+[23-Jun-2025 01:33:32 Europe/Madrid] Unknown column 'verification_token' in 'field list'
+#0 /home/vol5_3/infinityfree.com/if0_39074189/htdocs/api_handlers/register.php(40): mysqli->prepare('INSERT INTO usu...')
+#1 /home/vol5_3/infinityfree.com/if0_39074189/htdocs/api.php(111): require('/home/vol5_3/in...')
+#2 {main}
+[23-Jun-2025 01:33:33 Europe/Madrid] Unknown column 'verification_token' in 'field list'
+#0 /home/vol5_3/infinityfree.com/if0_39074189/htdocs/api_handlers/register.php(40): mysqli->prepare('INSERT INTO usu...')
+#1 /home/vol5_3/infinityfree.com/if0_39074189/htdocs/api.php(111): require('/home/vol5_3/in...')
+#2 {main}
+[23-Jun-2025 01:33:34 Europe/Madrid] Unknown column 'verification_token' in 'field list'
+#0 /home/vol5_3/infinityfree.com/if0_39074189/htdocs/api_handlers/register.php(40): mysqli->prepare('INSERT INTO usu...')
+#1 /home/vol5_3/infinityfree.com/if0_39074189/htdocs/api.php(111): require('/home/vol5_3/in...')
+#2 {main}
+[23-Jun-2025 01:33:35 Europe/Madrid] Unknown column 'verification_token' in 'field list'
+#0 /home/vol5_3/infinityfree.com/if0_39074189/htdocs/api_handlers/register.php(40): mysqli->prepare('INSERT INTO usu...')
+#1 /home/vol5_3/infinityfree.com/if0_39074189/htdocs/api.php(111): require('/home/vol5_3/in...')
+#2 {main}
+[23-Jun-2025 01:33:35 Europe/Madrid] Unknown column 'verification_token' in 'field list'
+#0 /home/vol5_3/infinityfree.com/if0_39074189/htdocs/api_handlers/register.php(40): mysqli->prepare('INSERT INTO usu...')
+#1 /home/vol5_3/infinityfree.com/if0_39074189/htdocs/api.php(111): require('/home/vol5_3/in...')
+#2 {main}
+[23-Jun-2025 01:34:03 Europe/Madrid] Unknown column 'verification_token' in 'field list'
+#0 /home/vol5_3/infinityfree.com/if0_39074189/htdocs/api_handlers/register.php(40): mysqli->prepare('INSERT INTO usu...')
+#1 /home/vol5_3/infinityfree.com/if0_39074189/htdocs/api.php(111): require('/home/vol5_3/in...')
+#2 {main}
+[23-Jun-2025 01:34:04 Europe/Madrid] Unknown column 'verification_token' in 'field list'
+#0 /home/vol5_3/infinityfree.com/if0_39074189/htdocs/api_handlers/register.php(40): mysqli->prepare('INSERT INTO usu...')
+#1 /home/vol5_3/infinityfree.com/if0_39074189/htdocs/api.php(111): require('/home/vol5_3/in...')
+#2 {main}
+[23-Jun-2025 01:34:04 Europe/Madrid] Unknown column 'verification_token' in 'field list'
+#0 /home/vol5_3/infinityfree.com/if0_39074189/htdocs/api_handlers/register.php(40): mysqli->prepare('INSERT INTO usu...')
+#1 /home/vol5_3/infinityfree.com/if0_39074189/htdocs/api.php(111): require('/home/vol5_3/in...')
+#2 {main}
+[23-Jun-2025 13:25:57 Europe/Madrid] Call to undefined method DateTime::getTime()
+#0 /home/vol5_3/infinityfree.com/if0_39074189/htdocs/api.php(111): require()
+#1 {main}
+[23-Jun-2025 13:27:32 Europe/Madrid] Call to undefined method DateTime::getTime()
+#0 /home/vol5_3/infinityfree.com/if0_39074189/htdocs/api.php(111): require()
+#1 {main}
+[23-Jun-2025 13:30:00 Europe/Madrid] Call to undefined method DateTime::getTime()
+#0 /home/vol5_3/infinityfree.com/if0_39074189/htdocs/api.php(111): require()
+#1 {main}
+[23-Jun-2025 13:36:30 Europe/Madrid] Call to undefined method DateTime::getTime()
+#0 /home/vol5_3/infinityfree.com/if0_39074189/htdocs/api.php(111): require()
+#1 {main}
+[23-Jun-2025 13:36:37 Europe/Madrid] Call to undefined method DateTime::getTime()
+#0 /home/vol5_3/infinityfree.com/if0_39074189/htdocs/api.php(111): require()
+#1 {main}
+[23-Jun-2025 13:44:29 Europe/Madrid] Call to undefined method DateTime::getTime()
+#0 /home/vol5_3/infinityfree.com/if0_39074189/htdocs/api.php(111): require()
+#1 {main}
+[23-Jun-2025 13:46:23 Europe/Madrid] Call to undefined method DateTime::getTime()
+#0 /home/vol5_3/infinityfree.com/if0_39074189/htdocs/api.php(111): require()
+#1 {main}
+[23-Jun-2025 13:51:31 Europe/Madrid] anotaciones.php GET request. fecha_single: NULL, mes: 6, anio: 2025
+[23-Jun-2025 13:51:31 Europe/Madrid] anotaciones.php GET request. _GET content: Array
+(
+    [mes] => 6
+    [anio] => 2025
+)
+
+[23-Jun-2025 13:51:31 Europe/Madrid] anotaciones.php: Checking if (mes && anio) is true. Result: TRUE
+[23-Jun-2025 13:51:37 Europe/Madrid] Call to undefined method DateTime::getTime()
+#0 /home/vol5_3/infinityfree.com/if0_39074189/htdocs/api.php(111): require()
+#1 {main}
+[23-Jun-2025 13:51:37 Europe/Madrid] anotaciones.php GET request. fecha_single: 2025-06-23, mes: NULL, anio: NULL
+[23-Jun-2025 13:51:37 Europe/Madrid] anotaciones.php GET request. _GET content: Array
+(
+    [fecha] => 2025-06-23
+)
+
+[23-Jun-2025 13:52:44 Europe/Madrid] anotaciones.php GET request. fecha_single: NULL, mes: 6, anio: 2025
+[23-Jun-2025 13:52:44 Europe/Madrid] anotaciones.php GET request. _GET content: Array
+(
+    [mes] => 6
+    [anio] => 2025
+)
+
+[23-Jun-2025 13:52:44 Europe/Madrid] anotaciones.php: Checking if (mes && anio) is true. Result: TRUE
+[23-Jun-2025 13:52:50 Europe/Madrid] anotaciones.php GET request. fecha_single: 2025-06-23, mes: NULL, anio: NULL
+[23-Jun-2025 13:52:50 Europe/Madrid] anotaciones.php GET request. _GET content: Array
+(
+    [fecha] => 2025-06-23
+)
+
+[23-Jun-2025 13:52:56 Europe/Madrid] anotaciones.php GET request. fecha_single: NULL, mes: 6, anio: 2025
+[23-Jun-2025 13:52:56 Europe/Madrid] anotaciones.php GET request. _GET content: Array
+(
+    [mes] => 6
+    [anio] => 2025
+)
+
+[23-Jun-2025 13:52:56 Europe/Madrid] anotaciones.php: Checking if (mes && anio) is true. Result: TRUE
+[23-Jun-2025 13:53:13 Europe/Madrid] anotaciones.php GET request. fecha_single: NULL, mes: 6, anio: 2025
+[23-Jun-2025 13:53:13 Europe/Madrid] anotaciones.php GET request. _GET content: Array
+(
+    [mes] => 6
+    [anio] => 2025
+)
+
+[23-Jun-2025 13:53:13 Europe/Madrid] anotaciones.php: Checking if (mes && anio) is true. Result: TRUE
+[23-Jun-2025 13:54:39 Europe/Madrid] anotaciones.php GET request. fecha_single: NULL, mes: 6, anio: 2025
+[23-Jun-2025 13:54:39 Europe/Madrid] anotaciones.php GET request. _GET content: Array
+(
+    [mes] => 6
+    [anio] => 2025
+)
+
+[23-Jun-2025 13:54:39 Europe/Madrid] anotaciones.php: Checking if (mes && anio) is true. Result: TRUE
+[23-Jun-2025 13:54:44 Europe/Madrid] anotaciones.php GET request. fecha_single: 2025-06-23, mes: NULL, anio: NULL
+[23-Jun-2025 13:54:44 Europe/Madrid] anotaciones.php GET request. _GET content: Array
+(
+    [fecha] => 2025-06-23
+)
+
+[23-Jun-2025 13:54:46 Europe/Madrid] anotaciones.php GET request. fecha_single: NULL, mes: 6, anio: 2025
+[23-Jun-2025 13:54:46 Europe/Madrid] anotaciones.php GET request. _GET content: Array
+(
+    [mes] => 6
+    [anio] => 2025
+)
+
+[23-Jun-2025 13:54:46 Europe/Madrid] anotaciones.php: Checking if (mes && anio) is true. Result: TRUE
+[23-Jun-2025 13:59:18 Europe/Madrid] anotaciones.php GET request. fecha_single: NULL, mes: 6, anio: 2025
+[23-Jun-2025 13:59:18 Europe/Madrid] anotaciones.php GET request. _GET content: Array
+(
+    [mes] => 6
+    [anio] => 2025
+)
+
+[23-Jun-2025 13:59:18 Europe/Madrid] anotaciones.php: Checking if (mes && anio) is true. Result: TRUE
+[23-Jun-2025 13:59:23 Europe/Madrid] anotaciones.php GET request. fecha_single: 2025-06-23, mes: NULL, anio: NULL
+[23-Jun-2025 13:59:23 Europe/Madrid] anotaciones.php GET request. _GET content: Array
+(
+    [fecha] => 2025-06-23
+)
+
+[23-Jun-2025 13:59:26 Europe/Madrid] anotaciones.php GET request. fecha_single: NULL, mes: 6, anio: 2025
+[23-Jun-2025 13:59:26 Europe/Madrid] anotaciones.php GET request. _GET content: Array
+(
+    [mes] => 6
+    [anio] => 2025
+)
+
+[23-Jun-2025 13:59:26 Europe/Madrid] anotaciones.php: Checking if (mes && anio) is true. Result: TRUE
+[23-Jun-2025 14:01:33 Europe/Madrid] anotaciones.php GET request. fecha_single: NULL, mes: 6, anio: 2025
+[23-Jun-2025 14:01:33 Europe/Madrid] anotaciones.php GET request. _GET content: Array
+(
+    [mes] => 6
+    [anio] => 2025
+)
+
+[23-Jun-2025 14:01:33 Europe/Madrid] anotaciones.php: Checking if (mes && anio) is true. Result: TRUE
+[23-Jun-2025 14:02:22 Europe/Madrid] Failed opening required '../helpers/email_helper.php' (include_path='.:/usr/share/pear/')
+#0 /home/vol5_3/infinityfree.com/if0_39074189/htdocs/api.php(111): require()
+#1 {main}
+[23-Jun-2025 14:03:20 Europe/Madrid] anotaciones.php GET request. fecha_single: NULL, mes: 6, anio: 2025
+[23-Jun-2025 14:03:20 Europe/Madrid] anotaciones.php GET request. _GET content: Array
+(
+    [mes] => 6
+    [anio] => 2025
+)
+
+[23-Jun-2025 14:03:20 Europe/Madrid] anotaciones.php: Checking if (mes && anio) is true. Result: TRUE
+[23-Jun-2025 14:03:22 Europe/Madrid] anotaciones.php GET request. fecha_single: 2025-06-22, mes: NULL, anio: NULL
+[23-Jun-2025 14:03:22 Europe/Madrid] anotaciones.php GET request. _GET content: Array
+(
+    [fecha] => 2025-06-22
+)
+
+[23-Jun-2025 14:05:05 Europe/Madrid] anotaciones.php GET request. fecha_single: NULL, mes: 6, anio: 2025
+[23-Jun-2025 14:05:05 Europe/Madrid] anotaciones.php GET request. _GET content: Array
+(
+    [mes] => 6
+    [anio] => 2025
+)
+
+[23-Jun-2025 14:05:05 Europe/Madrid] anotaciones.php: Checking if (mes && anio) is true. Result: TRUE
+[23-Jun-2025 14:05:10 Europe/Madrid] anotaciones.php GET request. fecha_single: 2025-06-22, mes: NULL, anio: NULL
+[23-Jun-2025 14:05:10 Europe/Madrid] anotaciones.php GET request. _GET content: Array
+(
+    [fecha] => 2025-06-22
+)
+
+[23-Jun-2025 14:05:13 Europe/Madrid] anotaciones.php GET request. fecha_single: 2025-06-23, mes: NULL, anio: NULL
+[23-Jun-2025 14:05:13 Europe/Madrid] anotaciones.php GET request. _GET content: Array
+(
+    [fecha] => 2025-06-23
+)
+
+[23-Jun-2025 14:05:15 Europe/Madrid] anotaciones.php GET request. fecha_single: 2025-06-23, mes: NULL, anio: NULL
+[23-Jun-2025 14:05:15 Europe/Madrid] anotaciones.php GET request. _GET content: Array
+(
+    [fecha] => 2025-06-23
+)
+
+[23-Jun-2025 14:05:23 Europe/Madrid] anotaciones.php GET request. fecha_single: 2025-06-23, mes: NULL, anio: NULL
+[23-Jun-2025 14:05:23 Europe/Madrid] anotaciones.php GET request. _GET content: Array
+(
+    [fecha] => 2025-06-23
+)
+
+[23-Jun-2025 14:05:26 Europe/Madrid] anotaciones.php GET request. fecha_single: 2025-06-23, mes: NULL, anio: NULL
+[23-Jun-2025 14:05:26 Europe/Madrid] anotaciones.php GET request. _GET content: Array
+(
+    [fecha] => 2025-06-23
+)
+
+[23-Jun-2025 14:05:30 Europe/Madrid] anotaciones.php GET request. fecha_single: 2025-06-23, mes: NULL, anio: NULL
+[23-Jun-2025 14:05:30 Europe/Madrid] anotaciones.php GET request. _GET content: Array
+(
+    [fecha] => 2025-06-23
+)
+
+[23-Jun-2025 14:06:16 Europe/Madrid] anotaciones.php GET request. fecha_single: 2025-06-23, mes: NULL, anio: NULL
+[23-Jun-2025 14:06:16 Europe/Madrid] anotaciones.php GET request. _GET content: Array
+(
+    [fecha] => 2025-06-23
+)
+
+[23-Jun-2025 14:09:07 Europe/Madrid] anotaciones.php GET request. fecha_single: NULL, mes: 6, anio: 2025
+[23-Jun-2025 14:09:07 Europe/Madrid] anotaciones.php GET request. _GET content: Array
+(
+    [mes] => 6
+    [anio] => 2025
+)
+
+[23-Jun-2025 14:09:07 Europe/Madrid] anotaciones.php: Checking if (mes && anio) is true. Result: TRUE
+[23-Jun-2025 14:09:12 Europe/Madrid] anotaciones.php GET request. fecha_single: 2025-06-23, mes: NULL, anio: NULL
+[23-Jun-2025 14:09:12 Europe/Madrid] anotaciones.php GET request. _GET content: Array
+(
+    [fecha] => 2025-06-23
+)
+
+[23-Jun-2025 14:09:18 Europe/Madrid] anotaciones.php GET request. fecha_single: 2025-06-23, mes: NULL, anio: NULL
+[23-Jun-2025 14:09:18 Europe/Madrid] anotaciones.php GET request. _GET content: Array
+(
+    [fecha] => 2025-06-23
+)
+
+[23-Jun-2025 14:09:29 Europe/Madrid] anotaciones.php GET request. fecha_single: 2025-06-24, mes: NULL, anio: NULL
+[23-Jun-2025 14:09:29 Europe/Madrid] anotaciones.php GET request. _GET content: Array
+(
+    [fecha] => 2025-06-24
+)
+
+[23-Jun-2025 14:09:35 Europe/Madrid] anotaciones.php GET request. fecha_single: NULL, mes: 6, anio: 2025
+[23-Jun-2025 14:09:35 Europe/Madrid] anotaciones.php GET request. _GET content: Array
+(
+    [mes] => 6
+    [anio] => 2025
+)
+
+[23-Jun-2025 14:09:35 Europe/Madrid] anotaciones.php: Checking if (mes && anio) is true. Result: TRUE
+[23-Jun-2025 14:09:35 Europe/Madrid] anotaciones.php GET request. fecha_single: 2025-06-24, mes: NULL, anio: NULL
+[23-Jun-2025 14:09:35 Europe/Madrid] anotaciones.php GET request. _GET content: Array
+(
+    [fecha] => 2025-06-24
+)
+
+[23-Jun-2025 14:09:47 Europe/Madrid] anotaciones.php GET request. fecha_single: 2025-06-24, mes: NULL, anio: NULL
+[23-Jun-2025 14:09:47 Europe/Madrid] anotaciones.php GET request. _GET content: Array
+(
+    [fecha] => 2025-06-24
+)
+
+[23-Jun-2025 14:12:12 Europe/Madrid] anotaciones.php GET request. fecha_single: NULL, mes: 6, anio: 2025
+[23-Jun-2025 14:12:12 Europe/Madrid] anotaciones.php GET request. _GET content: Array
+(
+    [mes] => 6
+    [anio] => 2025
+)
+
+[23-Jun-2025 14:12:12 Europe/Madrid] anotaciones.php: Checking if (mes && anio) is true. Result: TRUE
+[23-Jun-2025 14:12:16 Europe/Madrid] anotaciones.php GET request. fecha_single: 2025-06-24, mes: NULL, anio: NULL
+[23-Jun-2025 14:12:16 Europe/Madrid] anotaciones.php GET request. _GET content: Array
+(
+    [fecha] => 2025-06-24
+)
+
+[23-Jun-2025 14:12:18 Europe/Madrid] anotaciones.php GET request. fecha_single: 2025-06-23, mes: NULL, anio: NULL
+[23-Jun-2025 14:12:18 Europe/Madrid] anotaciones.php GET request. _GET content: Array
+(
+    [fecha] => 2025-06-23
+)
+
+[23-Jun-2025 14:12:23 Europe/Madrid] anotaciones.php GET request. fecha_single: 2025-06-25, mes: NULL, anio: NULL
+[23-Jun-2025 14:12:23 Europe/Madrid] anotaciones.php GET request. _GET content: Array
+(
+    [fecha] => 2025-06-25
+)
+
+[23-Jun-2025 14:12:27 Europe/Madrid] anotaciones.php GET request. fecha_single: NULL, mes: 6, anio: 2025
+[23-Jun-2025 14:12:27 Europe/Madrid] anotaciones.php GET request. _GET content: Array
+(
+    [mes] => 6
+    [anio] => 2025
+)
+
+[23-Jun-2025 14:12:27 Europe/Madrid] anotaciones.php: Checking if (mes && anio) is true. Result: TRUE
+[23-Jun-2025 14:12:28 Europe/Madrid] anotaciones.php GET request. fecha_single: 2025-06-25, mes: NULL, anio: NULL
+[23-Jun-2025 14:12:28 Europe/Madrid] anotaciones.php GET request. _GET content: Array
+(
+    [fecha] => 2025-06-25
+)
+
+[23-Jun-2025 14:12:32 Europe/Madrid] anotaciones.php GET request. fecha_single: NULL, mes: 6, anio: 2025
+[23-Jun-2025 14:12:32 Europe/Madrid] anotaciones.php GET request. _GET content: Array
+(
+    [mes] => 6
+    [anio] => 2025
+)
+
+[23-Jun-2025 14:12:32 Europe/Madrid] anotaciones.php: Checking if (mes && anio) is true. Result: TRUE
+[23-Jun-2025 14:12:33 Europe/Madrid] anotaciones.php GET request. fecha_single: 2025-06-26, mes: NULL, anio: NULL
+[23-Jun-2025 14:12:33 Europe/Madrid] anotaciones.php GET request. _GET content: Array
+(
+    [fecha] => 2025-06-26
+)
+
+[23-Jun-2025 14:12:36 Europe/Madrid] anotaciones.php GET request. fecha_single: NULL, mes: 6, anio: 2025
+[23-Jun-2025 14:12:36 Europe/Madrid] anotaciones.php GET request. _GET content: Array
+(
+    [mes] => 6
+    [anio] => 2025
+)
+
+[23-Jun-2025 14:12:36 Europe/Madrid] anotaciones.php: Checking if (mes && anio) is true. Result: TRUE
+[23-Jun-2025 14:12:37 Europe/Madrid] anotaciones.php GET request. fecha_single: 2025-06-26, mes: NULL, anio: NULL
+[23-Jun-2025 14:12:37 Europe/Madrid] anotaciones.php GET request. _GET content: Array
+(
+    [fecha] => 2025-06-26
+)
+
+[23-Jun-2025 14:12:39 Europe/Madrid] anotaciones.php GET request. fecha_single: NULL, mes: 6, anio: 2025
+[23-Jun-2025 14:12:39 Europe/Madrid] anotaciones.php GET request. _GET content: Array
+(
+    [mes] => 6
+    [anio] => 2025
+)
+
+[23-Jun-2025 14:12:39 Europe/Madrid] anotaciones.php: Checking if (mes && anio) is true. Result: TRUE
+[23-Jun-2025 14:12:41 Europe/Madrid] anotaciones.php GET request. fecha_single: 2025-06-26, mes: NULL, anio: NULL
+[23-Jun-2025 14:12:41 Europe/Madrid] anotaciones.php GET request. _GET content: Array
+(
+    [fecha] => 2025-06-26
+)
+
+[23-Jun-2025 14:12:43 Europe/Madrid] anotaciones.php GET request. fecha_single: NULL, mes: 6, anio: 2025
+[23-Jun-2025 14:12:43 Europe/Madrid] anotaciones.php GET request. _GET content: Array
+(
+    [mes] => 6
+    [anio] => 2025
+)
+
+[23-Jun-2025 14:12:43 Europe/Madrid] anotaciones.php: Checking if (mes && anio) is true. Result: TRUE
+[23-Jun-2025 14:12:44 Europe/Madrid] anotaciones.php GET request. fecha_single: 2025-06-26, mes: NULL, anio: NULL
+[23-Jun-2025 14:12:44 Europe/Madrid] anotaciones.php GET request. _GET content: Array
+(
+    [fecha] => 2025-06-26
+)
+
+[23-Jun-2025 14:12:54 Europe/Madrid] anotaciones.php GET request. fecha_single: NULL, mes: 6, anio: 2025
+[23-Jun-2025 14:12:54 Europe/Madrid] anotaciones.php GET request. _GET content: Array
+(
+    [mes] => 6
+    [anio] => 2025
+)
+
+[23-Jun-2025 14:12:54 Europe/Madrid] anotaciones.php: Checking if (mes && anio) is true. Result: TRUE
+[23-Jun-2025 14:12:55 Europe/Madrid] anotaciones.php GET request. fecha_single: 2025-06-26, mes: NULL, anio: NULL
+[23-Jun-2025 14:12:55 Europe/Madrid] anotaciones.php GET request. _GET content: Array
+(
+    [fecha] => 2025-06-26
+)
+
+[23-Jun-2025 14:12:58 Europe/Madrid] anotaciones.php GET request. fecha_single: NULL, mes: 6, anio: 2025
+[23-Jun-2025 14:12:58 Europe/Madrid] anotaciones.php GET request. _GET content: Array
+(
+    [mes] => 6
+    [anio] => 2025
+)
+
+[23-Jun-2025 14:12:58 Europe/Madrid] anotaciones.php: Checking if (mes && anio) is true. Result: TRUE
+[23-Jun-2025 14:12:59 Europe/Madrid] anotaciones.php GET request. fecha_single: 2025-06-26, mes: NULL, anio: NULL
+[23-Jun-2025 14:12:59 Europe/Madrid] anotaciones.php GET request. _GET content: Array
+(
+    [fecha] => 2025-06-26
+)
+
+[23-Jun-2025 14:13:03 Europe/Madrid] anotaciones.php GET request. fecha_single: NULL, mes: 6, anio: 2025
+[23-Jun-2025 14:13:03 Europe/Madrid] anotaciones.php GET request. _GET content: Array
+(
+    [mes] => 6
+    [anio] => 2025
+)
+
+[23-Jun-2025 14:13:03 Europe/Madrid] anotaciones.php: Checking if (mes && anio) is true. Result: TRUE
+[23-Jun-2025 14:13:05 Europe/Madrid] anotaciones.php GET request. fecha_single: 2025-06-26, mes: NULL, anio: NULL
+[23-Jun-2025 14:13:05 Europe/Madrid] anotaciones.php GET request. _GET content: Array
+(
+    [fecha] => 2025-06-26
+)
+
+[23-Jun-2025 14:13:19 Europe/Madrid] anotaciones.php GET request. fecha_single: NULL, mes: 6, anio: 2025
+[23-Jun-2025 14:13:19 Europe/Madrid] anotaciones.php GET request. _GET content: Array
+(
+    [mes] => 6
+    [anio] => 2025
+)
+
+[23-Jun-2025 14:13:19 Europe/Madrid] anotaciones.php: Checking if (mes && anio) is true. Result: TRUE
+[23-Jun-2025 14:13:20 Europe/Madrid] anotaciones.php GET request. fecha_single: 2025-06-26, mes: NULL, anio: NULL
+[23-Jun-2025 14:13:20 Europe/Madrid] anotaciones.php GET request. _GET content: Array
+(
+    [fecha] => 2025-06-26
+)
+
+[23-Jun-2025 14:13:38 Europe/Madrid] anotaciones.php GET request. fecha_single: NULL, mes: 6, anio: 2025
+[23-Jun-2025 14:13:38 Europe/Madrid] anotaciones.php GET request. _GET content: Array
+(
+    [mes] => 6
+    [anio] => 2025
+)
+
+[23-Jun-2025 14:13:38 Europe/Madrid] anotaciones.php: Checking if (mes && anio) is true. Result: TRUE
+[23-Jun-2025 14:13:39 Europe/Madrid] anotaciones.php GET request. fecha_single: 2025-06-26, mes: NULL, anio: NULL
+[23-Jun-2025 14:13:39 Europe/Madrid] anotaciones.php GET request. _GET content: Array
+(
+    [fecha] => 2025-06-26
+)
+
+[23-Jun-2025 14:13:50 Europe/Madrid] anotaciones.php GET request. fecha_single: NULL, mes: 6, anio: 2025
+[23-Jun-2025 14:13:50 Europe/Madrid] anotaciones.php GET request. _GET content: Array
+(
+    [mes] => 6
+    [anio] => 2025
+)
+
+[23-Jun-2025 14:13:50 Europe/Madrid] anotaciones.php: Checking if (mes && anio) is true. Result: TRUE
+[23-Jun-2025 14:13:54 Europe/Madrid] anotaciones.php GET request. fecha_single: 2025-06-24, mes: NULL, anio: NULL
+[23-Jun-2025 14:13:54 Europe/Madrid] anotaciones.php GET request. _GET content: Array
+(
+    [fecha] => 2025-06-24
+)
+
+[23-Jun-2025 14:14:05 Europe/Madrid] anotaciones.php GET request. fecha_single: 2025-06-22, mes: NULL, anio: NULL
+[23-Jun-2025 14:14:05 Europe/Madrid] anotaciones.php GET request. _GET content: Array
+(
+    [fecha] => 2025-06-22
+)
+
+[23-Jun-2025 14:14:09 Europe/Madrid] anotaciones.php GET request. fecha_single: 2025-06-22, mes: NULL, anio: NULL
+[23-Jun-2025 14:14:09 Europe/Madrid] anotaciones.php GET request. _GET content: Array
+(
+    [fecha] => 2025-06-22
+)
+
+[23-Jun-2025 14:15:24 Europe/Madrid] anotaciones.php GET request. fecha_single: NULL, mes: 6, anio: 2025
+[23-Jun-2025 14:15:24 Europe/Madrid] anotaciones.php GET request. _GET content: Array
+(
+    [mes] => 6
+    [anio] => 2025
+)
+
+[23-Jun-2025 14:15:24 Europe/Madrid] anotaciones.php: Checking if (mes && anio) is true. Result: TRUE
+[23-Jun-2025 14:15:31 Europe/Madrid] anotaciones.php GET request. fecha_single: NULL, mes: 6, anio: 2025
+[23-Jun-2025 14:15:31 Europe/Madrid] anotaciones.php GET request. _GET content: Array
+(
+    [mes] => 6
+    [anio] => 2025
+)
+
+[23-Jun-2025 14:15:31 Europe/Madrid] anotaciones.php: Checking if (mes && anio) is true. Result: TRUE
+[23-Jun-2025 14:15:33 Europe/Madrid] anotaciones.php GET request. fecha_single: NULL, mes: 6, anio: 2025
+[23-Jun-2025 14:15:33 Europe/Madrid] anotaciones.php GET request. _GET content: Array
+(
+    [mes] => 6
+    [anio] => 2025
+)
+
+[23-Jun-2025 14:15:33 Europe/Madrid] anotaciones.php: Checking if (mes && anio) is true. Result: TRUE
+[23-Jun-2025 14:16:23 Europe/Madrid] anotaciones.php GET request. fecha_single: NULL, mes: 6, anio: 2025
+[23-Jun-2025 14:16:23 Europe/Madrid] anotaciones.php GET request. _GET content: Array
+(
+    [mes] => 6
+    [anio] => 2025
+)
+
+[23-Jun-2025 14:16:23 Europe/Madrid] anotaciones.php: Checking if (mes && anio) is true. Result: TRUE
+[23-Jun-2025 14:16:25 Europe/Madrid] anotaciones.php GET request. fecha_single: 2025-06-23, mes: NULL, anio: NULL
+[23-Jun-2025 14:16:25 Europe/Madrid] anotaciones.php GET request. _GET content: Array
+(
+    [fecha] => 2025-06-23
+)
+
+[23-Jun-2025 14:17:53 Europe/Madrid] Failed opening required '/home/vol5_3/infinityfree.com/if0_39074189/htdocs/api_handlers/../helpers/email_helper.php' (include_path='.:/usr/share/pear/')
+#0 /home/vol5_3/infinityfree.com/if0_39074189/htdocs/api.php(111): require()
+#1 {main}
+[23-Jun-2025 14:17:55 Europe/Madrid] anotaciones.php GET request. fecha_single: NULL, mes: 6, anio: 2025
+[23-Jun-2025 14:17:55 Europe/Madrid] anotaciones.php GET request. _GET content: Array
+(
+    [mes] => 6
+    [anio] => 2025
+)
+
+[23-Jun-2025 14:17:55 Europe/Madrid] anotaciones.php: Checking if (mes && anio) is true. Result: TRUE
+[23-Jun-2025 14:21:20 Europe/Madrid] anotaciones.php GET request. fecha_single: NULL, mes: 6, anio: 2025
+[23-Jun-2025 14:21:20 Europe/Madrid] anotaciones.php GET request. _GET content: Array
+(
+    [mes] => 6
+    [anio] => 2025
+)
+
+[23-Jun-2025 14:21:20 Europe/Madrid] anotaciones.php: Checking if (mes && anio) is true. Result: TRUE
+[23-Jun-2025 14:25:19 Europe/Madrid] anotaciones.php GET request. fecha_single: NULL, mes: 6, anio: 2025
+[23-Jun-2025 14:25:19 Europe/Madrid] anotaciones.php GET request. _GET content: Array
+(
+    [mes] => 6
+    [anio] => 2025
+)
+
+[23-Jun-2025 14:25:19 Europe/Madrid] anotaciones.php: Checking if (mes && anio) is true. Result: TRUE
+[23-Jun-2025 14:25:28 Europe/Madrid] anotaciones.php GET request. fecha_single: 2025-06-23, mes: NULL, anio: NULL
+[23-Jun-2025 14:25:28 Europe/Madrid] anotaciones.php GET request. _GET content: Array
+(
+    [fecha] => 2025-06-23
+)
+
+[23-Jun-2025 14:25:46 Europe/Madrid] anotaciones.php GET request. fecha_single: NULL, mes: 6, anio: 2025
+[23-Jun-2025 14:25:46 Europe/Madrid] anotaciones.php GET request. _GET content: Array
+(
+    [mes] => 6
+    [anio] => 2025
+)
+
+[23-Jun-2025 14:25:46 Europe/Madrid] anotaciones.php: Checking if (mes && anio) is true. Result: TRUE
+[23-Jun-2025 14:28:02 Europe/Madrid] anotaciones.php GET request. fecha_single: 2025-06-23, mes: NULL, anio: NULL
+[23-Jun-2025 14:28:02 Europe/Madrid] anotaciones.php GET request. _GET content: Array
+(
+    [fecha] => 2025-06-23
+)
+
+[23-Jun-2025 14:28:18 Europe/Madrid] anotaciones.php GET request. fecha_single: NULL, mes: 6, anio: 2025
+[23-Jun-2025 14:28:18 Europe/Madrid] anotaciones.php GET request. _GET content: Array
+(
+    [mes] => 6
+    [anio] => 2025
+)
+
+[23-Jun-2025 14:28:18 Europe/Madrid] anotaciones.php: Checking if (mes && anio) is true. Result: TRUE
+[23-Jun-2025 14:28:21 Europe/Madrid] anotaciones.php GET request. fecha_single: 2025-06-23, mes: NULL, anio: NULL
+[23-Jun-2025 14:28:21 Europe/Madrid] anotaciones.php GET request. _GET content: Array
+(
+    [fecha] => 2025-06-23
+)
+
+[23-Jun-2025 14:32:19 Europe/Madrid] anotaciones.php GET request. fecha_single: 2025-06-23, mes: NULL, anio: NULL
+[23-Jun-2025 14:32:19 Europe/Madrid] anotaciones.php GET request. _GET content: Array
+(
+    [fecha] => 2025-06-23
+)
+
+[23-Jun-2025 14:32:28 Europe/Madrid] anotaciones.php GET request. fecha_single: NULL, mes: 6, anio: 2025
+[23-Jun-2025 14:32:28 Europe/Madrid] anotaciones.php GET request. _GET content: Array
+(
+    [mes] => 6
+    [anio] => 2025
+)
+
+[23-Jun-2025 14:32:28 Europe/Madrid] anotaciones.php: Checking if (mes && anio) is true. Result: TRUE
+[23-Jun-2025 14:33:53 Europe/Madrid] anotaciones.php GET request. fecha_single: NULL, mes: 6, anio: 2025
+[23-Jun-2025 14:33:53 Europe/Madrid] anotaciones.php GET request. _GET content: Array
+(
+    [mes] => 6
+    [anio] => 2025
+)
+
+[23-Jun-2025 14:33:53 Europe/Madrid] anotaciones.php: Checking if (mes && anio) is true. Result: TRUE
+[23-Jun-2025 14:33:56 Europe/Madrid] anotaciones.php GET request. fecha_single: 2025-06-23, mes: NULL, anio: NULL
+[23-Jun-2025 14:33:56 Europe/Madrid] anotaciones.php GET request. _GET content: Array
+(
+    [fecha] => 2025-06-23
+)
+
+[23-Jun-2025 14:34:32 Europe/Madrid] Failed opening required '/home/vol5_3/infinityfree.com/if0_39074189/htdocs/api_handlers/../helpers/email_helper.php' (include_path='.:/usr/share/pear/')
+#0 /home/vol5_3/infinityfree.com/if0_39074189/htdocs/api.php(111): require()
+#1 {main}
+[23-Jun-2025 14:34:40 Europe/Madrid] anotaciones.php GET request. fecha_single: NULL, mes: 6, anio: 2025
+[23-Jun-2025 14:34:40 Europe/Madrid] anotaciones.php GET request. _GET content: Array
+(
+    [mes] => 6
+    [anio] => 2025
+)
+
+[23-Jun-2025 14:34:40 Europe/Madrid] anotaciones.php: Checking if (mes && anio) is true. Result: TRUE
+[23-Jun-2025 14:52:30 Europe/Madrid] anotaciones.php GET request. fecha_single: NULL, mes: 6, anio: 2025
+[23-Jun-2025 14:52:30 Europe/Madrid] anotaciones.php GET request. _GET content: Array
+(
+    [mes] => 6
+    [anio] => 2025
+)
+
+[23-Jun-2025 14:52:30 Europe/Madrid] anotaciones.php: Checking if (mes && anio) is true. Result: TRUE
+[23-Jun-2025 14:52:33 Europe/Madrid] anotaciones.php GET request. fecha_single: 2025-06-23, mes: NULL, anio: NULL
+[23-Jun-2025 14:52:33 Europe/Madrid] anotaciones.php GET request. _GET content: Array
+(
+    [fecha] => 2025-06-23
+)
+
+[23-Jun-2025 14:54:23 Europe/Madrid] Failed opening required '/home/vol5_3/infinityfree.com/if0_39074189/htdocs/api_handlers/../helpers/email_helper.php' (include_path='.:/usr/share/pear/')
+#0 /home/vol5_3/infinityfree.com/if0_39074189/htdocs/api.php(111): require()
+#1 {main}
+[23-Jun-2025 14:54:26 Europe/Madrid] anotaciones.php GET request. fecha_single: NULL, mes: 6, anio: 2025
+[23-Jun-2025 14:54:26 Europe/Madrid] anotaciones.php GET request. _GET content: Array
+(
+    [mes] => 6
+    [anio] => 2025
+)
+
+[23-Jun-2025 14:54:26 Europe/Madrid] anotaciones.php: Checking if (mes && anio) is true. Result: TRUE
+[23-Jun-2025 15:03:25 Europe/Madrid] Failed opening required '../helpers/email_helper.php' (include_path='.:/usr/share/pear/')
+#0 /home/vol5_3/infinityfree.com/if0_39074189/htdocs/api.php(111): require()
+#1 {main}
+[23-Jun-2025 15:07:13 Europe/Madrid] Failed opening required '../helpers/email_helper.php' (include_path='.:/usr/share/pear/')
+#0 /home/vol5_3/infinityfree.com/if0_39074189/htdocs/api.php(111): require()
+#1 {main}
+[23-Jun-2025 15:08:44 Europe/Madrid] Failed opening required '../helpers/email_helper.php' (include_path='.:/usr/share/pear/')
+#0 /home/vol5_3/infinityfree.com/if0_39074189/htdocs/api.php(111): require()
+#1 {main}
+[23-Jun-2025 16:03:23 Europe/Madrid] anotaciones.php GET request. fecha_single: NULL, mes: 6, anio: 2025
+[23-Jun-2025 16:03:23 Europe/Madrid] anotaciones.php GET request. _GET content: Array
+(
+    [mes] => 6
+    [anio] => 2025
+)
+
+[23-Jun-2025 16:03:23 Europe/Madrid] anotaciones.php: Checking if (mes && anio) is true. Result: TRUE
+[23-Jun-2025 16:03:30 Europe/Madrid] anotaciones.php GET request. fecha_single: 2025-06-23, mes: NULL, anio: NULL
+[23-Jun-2025 16:03:30 Europe/Madrid] anotaciones.php GET request. _GET content: Array
+(
+    [fecha] => 2025-06-23
+)
+
+[23-Jun-2025 16:04:29 Europe/Madrid] anotaciones.php GET request. fecha_single: NULL, mes: 6, anio: 2025
+[23-Jun-2025 16:04:29 Europe/Madrid] anotaciones.php GET request. _GET content: Array
+(
+    [mes] => 6
+    [anio] => 2025
+)
+
+[23-Jun-2025 16:04:29 Europe/Madrid] anotaciones.php: Checking if (mes && anio) is true. Result: TRUE
+[23-Jun-2025 16:08:27 Europe/Madrid] anotaciones.php GET request. fecha_single: NULL, mes: 6, anio: 2025
+[23-Jun-2025 16:08:27 Europe/Madrid] anotaciones.php GET request. _GET content: Array
+(
+    [mes] => 6
+    [anio] => 2025
+)
+
+[23-Jun-2025 16:08:27 Europe/Madrid] anotaciones.php: Checking if (mes && anio) is true. Result: TRUE
+[23-Jun-2025 16:08:42 Europe/Madrid] anotaciones.php GET request. fecha_single: NULL, mes: 6, anio: 2025
+[23-Jun-2025 16:08:42 Europe/Madrid] anotaciones.php GET request. _GET content: Array
+(
+    [mes] => 6
+    [anio] => 2025
+)
+
+[23-Jun-2025 16:08:42 Europe/Madrid] anotaciones.php: Checking if (mes && anio) is true. Result: TRUE
+[23-Jun-2025 16:08:55 Europe/Madrid] anotaciones.php GET request. fecha_single: 2025-06-23, mes: NULL, anio: NULL
+[23-Jun-2025 16:08:55 Europe/Madrid] anotaciones.php GET request. _GET content: Array
+(
+    [fecha] => 2025-06-23
+)
+
+[23-Jun-2025 16:09:24 Europe/Madrid] anotaciones.php GET request. fecha_single: NULL, mes: 6, anio: 2025
+[23-Jun-2025 16:09:24 Europe/Madrid] anotaciones.php GET request. _GET content: Array
+(
+    [mes] => 6
+    [anio] => 2025
+)
+
+[23-Jun-2025 16:09:24 Europe/Madrid] anotaciones.php: Checking if (mes && anio) is true. Result: TRUE
