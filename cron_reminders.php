@@ -1,181 +1,200 @@
 <?php
 // cron_reminders.php
-// Este script está diseñado para ser ejecutado por un cron job en el servidor.
-// NO debe ser accesible directamente a través de una URL web.
+// Script para enviar recordatorios por correo electrónico. Diseñado para ser ejecutado por un cron job.
 
-require_once __DIR__ . '/db_config.php';
-require_once __DIR__ . '/vendor/autoload.php'; // Carga PHPMailer y otras dependencias de Composer
+// Incluir la configuración de la base de datos
+require_once 'db_config.php';
 
-// Configuración de PHPMailer
+// Cargar la biblioteca PHPMailer
+// Asegúrate de que PHPMailer esté instalado (ej. vía Composer: composer require phpmailer/phpmailer)
+// y que el autoload.php esté en la ruta correcta.
+require_once __DIR__ . '/vendor/autoload.php';
+
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
+
+// ZONA HORARIA (IMPORTANTE para que las fechas del servidor coincidan con las de la aplicación)
+date_default_timezone_set('Europe/Madrid');
 
 // #####################################################################################
 // ##  ¡ATENCIÓN! CONFIGURACIÓN DE CORREO: MODIFICA ESTO CON TUS PROPIOS DATOS SMTP  ##
 // #####################################################################################
-// Estas credenciales son NECESARIAS para que el servidor pueda enviar correos.
-// Consulta a tu proveedor de correo (Gmail, Outlook, tu hosting) para obtenerlas.
-define('MAIL_HOST', 'smtp.your_email_provider.com'); // Ej: 'smtp.gmail.com', 'smtp.office365.com'
-define('MAIL_USERNAME', 'tu_correo@ejemplo.com'); // Tu dirección de correo completa
-define('MAIL_PASSWORD', 'tu_contraseña_de_correo'); // Tu contraseña del correo (¡Cuidado con la seguridad!)
-                                                    // Si usas 2FA, puede que necesites una "contraseña de aplicación".
-define('MAIL_PORT', 587); // Puerto SMTP. Comunes: 587 (STARTTLS), 465 (SMTPS)
-define('MAIL_FROM_EMAIL', 'no-reply@planea.com'); // Correo que aparecerá como remitente
-define('MAIL_FROM_NAME', 'Recordatorios de Planea'); // Nombre del remitente
+// Credenciales de SMTP para el envío de recordatorios
+define('MAIL_HOST', 'smtp.gmail.com'); // Servidor SMTP (ej: 'smtp.gmail.com' para Gmail)
+define('MAIL_USERNAME', 'xxxdddgggttt@gmail.com'); // Tu dirección de correo completa que enviará los emails
+define('MAIL_PASSWORD', 'slavairbhvyhqwom'); // Contraseña SMTP (Contraseña de Aplicación para Gmail si usas 2FA)
+define('MAIL_PORT', 587); // Puerto SMTP (587 para STARTTLS, 465 para SMTPS)
+define('MAIL_FROM_EMAIL', 'xxxdddgggttt@gmail.com'); // Correo que aparecerá como remitente
+define('MAIL_FROM_NAME', 'Planea'); // <--- NOMBRE ACTUALIZADO AQUÍ
 // #####################################################################################
 
-// Asegúrate de que el script no termine por tiempo de ejecución en tareas largas
-set_time_limit(300); // 5 minutos de tiempo máximo de ejecución
 
-// Función para enviar correos electrónicos de recordatorio
-function sendReminderEmail($toEmail, $toName, $taskSubject, $htmlBody, $altBody) {
-    $mail = new PHPMailer(true); // Pasar 'true' habilita excepciones para manejo de errores
+// Función para enviar correos electrónicos (similar a email_helper.php pero con config propia de cron)
+function sendReminderEmail($toEmail, $toName, $subject, $htmlBody, $altBody) {
+    $mail = new PHPMailer(true);
     try {
         // Configuración del servidor SMTP
-        $mail->isSMTP();                                            // Usar SMTP
-        $mail->Host       = MAIL_HOST;                              // Especificar el servidor SMTP principal
-        $mail->SMTPAuth   = true;                                   // Habilitar autenticación SMTP
-        $mail->Username   = MAIL_USERNAME;                          // Nombre de usuario SMTP
-        $mail->Password   = MAIL_PASSWORD;                          // Contraseña SMTP
-        $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;         // Habilitar cifrado TLS implícito/explícito
-        $mail->Port       = MAIL_PORT;                              // Puerto TCP para conectar
-        $mail->CharSet    = 'UTF-8';                                // Establecer codificación de caracteres
+        $mail->isSMTP();
+        $mail->Host       = MAIL_HOST;
+        $mail->SMTPAuth   = true;
+        $mail->Username   = MAIL_USERNAME;
+        $mail->Password   = MAIL_PASSWORD;
+        $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS; // O ENCRYPTION_SMTPS para puerto 465
+        $mail->Port       = MAIL_PORT;
+        $mail->CharSet    = 'UTF-8';
 
         // Destinatarios
         $mail->setFrom(MAIL_FROM_EMAIL, MAIL_FROM_NAME);
-        $mail->addAddress($toEmail, $toName); // Añadir un destinatario
+        $mail->addAddress($toEmail, $toName);
 
         // Contenido del correo
-        $mail->isHTML(true); // Establecer el formato del correo a HTML
-        $mail->Subject = 'Recordatorio de Tarea: ' . htmlspecialchars($taskSubject); // Asunto del correo
+        $mail->isHTML(true);
+        $mail->Subject = $subject;
         $mail->Body    = $htmlBody;
         $mail->AltBody = $altBody;
 
         $mail->send();
         return true;
     } catch (Exception $e) {
-        // Registrar cualquier error que ocurra durante el envío del correo
-        error_log("Error al enviar email de recordatorio a $toEmail: {$mail->ErrorInfo} - Detalles: {$e->getMessage()}");
+        error_log("Error al enviar recordatorio a $toEmail (Asunto: $subject): {$mail->ErrorInfo} - Detalles: {$e->getMessage()}");
         return false;
     }
 }
 
-// Lógica principal para obtener y procesar recordatorios pendientes
-$current_time = new DateTime();
-// Solo selecciona recordatorios que estén 'pending' o 'failed' (para reintentos)
-// y cuya fecha/hora de recordatorio sea igual o anterior a la hora actual.
+// Lógica principal del cron job
+// 1. Obtener los recordatorios pendientes cuya hora de envío ha llegado o pasado
+// Se deben procesar recordatorios que tienen status 'pending'
+// y cuya `reminder_datetime` es menor o igual a la hora actual.
+// También se unen las horas específicas de reminder_times.
+
+$current_datetime = date('Y-m-d H:i:s');
+$current_time = date('H:i:s'); // Solo la hora actual para comparar con reminder_times
+
 $stmt = $mysqli->prepare("
-    SELECT r.id as reminder_id_entry, r.tarea_id, r.reminder_datetime, r.type,
-           td.texto as task_text, td.fecha_inicio as task_date,
-           u.email as user_email, u.username as user_name,
-           rt.time_of_day -- NUEVO: Seleccionar la hora específica
+    SELECT 
+        r.id AS reminder_id, 
+        r.usuario_id, 
+        r.tarea_id, 
+        r.type, 
+        td.texto AS tarea_texto, 
+        td.fecha_inicio AS tarea_fecha,
+        u.username, 
+        u.email,
+        GROUP_CONCAT(rt.time_of_day ORDER BY rt.time_of_day ASC) AS specific_times_str
     FROM reminders r
     JOIN tareas_diarias td ON r.tarea_id = td.id
     JOIN usuarios u ON r.usuario_id = u.id
-    LEFT JOIN reminder_times rt ON r.id = rt.reminder_id -- Unir con la nueva tabla
-    WHERE r.status IN ('pending', 'failed')
-      AND DATE(r.reminder_datetime) = CURRENT_DATE() -- Asegurar que es para hoy
-      AND (rt.time_of_day IS NULL OR TIME(NOW()) >= rt.time_of_day) -- Considerar la hora específica o si no hay horas definidas
-    ORDER BY r.reminder_datetime ASC, rt.time_of_day ASC
+    LEFT JOIN reminder_times rt ON r.id = rt.reminder_id
+    WHERE r.status = 'pending' 
+      AND r.reminder_datetime <= ?
+    GROUP BY r.id
+    ORDER BY r.reminder_datetime ASC
 ");
 
 if (!$stmt) {
     error_log("Error al preparar la consulta de recordatorios: " . $mysqli->error);
-    exit(); // Terminar el script si no se puede preparar la consulta
+    exit;
 }
 
-// Para la hora actual, se usa NOW() directamente en la consulta, no se necesita bindear aquí.
-// Pero la consulta anterior tenía un '?', ajustaremos para que no lo necesite si solo filtra por fecha de recordatorio.
-// Si r.reminder_datetime es DATETIME, entonces la consulta debería ser:
-// AND r.reminder_datetime <= ?
-// $stmt->bind_param("s", $current_time->format('Y-m-d H:i:s'));
-// Pero si queremos que el CRON se ejecute una vez al día para los recordatorios de ESE día,
-// y luego las horas específicas son el filtro interno, se mantiene así:
-$stmt->execute(); // No se bindea nada aquí porque CURRENT_DATE() y TIME(NOW()) se usan en SQL
-
+$stmt->bind_param("s", $current_datetime);
+$stmt->execute();
 $result = $stmt->get_result();
 
-// Modificación 2: Procesamiento y Envío
-// Necesitaremos agrupar los recordatorios por tarea para enviar un solo correo por tarea,
-// listando todas las horas si hay múltiples recordatorios para la misma tarea en el mismo día.
 $reminders_to_send = [];
 while ($row = $result->fetch_assoc()) {
-    $tarea_id = $row['tarea_id'];
-    $reminder_entry_id = $row['reminder_id_entry']; // El ID de la entrada en la tabla 'reminders'
-    $time_of_day = $row['time_of_day'];
-
-    // Si ya procesamos este ID de recordatorio principal (reminder_id_entry),
-    // solo añadimos la hora si existe y no se ha añadido ya.
-    if (!isset($reminders_to_send[$reminder_entry_id])) {
-        $reminders_to_send[$reminder_entry_id] = [
-            'user_email' => $row['user_email'],
-            'user_name' => $row['user_name'],
-            'task_text' => $row['task_text'],
-            'task_date' => $row['task_date'],
-            'type' => $row['type'], // Para la fecha del recordatorio general
-            'times_of_day' => [],
-            'reminder_id_entry' => $reminder_entry_id // Guardamos el ID principal para el update
-        ];
-    }
-    
-    if ($time_of_day) {
-        $reminders_to_send[$reminder_entry_id]['times_of_day'][] = date('H:i', strtotime($time_of_day));
-    } else {
-        // Si no hay 'time_of_day' (por LEFT JOIN), y la tarea es para hoy, se envía de todas formas
-        // Esto cubre casos donde no se especificaron horas pero se quiere un recordatorio general en la fecha
-        if (empty($reminders_to_send[$reminder_entry_id]['times_of_day'])) {
-             $reminders_to_send[$reminder_entry_id]['times_of_day'][] = 'hora indeterminada'; // O cualquier valor por defecto
-        }
-    }
+    $reminders_to_send[] = $row;
 }
-
-foreach ($reminders_to_send as $reminder_id_entry => $data) {
-    $time_info = '';
-    // Filtrar duplicados de horas y ordenar si se desea
-    $unique_times = array_unique($data['times_of_day']);
-    sort($unique_times);
-
-    if (!empty($unique_times)) {
-        if (count($unique_times) === 1 && $unique_times[0] === 'hora indeterminada') {
-            $time_info = ''; // No añadir "a las hora indeterminada"
-        } else {
-            $time_info = ' a las ' . implode(', ', $unique_times) . ' horas';
-        }
-    }
-
-    $mail_body = "Hola " . htmlspecialchars($data['user_name']) . ",<br><br>"
-               . "Solo un recordatorio de tu tarea programada: <strong>" . htmlspecialchars($data['task_text']) . "</strong>.<br>"
-               . "Está programada para el <strong>" . htmlspecialchars($data['task_date']) . $time_info . "</strong>.<br><br>"
-               . "¡Que tengas un gran día!<br>"
-               . "El equipo de Planea.";
-    $mail_alt_body = "Hola " . $data['user_name'] . ",\n\n"
-                   . "Solo un recordatorio de tu tarea programada: " . $data['task_text'] . ".\n"
-                   . "Está programada para el " . $data['task_date'] . $time_info . ".\n\n"
-                   . "¡Que tengas un gran día!\n"
-                   . "El equipo de Planea.";
-
-    $sent_successfully = sendReminderEmail(
-        $data['user_email'],
-        $data['user_name'],
-        $data['task_text'], // El asunto puede seguir siendo el texto de la tarea
-        $mail_body,
-        $mail_alt_body
-    );
-
-    // Actualizar el estado del recordatorio en la base de datos
-    $new_status = $sent_successfully ? 'sent' : 'failed';
-    $sent_at_time = $current_time->format('Y-m-d H:i:s');
-
-    // Actualizar solo la entrada principal en la tabla `reminders`
-    $update_status_stmt = $mysqli->prepare("UPDATE reminders SET status = ?, sent_at = ? WHERE id = ?");
-    if (!$update_status_stmt) {
-        error_log("Error al preparar la actualización de estado de recordatorio para ID {$reminder_id_entry}: " . $mysqli->error);
-        continue;
-    }
-    $update_status_stmt->bind_param("ssi", $new_status, $sent_at_time, $reminder_id_entry);
-    $update_status_stmt->execute();
-    $update_status_stmt->close();
-}
-
 $stmt->close();
-$mysqli->close(); // Cerrar la conexión a la base de datos al finalizar
+
+if (empty($reminders_to_send)) {
+    // error_log("No hay recordatorios pendientes para enviar en este momento."); // Descomentar para depuración
+    exit;
+}
+
+error_log("Procesando " . count($reminders_to_send) . " recordatorios.");
+
+foreach ($reminders_to_send as $reminder) {
+    $reminder_id = $reminder['reminder_id'];
+    $user_email = $reminder['email'];
+    $user_username = $reminder['username'];
+    $tarea_texto = $reminder['tarea_texto'];
+    $tarea_fecha = $reminder['tarea_fecha'];
+    $reminder_type = $reminder['type'];
+    $specific_times_str = $reminder['specific_times_str']; // string 'HH:MM:SS,HH:MM:SS' or null
+
+    $subject = "Recordatorio: ¡No olvides tu tarea en Planea!";
+    $html_body = "Hola " . htmlspecialchars($user_username) . ",<br><br>";
+    $alt_body = "Hola " . $user_username . ",\n\n";
+
+    $reminder_detail = "";
+    if ($reminder_type === 'hours_before') {
+        $reminder_detail = "Tienes una tarea próxima: <strong>" . htmlspecialchars($tarea_texto) . "</strong> programada para hoy, " . date('d/m/Y', strtotime($tarea_fecha)) . ".";
+        if ($specific_times_str) {
+            $times = array_map(function($t){ return date('H:i', strtotime($t)); }, explode(',', $specific_times_str));
+            $reminder_detail .= " Se te recordará a las: " . implode(', ', $times) . ".";
+        }
+    } elseif ($reminder_type === 'day_before') {
+        $reminder_detail = "Mañana tienes una tarea pendiente: <strong>" . htmlspecialchars($tarea_texto) . "</strong> programada para " . date('d/m/Y', strtotime($tarea_fecha)) . ".";
+    } elseif ($reminder_type === 'week_before') {
+        $reminder_detail = "La semana que viene tienes una tarea: <strong>" . htmlspecialchars($tarea_texto) . "</strong> programada para " . date('d/m/Y', strtotime($tarea_fecha)) . ".";
+    } elseif ($reminder_type === 'month_before') {
+        $reminder_detail = "En aproximadamente un mes tienes esta tarea: <strong>" . htmlspecialchars($tarea_texto) . "</strong> programada para " . date('d/m/Y', strtotime($tarea_fecha)) . ".";
+    }
+
+    $html_body .= $reminder_detail . "<br><br>";
+    $html_body .= "Accede a tu aplicación Planea para gestionarla: <a href='https://tu-dominio.com/index.html'>https://tu-dominio.com/index.html</a><br><br>";
+    $html_body .= "El equipo de Planea.";
+
+    $alt_body .= strip_tags($reminder_detail) . "\n\n";
+    $alt_body .= "Accede a tu aplicación Planea para gestionarla: https://tu-dominio.com/index.html\n\n";
+    $alt_body .= "El equipo de Planea.";
+
+    // Lógica para enviar el recordatorio si se cumplen las horas específicas (si existen)
+    $should_send_now = true;
+    if ($specific_times_str) {
+        $specific_times = explode(',', $specific_times_str);
+        $found_matching_time = false;
+        foreach ($specific_times as $time_str) {
+            // Compara solo la hora actual con la hora específica del recordatorio
+            // Ajusta la precisión si es necesario (ej. para minutos)
+            if (date('H:i', strtotime($current_time)) === date('H:i', strtotime($time_str))) {
+                $found_matching_time = true;
+                break;
+            }
+        }
+        $should_send_now = $found_matching_time;
+    }
+
+    if ($should_send_now) {
+        if (sendReminderEmail($user_email, $user_username, $subject, $html_body, $alt_body)) {
+            $stmt_update = $mysqli->prepare("UPDATE reminders SET status = 'sent', sent_at = ? WHERE id = ?");
+            if ($stmt_update) {
+                $stmt_update->bind_param("si", $current_datetime, $reminder_id);
+                $stmt_update->execute();
+                $stmt_update->close();
+                error_log("Recordatorio ID {$reminder_id} enviado a {$user_email}.");
+            } else {
+                error_log("Error al preparar la actualización de recordatorio ID {$reminder_id}: " . $mysqli->error);
+            }
+        } else {
+            $stmt_update = $mysqli->prepare("UPDATE reminders SET status = 'failed' WHERE id = ?");
+            if ($stmt_update) {
+                $stmt_update->bind_param("i", $reminder_id);
+                $stmt_update->execute();
+                $stmt_update->close();
+                error_log("Fallo al enviar recordatorio ID {$reminder_id} a {$user_email}.");
+            } else {
+                error_log("Error al preparar la actualización de recordatorio fallido ID {$reminder_id}: " . $mysqli->error);
+            }
+        }
+    } else {
+        // Recordatorio no se envía ahora porque no coincide con ninguna hora específica,
+        // pero su reminder_datetime general sí ha pasado. Esto está bien si hay horas específicas.
+        // Solo loguear si es relevante para depuración.
+        // error_log("Recordatorio ID {$reminder_id} no enviado en este ciclo porque no coincide con horas específicas. Proxima hora: {$specific_times_str}");
+    }
+}
+
+// Cerrar la conexión a la base de datos
+$mysqli->close();
+?>

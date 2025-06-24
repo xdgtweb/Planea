@@ -15,7 +15,7 @@ date_default_timezone_set('Europe/Madrid');
 ini_set('log_errors', 1);
 ini_set('error_log', 'error_log.log'); // Asegúrate de que este archivo tenga permisos de escritura
 // No mostrar errores en producción
-$is_production = true; // CAMBIAR ESTO A TRUE PARA DESHABILITAR display_errors en producción
+$is_production = false; // <--- TEMPORALMENTE CAMBIA ESTO A 'false' PARA VER ERRORES DETALLADOS. ¡RECUERDA VOLVERLO A 'true' DESPUÉS DE DEPURAR!
 if ($is_production) {
     ini_set('display_errors', 0);
     ini_set('display_startup_errors', 0);
@@ -46,7 +46,7 @@ $raw_input = file_get_contents("php://input");
 $request_payload = json_decode($raw_input, true); // Decodificar el JSON completo
 
 if ($request_payload === null && json_last_error() !== JSON_ERROR_NONE) {
-    json_response(['error' => 'Invalid JSON body in POST request: ' . json_last_error_msg()], 400);
+    json_response(['error' => 'Invalid JSON body in POST request: ' . json_last_error_msg() . ' Raw input: ' . $raw_input], 400); // Añadido raw_input para más info
 }
 if (!is_array($request_payload)) {
     json_response(['error' => 'Invalid data format, expected JSON object/array in POST body.'], 400);
@@ -88,6 +88,9 @@ $endpoint_map = [
     '/logout' => 'api_handlers/logout.php',
     '/session-status' => 'api_handlers/session_status.php',
     '/google-signin' => 'api_handlers/google_signin.php',
+    '/verify-email' => 'api_handlers/verify_email.php', 
+    '/admin-users' => 'api_handlers/admin_users.php', 
+    '/share-task' => 'api_handlers/share_task.php', 
 
     // Rutas de la aplicación
     '/objetivos' => 'api_handlers/objetivos.php',
@@ -104,21 +107,7 @@ $endpoint_map = [
 
 try {
     if (isset($endpoint_map[$endpoint])) {
-        // Para los manejadores que leen el cuerpo raw (como tareas_diarias), necesitan el JSON original.
-        // Como ya lo leímos y decodificamos en $request_payload (que está en $_POST),
-        // aseguramos que file_get_contents("php://input") pueda ser leído de nuevo o simulado.
-        // Es una práctica mejor que los manejadores accedan a $_POST directamente en este setup.
-        // Sin embargo, si leen file_get_contents("php://input") de nuevo, podría estar vacío.
-        // La mejor solución es que los manejadores usen $_POST en este esquema.
-        
-        // Manejadores como tareas_diarias.php leen: $data = json_decode(file_get_contents("php://input"), true);
-        // Esto ahora debe cambiarse para que lean directamente de $_POST o de $request_payload.
-        // Haremos que $data en los manejadores sea $request_payload para la compatibilidad.
-        
-        // Paso temporal para evitar un error en manejadores que intenten leer file_get_contents("php://input")
-        // No es la forma más limpia, pero fuerza la compatibilidad sin modificar cada manejador.
-        // Es preferible modificar cada manejador para que lea directamente de $_POST si el método es POST.
-        
+        // Incluir el manejador correspondiente al endpoint
         require $endpoint_map[$endpoint];
 
     } else {

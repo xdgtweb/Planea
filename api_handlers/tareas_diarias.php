@@ -14,54 +14,110 @@ switch ($method) {
         $fecha_filtro = $_GET['fecha'] ?? null; 
         $activo_filtro = $_GET['activo'] ?? null; 
 
-        // Asegúrate de seleccionar la nueva columna submission_group_id aquí
-        $query = "SELECT id, texto, completado, tipo, parent_id, regla_recurrencia, fecha_inicio, activo, emoji_anotacion, descripcion_anotacion, submission_group_id FROM tareas_diarias WHERE usuario_id = ?"; 
-        $params = [$usuario_id];
-        $types = "i";
-
-        if ($fecha_filtro) {
-            $query .= " AND fecha_inicio = ?";
-            $params[] = $fecha_filtro;
-            $types .= "s";
-        }
-        if ($activo_filtro !== null) { 
-            $query .= " AND activo = ?";
-            $params[] = (int)$activo_filtro;
-            $types .= "i";
-        }
-        
-        // Ordenar para ayudar en la reconstrucción de la jerarquía
-        $query .= " ORDER BY id ASC"; // Ordenar solo por ID para mantener el orden de creación original
-
-        $stmt_tasks = $mysqli->prepare($query);
-        if (!$stmt_tasks) {
-            json_response(['error' => 'Error al preparar la consulta GET: ' . $mysqli->error], 500);
+        if (!$fecha_filtro) {
+            json_response(['error' => 'Parámetro de fecha requerido para GET'], 400);
             return;
         }
 
-        $stmt_tasks->bind_param($types, ...$params);
-        $stmt_tasks->execute();
-        $result = $stmt_tasks->get_result();
+        // Obtener tareas propias del usuario
+        // Incluimos activo = 1, pero si quieres ver inactivas en el detalle, ajusta esto.
+        // Se añade `submission_group_id` para agrupamiento.
+        $query_own_tasks = "
+            SELECT id, texto, completado, tipo, parent_id, regla_recurrencia, fecha_inicio, activo, emoji_anotacion, descripcion_anotacion, submission_group_id, usuario_id # <--- ¡AÑADIDA usuario_id AQUÍ!
+            FROM tareas_diarias
+            WHERE usuario_id = ? AND fecha_inicio = ?
+        ";
+        $params_own_tasks = [$usuario_id, $fecha_filtro];
+        $types_own_tasks = "is";
+
+        if ($activo_filtro !== null) { 
+            $query_own_tasks .= " AND activo = ?";
+            $params_own_tasks[] = (int)$activo_filtro;
+            $types_own_tasks .= "i";
+        }
+        $query_own_tasks .= " ORDER BY id ASC";
+
+        $stmt_own_tasks = $mysqli->prepare($query_own_tasks);
+        if (!$stmt_own_tasks) {
+            json_response(['error' => 'Error al preparar la consulta GET de tareas propias: ' . $mysqli->error], 500);
+            return;
+        }
+        $stmt_own_tasks->bind_param($types_own_tasks, ...$params_own_tasks);
+        $stmt_own_tasks->execute();
+        $result_own_tasks = $stmt_own_tasks->get_result();
         
         $tasks_by_id = [];
-        $root_tasks = [];
-
-        // Primera pasada: Organizar todas las tareas por ID y separar las tareas raíz
-        while ($task = $result->fetch_assoc()) {
+        while ($task = $result_own_tasks->fetch_assoc()) {
             $task['completado'] = (bool)$task['completado'];
             $task['activo'] = (bool)$task['activo'];
-            $task['subtareas'] = []; // Inicializar array de subtareas
+            $task['subtareas'] = [];
+            $task['is_shared'] = false; // Por defecto no es compartida
             $tasks_by_id[$task['id']] = $task;
+        }
+        $stmt_own_tasks->close();
 
+        // Obtener tareas compartidas con el usuario actual (solo si tienen cuenta)
+        $query_shared_tasks = "
+            SELECT td.id, td.texto, td.completado, td.tipo, td.parent_id, td.regla_recurrencia, td.fecha_inicio, td.activo, td.emoji_anotacion, td.descripcion_anotacion, td.submission_group_id,
+                   st.owner_user_id, u.username as owner_username, u.email as owner_email
+            FROM shared_tasks st
+            JOIN tareas_diarias td ON st.task_id = td.id
+            JOIN usuarios u ON st.owner_user_id = u.id
+            WHERE st.shared_with_user_id = ? AND td.fecha_inicio = ?
+        ";
+        $params_shared_tasks = [$usuario_id, $fecha_filtro];
+        $types_shared_tasks = "is";
+
+        // Si se filtra por activo, aplicar también a las compartidas
+        if ($activo_filtro !== null) {
+            $query_shared_tasks .= " AND td.activo = ?";
+            $params_shared_tasks[] = (int)$activo_filtro;
+            $types_shared_tasks .= "i";
+        }
+        $query_shared_tasks .= " ORDER BY td.id ASC";
+
+        $stmt_shared_tasks = $mysqli->prepare($query_shared_tasks);
+        if (!$stmt_shared_tasks) {
+            json_response(['error' => 'Error al preparar la consulta GET de tareas compartidas: ' . $mysqli->error], 500);
+            return;
+        }
+        $stmt_shared_tasks->bind_param($types_shared_tasks, ...$params_shared_tasks);
+        $stmt_shared_tasks->execute();
+        $result_shared_tasks = $stmt_shared_tasks->get_result();
+
+        while ($task = $result_shared_tasks->fetch_assoc()) {
+            // Solo añadir si la tarea no es ya del propio usuario (priorizar propiedad)
+            if (!isset($tasks_by_id[$task['id']])) {
+                $task['completado'] = (bool)$task['completado'];
+                $task['activo'] = (bool)$task['activo'];
+                $task['subtareas'] = [];
+                $task['is_shared'] = true; // Indicar que es una tarea compartida
+                $task['shared_owner_info'] = ['id' => $task['owner_user_id'], 'username' => $task['owner_username'], 'email' => $task['owner_email']];
+                unset($task['owner_user_id'], $task['owner_username'], $task['owner_email']); // Limpiar datos no necesarios
+                $tasks_by_id[$task['id']] = $task;
+            }
+        }
+        $stmt_shared_tasks->close();
+
+        $root_tasks = [];
+        // Primera pasada: Organizar todas las tareas por ID y separar las tareas raíz
+        foreach ($tasks_by_id as $id => &$task) {
             if ($task['parent_id'] === null) {
                 $root_tasks[$task['id']] = &$tasks_by_id[$task['id']]; // Mantener referencia a la tarea raíz
             }
         }
 
-        // Recuperar las horas de recordatorio para cada tarea principal
-        $task_ids = array_keys($tasks_by_id);
-        if (!empty($task_ids)) {
-            $placeholders = implode(',', array_fill(0, count($task_ids), '?'));
+        // Recuperar las horas de recordatorio para cada tarea principal (solo si es propia del usuario logueado)
+        $own_task_ids = [];
+        foreach ($tasks_by_id as $id => $task) {
+            // Solo si la tarea es del usuario, no si es compartida de otro
+            if ($task['usuario_id'] == $usuario_id) {
+                $own_task_ids[] = $id;
+            }
+        }
+
+        if (!empty($own_task_ids)) {
+            $placeholders = implode(',', array_fill(0, count($own_task_ids), '?'));
             $stmt_reminder_times = $mysqli->prepare("
                 SELECT r.tarea_id, rt.time_of_day 
                 FROM reminders r
@@ -69,8 +125,8 @@ switch ($method) {
                 WHERE r.tarea_id IN ($placeholders)
             ");
             if ($stmt_reminder_times) {
-                $types_str = str_repeat('i', count($task_ids));
-                $stmt_reminder_times->bind_param($types_str, ...$task_ids);
+                $types_str = str_repeat('i', count($own_task_ids));
+                $stmt_reminder_times->bind_param($types_str, ...$own_task_ids);
                 $stmt_reminder_times->execute();
                 $times_result = $stmt_reminder_times->get_result();
                 
@@ -81,10 +137,15 @@ switch ($method) {
                 $stmt_reminder_times->close();
 
                 foreach($tasks_by_id as $id => &$task) {
-                    if (isset($times_by_task_id[$id])) {
-                        $task['reminder_times'] = $times_by_task_id[$id];
+                    // Asegurarse de asignar reminder_times solo a tareas propias
+                    if (isset($task['usuario_id']) && $task['usuario_id'] == $usuario_id) { // Added isset check
+                        if (isset($times_by_task_id[$id])) {
+                            $task['reminder_times'] = $times_by_task_id[$id];
+                        } else {
+                            $task['reminder_times'] = [];
+                        }
                     } else {
-                        $task['reminder_times'] = [];
+                        $task['reminder_times'] = []; // Las tareas compartidas no tienen recordatorios asociados directamente al usuario
                     }
                 }
             }
@@ -118,7 +179,6 @@ switch ($method) {
         }
         
         json_response($final_output);
-        $stmt_tasks->close();
         break;
 
 
@@ -126,7 +186,6 @@ switch ($method) {
         $raw_input = file_get_contents("php://input");
         $data = json_decode($raw_input, true);
 
-        // --- INICIO DE LA CORRECCIÓN ---
         // Verificar si la decodificación JSON falló
         if ($data === null && json_last_error() !== JSON_ERROR_NONE) {
             json_response(['error' => 'Entrada JSON inválida: ' . json_last_error_msg()], 400);
@@ -137,9 +196,15 @@ switch ($method) {
             json_response(['error' => 'Formato de datos inválido, se esperaba un objeto/array JSON.'], 400);
             return;
         }
-        // --- FIN DE LA CORRECCIÓN ---
 
         $_method_override = $data['_method'] ?? $method; // Obtener el método real, por defecto es POST si no se especifica _method
+
+        // Validar que el usuario tiene el correo verificado para crear/modificar tareas (excepto si es admin)
+        // Solo aplica si el usuario no es admin y su email no está verificado
+        if (!($_SESSION['is_admin'] ?? false) && !($_SESSION['email_verified'] ?? false)) {
+            json_response(['error' => 'Debe verificar su correo electrónico para crear o modificar tareas.'], 403);
+            return;
+        }
 
         // --- MANEJO DE OPERACIONES DE ACTUALIZACIÓN (PUT SIMULADO) ---
         if ($_method_override === 'PUT') {
@@ -165,6 +230,17 @@ switch ($method) {
             if (empty($texto_update) || empty($tipo_update)) {
                 json_response(['error' => 'El texto y el tipo de tarea son obligatorios para la actualización'], 400);
                 return;
+            }
+
+            // Nuevo: Validación de fecha para no actualizar a días pasados
+            if ($fecha_inicio_update !== null) {
+                $fecha_obj_update = new DateTime($fecha_inicio_update);
+                $hoy_update = new DateTime(date('Y-m-d')); // Fecha actual sin hora
+                // Corregido: getTime() a getTimestamp()
+                if ($fecha_obj_update->getTimestamp() < $hoy_update->getTimestamp()) {
+                    json_response(['error' => 'No se pueden actualizar tareas a días anteriores al actual.'], 403);
+                    return;
+                }
             }
 
             $set_clauses = [];
@@ -331,6 +407,7 @@ switch ($method) {
         } elseif ($_method_override === 'DELETE' || $_method_override === 'HARD_DELETE') {
             $id = $data['id'] ?? 0;
             $tipo_tarea = $data['tipo'] ?? null; 
+            $fecha_tarea_eliminar = $data['fecha_inicio'] ?? null; // Obtener la fecha de la tarea para validación
 
             if ($id <= 0) {
                 json_response(['error' => 'ID de tarea inválido'], 400);
@@ -341,9 +418,29 @@ switch ($method) {
                 return;
             }
 
+            // Nuevo: Validación para no eliminar/archivar tareas de días pasados
+            if ($fecha_tarea_eliminar !== null) {
+                $fecha_obj_delete = new DateTime($fecha_tarea_eliminar);
+                $hoy_delete = new DateTime(date('Y-m-d')); // Fecha actual sin hora
+                // Corregido: getTime() a getTimestamp()
+                if ($fecha_obj_delete->getTimestamp() < $hoy_delete->getTimestamp()) {
+                    json_response(['error' => 'No se pueden eliminar o archivar tareas de días anteriores al actual.'], 403);
+                    return;
+                }
+            }
+
             if ($_method_override === 'HARD_DELETE') {
                 $mysqli->begin_transaction();
                 try {
+                    // Eliminar registros de shared_tasks relacionados con esta tarea
+                    $stmt_delete_shared = $mysqli->prepare("DELETE FROM shared_tasks WHERE task_id = ? AND owner_user_id = ?");
+                    if (!$stmt_delete_shared) {
+                        throw new Exception("Error al preparar eliminación de tareas compartidas: " . $mysqli->error);
+                    }
+                    $stmt_delete_shared->bind_param("ii", $id, $usuario_id);
+                    $stmt_delete_shared->execute();
+                    $stmt_delete_shared->close();
+
                     if ($tipo_tarea === 'titulo') {
                         $stmt_delete_reminders = $mysqli->prepare("DELETE FROM reminders WHERE tarea_id = ? AND usuario_id = ?");
                         if (!$stmt_delete_reminders) {
@@ -377,7 +474,7 @@ switch ($method) {
                     error_log("Error al eliminar permanentemente: " . $e->getMessage()); 
                     json_response(['error' => 'Error al eliminar permanentemente: ' . $e->getMessage()], 500);
                 }
-            } else {
+            } else { // DELETE (archivar)
                 $mysqli->begin_transaction();
                 try {
                     $stmt_deactivate_main = $mysqli->prepare("UPDATE tareas_diarias SET activo = 0 WHERE id = ? AND usuario_id = ?");
@@ -404,6 +501,30 @@ switch ($method) {
                             $stmt_deactivate_reminders->bind_param("ii", $id, $usuario_id);
                             $stmt_deactivate_reminders->execute();
                             $stmt_deactivate_reminders->close();
+
+                            // Desactivar también los compartidos de esta tarea principal y sus subtareas
+                            $stmt_deactivate_shared = $mysqli->prepare("UPDATE shared_tasks SET access_token = NULL WHERE task_id = ? AND owner_user_id = ?");
+                            if (!$stmt_deactivate_shared) {
+                                throw new Exception("Error al preparar desactivación de compartidos: " . $mysqli->error);
+                            }
+                            $stmt_deactivate_shared->bind_param("ii", $id, $usuario_id);
+                            $stmt_deactivate_shared->execute();
+                            $stmt_deactivate_shared->close();
+
+                            // Si fuera necesario desactivar las subtareas compartidas
+                            // $stmt_subtask_ids = $mysqli->prepare("SELECT id FROM tareas_diarias WHERE parent_id = ? AND usuario_id = ?");
+                            // $stmt_subtask_ids->bind_param("ii", $id, $usuario_id);
+                            // $stmt_subtask_ids->execute();
+                            // $sub_task_ids = $stmt_subtask_ids->get_result()->fetch_all(MYSQLI_ASSOC);
+                            // $stmt_subtask_ids->close();
+
+                            // foreach ($sub_task_ids as $sub_task_id_row) {
+                            //     $stmt_deactivate_shared_sub = $mysqli->prepare("UPDATE shared_tasks SET access_token = NULL WHERE task_id = ? AND owner_user_id = ?");
+                            //     $stmt_deactivate_shared_sub->bind_param("ii", $sub_task_id_row['id'], $usuario_id);
+                            //     $stmt_deactivate_shared_sub->execute();
+                            //     $stmt_deactivate_shared_sub->close();
+                            // }
+
                         }
                         $mysqli->commit();
                         json_response(['success' => true, 'message' => 'Elemento marcado como inactivo.']);
@@ -422,7 +543,7 @@ switch ($method) {
             }
             break;
 
-        } else { 
+        } else { // POST (Creación de Tareas)
             $texto = $data['texto'] ?? null;
             $tipo = $data['tipo'] ?? null;
             $parent_id = $data['parent_id'] ?? null;
@@ -435,11 +556,22 @@ switch ($method) {
             $reminder_type = $data['reminder_type'] ?? 'none';
             $selected_reminder_times = $data['selected_reminder_times'] ?? [];
 
-
             if (empty($texto) || empty($tipo)) {
                 json_response(['error' => 'El texto y el tipo de tarea son obligatorios para la creación'], 400);
                 return;
             }
+
+            // Nuevo: Validación de fecha para no crear tareas en días pasados
+            if ($fecha_inicio !== null) {
+                $fecha_obj_create = new DateTime($fecha_inicio);
+                $hoy_create = new DateTime(date('Y-m-d')); // Fecha actual sin hora
+                // Corregido: getTime() a getTimestamp()
+                if ($fecha_obj_create->getTimestamp() < $hoy_create->getTimestamp()) {
+                    json_response(['error' => 'No se pueden crear tareas para días anteriores al actual.'], 403);
+                    return;
+                }
+            }
+
 
             if ($tipo === 'titulo' && isset($data['subtareas_textos']) && is_array($data['subtareas_textos'])) {
                 $mysqli->begin_transaction();
@@ -544,7 +676,7 @@ switch ($method) {
                     $mysqli->rollback();
                     json_response(['error' => 'Error en la transacción: ' . $e->getMessage()], 500);
                 }
-            } else {
+            } else { // Crear tarea simple
                 $stmt = $mysqli->prepare("INSERT INTO tareas_diarias (usuario_id, texto, tipo, parent_id, regla_recurrencia, fecha_inicio, submission_group_id) VALUES (?, ?, ?, ?, ?, ?, ?)"); 
                 if (!$stmt) {
                      json_response(['error' => 'Error al preparar la inserción de tarea simple: ' . $mysqli->error], 500);
@@ -566,3 +698,4 @@ switch ($method) {
         json_response(['error' => 'Método no permitido'], 405);
         break;
 }
+?>

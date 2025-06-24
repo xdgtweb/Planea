@@ -14,6 +14,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         return;
     }
 
+    // --- ELIMINADO: Validación para no permitir la consulta de tareas de días pasados ---
+    // La lógica para deshabilitar la edición en el frontend y en los métodos POST/PUT/DELETE
+    // ya se encarga de que no se puedan modificar tareas de días anteriores.
+    /*
+    $fecha_obj = new DateTime($fecha);
+    $hoy = new DateTime(date('Y-m-d')); // Fecha actual sin hora
+
+    if ($fecha_obj->getTimestamp() < $hoy->getTimestamp()) {
+        json_response(['error' => 'No se pueden consultar tareas de días anteriores al actual.'], 403);
+        return;
+    }
+    */
+    // --- FIN DE ELIMINACIÓN ---
+
+
     // Consulta para obtener todas las tareas y subtareas programadas para una fecha específica
     // Incluimos activo = 1, pero si quieres ver inactivas en el detalle, ajusta esto.
     $stmt = $mysqli->prepare("

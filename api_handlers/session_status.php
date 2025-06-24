@@ -10,7 +10,9 @@ if (isset($_SESSION['usuario_id'])) {
     json_response([
         'loggedIn' => true, 
         'username' => $_SESSION['username'], 
-        'usuario_id' => $_SESSION['usuario_id']
+        'usuario_id' => $_SESSION['usuario_id'],
+        'email_verified' => $_SESSION['email_verified'] ?? false, // Nuevo: estado de verificación del email
+        'is_admin' => $_SESSION['is_admin'] ?? false // Nuevo: rol de administrador
     ]);
 } else {
     // CORRECCIÓN: Cambiado 'jsonResponse' a 'json_response'

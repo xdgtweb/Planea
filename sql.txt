@@ -1,6 +1,7 @@
 -- Eliminar tablas existentes si ya están creadas para evitar errores y permitir la sobrescritura
 DROP TABLE IF EXISTS `reminder_times`;
 DROP TABLE IF EXISTS `reminders`;
+DROP TABLE IF EXISTS `shared_tasks`; -- Nueva tabla
 DROP TABLE IF EXISTS `anotaciones`;
 DROP TABLE IF EXISTS `sub_objetivos`;
 DROP TABLE IF EXISTS `tareas_diarias`;
@@ -15,6 +16,10 @@ CREATE TABLE `usuarios` (
     `email` VARCHAR(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL UNIQUE,
     `password_hash` VARCHAR(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
     `google_id` VARCHAR(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci UNIQUE NULL DEFAULT NULL, -- Para el inicio de sesión con Google
+    `email_verified_at` TIMESTAMP NULL DEFAULT NULL, -- Nuevo: Para la verificación de correo
+    `verification_token` VARCHAR(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci UNIQUE NULL DEFAULT NULL, -- Nuevo: Token único para verificación
+    `token_expires_at` TIMESTAMP NULL DEFAULT NULL, -- Nuevo: Fecha de expiración del token
+    `is_admin` BOOLEAN DEFAULT FALSE, -- Nuevo: Campo para identificar administradores
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -29,7 +34,6 @@ INSERT INTO `modos` (`id`, `nombre`) VALUES
 ('dia-a-dia', 'Día a Día'),
 ('corto-medio-plazo', 'Corto/Medio Plazo'),
 ('largo-plazo', 'Largo Plazo');
-
 
 -- Creación de la tabla 'objetivos'
 CREATE TABLE `objetivos` (
@@ -106,4 +110,20 @@ CREATE TABLE `reminder_times` (
     `reminder_id` INT NOT NULL,
     `time_of_day` TIME NOT NULL, -- Almacena la hora específica del día (HH:MM:SS)
     FOREIGN KEY (`reminder_id`) REFERENCES `reminders`(`id`) ON DELETE CASCADE
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- Nueva tabla 'shared_tasks' para la funcionalidad de compartir tareas
+CREATE TABLE `shared_tasks` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `task_id` INT NOT NULL, -- La tarea original que se comparte
+    `owner_user_id` INT NOT NULL, -- El ID del usuario que creó/comparte la tarea
+    `shared_with_user_id` INT NULL, -- El ID del usuario con quien se comparte (si tiene cuenta)
+    `shared_with_email` VARCHAR(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL, -- El email del invitado (si no tiene cuenta o para invitación)
+    `access_token` VARCHAR(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci UNIQUE NULL, -- Token para acceso público/invitación
+    `shared_date` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (`task_id`) REFERENCES `tareas_diarias`(`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`owner_user_id`) REFERENCES `usuarios`(`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`shared_with_user_id`) REFERENCES `usuarios`(`id`) ON DELETE CASCADE,
+    UNIQUE (`task_id`, `shared_with_user_id`), -- Una tarea solo se comparte una vez con un usuario registrado
+    UNIQUE (`task_id`, `shared_with_email`) -- Una tarea solo se comparte una vez con un email (para invitados)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;

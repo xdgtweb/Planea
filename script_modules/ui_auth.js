@@ -1,5 +1,5 @@
 import { login, register, logout, loginWithGoogle } from './auth.js';
-import { cargarModos } from './app.js'; // CORRECCIÓN: Se importa 'cargarModos' en lugar de 'loadInitialApp'.
+import { cargarModos, currentUser } from './app.js'; // Importar currentUser de app.js para actualizarlo
 
 let googleInitialized = false;
 
@@ -42,6 +42,48 @@ export function showLoginScreen() {
 
     setupAuthEventListeners();
     initializeGoogleSignIn();
+
+    // Nuevo: Manejar mensajes de la URL (después de verificación de email)
+    const urlParams = new URLSearchParams(window.location.search);
+    const message = urlParams.get('message');
+    if (message) {
+        let displayMessage = '';
+        let messageType = 'success'; // Por defecto
+        switch (message) {
+            case 'email_verified_success':
+                displayMessage = '¡Correo electrónico verificado exitosamente! Ahora puedes iniciar sesión.';
+                break;
+            case 'invalid_verification_link':
+                displayMessage = 'El enlace de verificación no es válido o está incompleto.';
+                messageType = 'error';
+                break;
+            case 'verification_error':
+                displayMessage = 'Ocurrió un error durante la verificación del correo. Inténtalo de nuevo.';
+                messageType = 'error';
+                break;
+            case 'token_expired':
+                displayMessage = 'El enlace de verificación ha expirado. Por favor, regístrese de nuevo o solicite uno nuevo.';
+                messageType = 'error';
+                break;
+            case 'invalid_token':
+                displayMessage = 'El token de verificación no es válido.';
+                messageType = 'error';
+                break;
+            case 'invite_accepted': // Para futuras implementaciones de invitación
+                displayMessage = '¡Invitación aceptada! Inicia sesión para ver el contenido compartido.';
+                break;
+            default:
+                displayMessage = ''; // No mostrar nada si el mensaje no es reconocido
+        }
+
+        if (displayMessage) {
+            const messageDiv = document.getElementById('auth-message');
+            messageDiv.textContent = displayMessage;
+            messageDiv.className = `auth-message ${messageType}`;
+            // Limpiar el parámetro de la URL para que no se muestre de nuevo al recargar
+            history.replaceState({}, document.title, window.location.pathname);
+        }
+    }
 }
 
 // Función para inicializar Google Sign-In
@@ -79,7 +121,13 @@ async function handleGoogleSignIn(response) {
     try {
         const result = await loginWithGoogle(response.credential);
         if (result.success) {
-            cargarModos(); // CORRECCIÓN: Se llama a la función correcta.
+            // Actualizar el objeto currentUser global en app.js
+            currentUser.id = result.usuario_id;
+            currentUser.username = result.username;
+            currentUser.email_verified = result.email_verified;
+            currentUser.is_admin = result.is_admin;
+            // No se necesita is_admin_original_login aquí, ya que no se está simulando
+            cargarModos();
         } else {
             messageDiv.textContent = result.message || 'Error en el inicio de sesión con Google.';
             messageDiv.className = 'auth-message error';
@@ -103,7 +151,12 @@ function setupAuthEventListeners() {
         const password = document.getElementById('login-password').value;
         const result = await login(email, password);
         if (result.success) {
-            cargarModos(); // CORRECCIÓN: Se llama a la función correcta.
+            // Actualizar el objeto currentUser global en app.js
+            currentUser.id = result.usuario_id;
+            currentUser.username = result.username;
+            currentUser.email_verified = result.email_verified;
+            currentUser.is_admin = result.is_admin;
+            cargarModos();
         } else {
             messageDiv.textContent = result.message;
             messageDiv.className = 'auth-message error';

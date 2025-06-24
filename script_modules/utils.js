@@ -1,6 +1,6 @@
 // script_modules/utils.js
 
-import { API_BASE_URL } from './config.js';
+import { API_BASE_URL } from './config.js'; // Importamos API_BASE_URL desde config.js
 
 // --- FUNCIONES DE LÓGICA DE UI ---
 

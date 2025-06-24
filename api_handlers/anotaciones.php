@@ -15,6 +15,11 @@ switch ($method) {
         $anio = $_GET['anio'] ?? null;
         $fecha_single = $_GET['fecha'] ?? null; // Variable para la petición de una sola fecha
 
+        // DEBUG: Log values received
+        error_log("anotaciones.php GET request. fecha_single: " . ($fecha_single ?? 'NULL') . ", mes: " . ($mes ?? 'NULL') . ", anio: " . ($anio ?? 'NULL'));
+        error_log("anotaciones.php GET request. _GET content: " . print_r($_GET, true)); // Print entire $_GET array
+
+
         // Si se solicita una sola fecha
         if ($fecha_single) {
             $stmt = $mysqli->prepare("
@@ -36,6 +41,8 @@ switch ($method) {
         }
         
         // Si se solicitan por mes/año (para el calendario)
+        // DEBUG: Check condition before entering
+        error_log("anotaciones.php: Checking if (mes && anio) is true. Result: " . (($mes && $anio) ? 'TRUE' : 'FALSE'));
         if ($mes && $anio) {
             $stmt = $mysqli->prepare("
                 SELECT fecha, emoji, descripcion
@@ -78,6 +85,16 @@ switch ($method) {
                 return;
             }
 
+            // Nuevo: Validación para no eliminar anotaciones de días pasados
+            $fecha_obj = new DateTime($fecha);
+            $hoy = new DateTime(date('Y-m-d')); // Fecha actual sin hora
+
+            // Corregido: getTime() a getTimestamp()
+            if ($fecha_obj->getTimestamp() < $hoy->getTimestamp()) {
+                json_response(['error' => 'No se pueden eliminar anotaciones de días anteriores al actual.'], 403);
+                return;
+            }
+
             $stmt = $mysqli->prepare("DELETE FROM anotaciones WHERE usuario_id = ? AND fecha = ?");
             if (!$stmt) {
                 json_response(['error' => 'Error al preparar la consulta DELETE: ' . $mysqli->error], 500);
@@ -106,6 +123,16 @@ switch ($method) {
 
             if (empty($fecha)) { // Fecha es obligatoria
                 json_response(['error' => 'La fecha es obligatoria para la anotación'], 400);
+                return;
+            }
+
+            // Nuevo: Validación para no añadir/actualizar anotaciones en días pasados
+            $fecha_obj = new DateTime($fecha);
+            $hoy = new DateTime(date('Y-m-d')); // Fecha actual sin hora
+
+            // Corregido: getTime() a getTimestamp()
+            if ($fecha_obj->getTimestamp() < $hoy->getTimestamp()) {
+                json_response(['error' => 'No se pueden añadir o modificar anotaciones en días anteriores al actual.'], 403);
                 return;
             }
 

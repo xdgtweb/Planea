@@ -171,7 +171,9 @@
 html, body {
     height: 100%; /* Asegura que el contenedor principal pueda tomar el 100% */
     width: 100%; /* Asegura que también ocupe todo el ancho */
-    overflow: hidden; /* Evita scroll no deseado si algo se desborda */
+    /* CAMBIADO: Permitir scroll vertical si el contenido excede la altura */
+    overflow-y: auto; 
+    /* Eliminar 'overflow: hidden;' para permitir el scroll */
 }
 
 body {
@@ -1444,6 +1446,21 @@ input[type="checkbox"]:focus {
     /* Crucial for content clipping */
 }
 
+/* Nuevo: Estilos para días pasados en el calendario */
+.dia-calendario.dia-pasado {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background-color: var(--bg-surface-secondary);
+    border-color: var(--border-color);
+}
+
+.dia-calendario.dia-pasado:hover {
+    box-shadow: none;
+    border-color: var(--border-color);
+    background-color: var(--bg-surface-secondary); /* Mantener el fondo si se hace hover */
+}
+
+
 .dia-calendario:hover {
     box-shadow: 0 0 0 3px var(--focus-ring-color);
     border-color: var(--color-primary);
@@ -1656,10 +1673,66 @@ input[type="checkbox"]:focus {
     color: var(--text-secondary);
 }
 
+/* Nuevo: Estilos para el icono de tarea compartida */
+.shared-icon {
+    font-size: 0.75em; /* Tamaño relativo al texto principal */
+    color: var(--color-primary); /* O un color distintivo, ej. #6c757d; */
+    margin-left: var(--space-xs);
+    vertical-align: middle;
+    /* Puede ser display: inline-block; si necesitas más control */
+}
 
-/* ==========================================================================
-   6. MEDIA QUERIES PARA RESPONSIVE
-   ========================================================================== */
+/* Nuevo: Estilos para la lista de usuarios compartidos en el modal de edición */
+.shared-user-list {
+    margin-top: var(--space-m);
+    padding-top: var(--space-m);
+    border-top: 1px solid var(--border-color);
+}
+
+.shared-user-list h4 {
+    font-size: 1.2rem;
+    margin-bottom: var(--space-m);
+    color: var(--text-primary);
+}
+
+.shared-user-entry {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: var(--bg-surface-tertiary);
+    padding: var(--space-xs) var(--space-s);
+    border-radius: var(--radius-s);
+    margin-bottom: var(--space-xs);
+    border: 1px solid var(--border-color);
+}
+
+.shared-user-entry span {
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    word-break: break-word; /* Romper palabras largas si el email es muy largo */
+}
+
+.shared-user-entry .remove-shared-btn {
+    background-color: var(--color-danger-soft-bg);
+    color: var(--color-danger);
+    border: none;
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    font-size: 1.2rem;
+    line-height: 1;
+    cursor: pointer;
+    transition: var(--transition-duration-fast);
+    flex-shrink: 0;
+}
+
+.shared-user-entry .remove-shared-btn:hover {
+    background-color: var(--color-danger);
+    color: var(--text-on-danger);
+    transform: scale(1.1);
+}
+
+/* 6. MEDIA QUERIES PARA RESPONSIVE */
 
 /* Teléfonos pequeños y medianos (pantallas hasta 767px de ancho) */
 @media (max-width: 767px) {
@@ -1682,22 +1755,16 @@ input[type="checkbox"]:focus {
 
     /* Full-screen modals for mobile app feel - CRITICAL ADJUSTMENTS FOR NO CLIPPING */
     .form-overlay {
-        position: fixed;
-        /* Ocupa el viewport */
-        top: 0; /* Aseguramos que empiece desde arriba del todo */
-        left: 0;
-        width: 100%;
-        height: 100%; /* Cubre el 100% del viewport */
-        background: rgba(0, 0, 0, 0.6);
-        /* Fondo semi-transparente */
-        z-index: 1050; /* Aumentado el z-index para asegurar que esté POR ENCIMA de TODO */
-        
-        display: flex; /* Cambiado a flex para posicionamiento y tamaño más controlados */
-        flex-direction: column; /* Apila los elementos en columna */
-        justify-content: flex-end; /* Empuja el modal a la parte inferior del overlay */
-        align-items: stretch; /* Estira el modal a lo ancho */
-        
-        padding: 0; /* Aseguramos que no haya padding en el overlay que reduzca su cobertura */
+        padding: 0;
+        /* REMOVED ALL PADDING: Ensures modal uses full viewport for positioning */
+        /* Ahora usamos flexbox para controlar la posición y el tamaño */
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        /* Alinea el contenido (el modal) a la parte inferior */
+        align-items: stretch;
+        /* Permite que el modal se estire a todo el ancho */
+        z-index: var(--z-modal-backdrop); /* z-modal-backdrop: 1000, ahora debe estar por encima de nav-modes */
         backdrop-filter: blur(5px);
         opacity: 0;
         visibility: hidden;

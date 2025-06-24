@@ -7,7 +7,7 @@ import {
     mostrarFormularioEditarTarea, 
     mostrarFormularioAddSubTarea,
     mostrarFormularioEditarObjetivo,
-    mostrarFormularioAddSubObjetivo, // ¡CORREGIDO! Antes estaba mal escrito con guion bajo.
+    mostrarFormularioAddSubObjetivo,
     mostrarFormularioEditarSubObjetivo 
 } from './modals.js'; 
 
@@ -16,6 +16,7 @@ export let appFechaCalendarioActual = new Date();
 export let appSetFechaCalendarioActual = (newDate) => { console.warn("setFechaCalendarioActual no inicializada en views.js"); appFechaCalendarioActual = newDate; }; 
 export let modosDisponibles = []; 
 export let myConfettiInstance = null; 
+export let currentUser = {}; // Importar el objeto currentUser desde app.js para acceder a sus propiedades
 
 export function initViewsModule(appState) {
     modoContenido = appState.modoContenido;
@@ -23,6 +24,7 @@ export function initViewsModule(appState) {
     appSetFechaCalendarioActual = appState.appSetFechaCalendarioActual;
     modosDisponibles = appState.modosDisponibles;
     myConfettiInstance = appState.myConfettiInstance;
+    currentUser = appState.currentUser; // Asignar el objeto currentUser
 }
 
 export async function renderizarModoDiaADia() {
@@ -50,7 +52,14 @@ export async function renderizarModoDiaADia() {
     btnAddDaily.id = 'add-daily-item-btn';
     btnAddDaily.className = 'add-elemento-diario-btn';
     btnAddDaily.textContent = '+ Añadir Título y Subtareas (Hoy)';
-    btnAddDaily.onclick = () => abrirModalParaNuevoElemento('dia-a-dia', new Date().toISOString().split('T')[0]); 
+    btnAddDaily.onclick = () => {
+        // Nuevo: Comprobar si el email está verificado antes de permitir añadir tareas
+        if (!currentUser.is_admin && !currentUser.email_verified) {
+            alert("Su correo electrónico no está verificado. Por favor, verifique su correo para crear o modificar elementos.");
+            return;
+        }
+        abrirModalParaNuevoElemento('dia-a-dia', new Date().toISOString().split('T')[0]); 
+    }; 
     addDailyItemContainer.appendChild(btnAddDaily);
     
     const toggleInactivasBtn = document.getElementById('toggle-tareas-inactivas');
@@ -164,6 +173,14 @@ export function crearElementoTituloTareaDiaria(tarea, fechaObj) {
     textoSpan.textContent = tarea.texto;
     liTitulo.appendChild(textoSpan);
 
+    // Nuevo: Indicador de tarea compartida
+    if (tarea.is_shared) {
+        const sharedIcon = document.createElement('i');
+        sharedIcon.className = 'fas fa-share-alt shared-icon';
+        sharedIcon.title = `Compartido por: ${tarea.shared_owner_info?.username || tarea.shared_owner_info?.email || 'Desconocido'}`;
+        textoSpan.appendChild(sharedIcon);
+    }
+
     const toggleBtn = createActionToggleButton(tarea, fechaObj, 'dia-a-dia'); 
     liTitulo.appendChild(toggleBtn);
     return liTitulo;
@@ -192,6 +209,15 @@ export function crearElementoSubTareaDiaria(tarea, fechaObj, esSuelta = false) {
     li.appendChild(checkbox);
     li.appendChild(label);
 
+    // Nuevo: Indicador de tarea compartida para subtareas
+    if (tarea.is_shared) {
+        const sharedIcon = document.createElement('i');
+        sharedIcon.className = 'fas fa-share-alt shared-icon';
+        sharedIcon.title = `Compartido por: ${tarea.shared_owner_info?.username || tarea.shared_owner_info?.email || 'Desconocido'}`;
+        label.appendChild(sharedIcon); // Añadir el icono dentro del label o al final de la línea
+    }
+
+
     const toggleBtn = createActionToggleButton(tarea, fechaObj, 'dia-a-dia');
     li.appendChild(toggleBtn);
     
@@ -201,7 +227,9 @@ export function crearElementoSubTareaDiaria(tarea, fechaObj, esSuelta = false) {
     fechaDeLaTareaVisualizada.setHours(0,0,0,0);
     const esPasado = fechaDeLaTareaVisualizada.getTime() < hoy.getTime();
 
-    checkbox.disabled = esPasado || !tarea.activo;
+    // Nuevo: Deshabilitar checkbox si el email no está verificado (a menos que sea admin)
+    // El checkbox se deshabilita si es pasado, inactivo O si el usuario no es admin y su email no está verificado.
+    checkbox.disabled = esPasado || !tarea.activo || (!currentUser.is_admin && !currentUser.email_verified);
     
     if (checkbox.disabled) { 
         checkbox.style.opacity = '0.6'; 
@@ -241,12 +269,29 @@ export function crearElementoSubTareaDiaria(tarea, fechaObj, esSuelta = false) {
 }
 
 export async function restaurarTarea(tareaARestaurar, fechaObjRecarga) {
+    // Nuevo: Comprobación de verificación de email antes de restaurar
+    if (!currentUser.is_admin && !currentUser.email_verified) {
+        alert("Su correo electrónico no está verificado. Por favor, verifique su correo para restaurar elementos.");
+        return;
+    }
+
+    // Nuevo: Validación para no restaurar tareas de días pasados
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const taskDateObj = new Date(tareaARestaurar.fecha_inicio + 'T00:00:00Z'); // Usar fecha_inicio de la tarea
+    
+    if (taskDateObj.getTime() < today.getTime()) {
+        alert("No se pueden restaurar tareas de días anteriores al actual.");
+        return;
+    }
+
     const payload = { 
         _method: "PUT", 
         id: parseInt(tareaARestaurar.id), 
         activo: true, 
         tipo: tareaARestaurar.tipo,
-        texto: tareaARestaurar.texto || '' 
+        texto: tareaARestaurar.texto || '' ,
+        fecha_inicio: tareaARestaurar.fecha_inicio // Incluir fecha_inicio para la validación del backend
     };
     if (tareaARestaurar.tipo === 'subtarea') {
         alert("Para restaurar una subtarea, primero restaura su título principal desde la lista de archivados.");
@@ -263,6 +308,22 @@ export async function restaurarTarea(tareaARestaurar, fechaObjRecarga) {
 
 export async function eliminarTareaDiaria(tarea, fechaObjRecarga, esActivaActual) {
     console.log("-> eliminarTareaDiaria llamada para ID:", tarea.id); 
+    // Nuevo: Comprobación de verificación de email antes de eliminar
+    if (!currentUser.is_admin && !currentUser.email_verified) {
+        alert("Su correo electrónico no está verificado. Por favor, verifique su correo para eliminar elementos.");
+        return;
+    }
+    
+    // Nuevo: Validación para no eliminar tareas de días pasados
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const taskDateObj = new Date(tarea.fecha_inicio + 'T00:00:00Z'); // Usar fecha_inicio de la tarea
+    
+    if (taskDateObj.getTime() < today.getTime()) {
+        alert("No se pueden eliminar o archivar tareas de días anteriores al actual.");
+        return;
+    }
+
     const confirmMessage = esActivaActual 
         ? `¿Marcar este elemento como inactivo? ${tarea.tipo === 'titulo' ? 'Sus subtareas también se marcarán como inactivas.' : ''}`
         : "Esto eliminará la tarea PERMANENTEMENTE. ¿Continuar?";
@@ -279,7 +340,8 @@ export async function eliminarTareaDiaria(tarea, fechaObjRecarga, esActivaActual
         _method: operationMethod, 
         id: parseInt(tarea.id), 
         tipo: tarea.tipo || '', 
-        texto: tarea.texto || '' 
+        texto: tarea.texto || '',
+        fecha_inicio: tarea.fecha_inicio // Incluir fecha_inicio para la validación del backend
     };
     console.log("-> Payload listo:", payload); 
     try {
@@ -308,7 +370,14 @@ export async function renderizarModoObjetivos(mode_id) {
     const btnAddObjetivo = document.createElement('button');
     btnAddObjetivo.className = 'add-elemento-diario-btn';
     btnAddObjetivo.textContent = '+ Añadir Nuevo Objetivo';
-    btnAddObjetivo.onclick = () => abrirModalParaNuevoElemento(mode_id); 
+    btnAddObjetivo.onclick = () => {
+        // Nuevo: Comprobar si el email está verificado antes de añadir objetivos
+        if (!currentUser.is_admin && !currentUser.email_verified) {
+            alert("Su correo electrónico no está verificado. Por favor, verifique su correo para crear o modificar elementos.");
+            return;
+        }
+        abrirModalParaNuevoElemento(mode_id); 
+    }; 
     addObjetivoContainer.appendChild(btnAddObjetivo);
     await cargarObjetivos(mode_id);
 }
@@ -373,11 +442,19 @@ export async function cargarObjetivos(mode_id) {
                     label.htmlFor = checkbox.id; 
                     label.textContent = sub.texto;
                     liSub.append(checkbox, label, createActionToggleButton(sub, null, mode_id));
+
+                    // Nuevo: Deshabilitar checkbox si el email no está verificado (a menos que sea admin)
+                    checkbox.disabled = (!currentUser.is_admin && !currentUser.email_verified);
+                    if (checkbox.disabled) { 
+                        checkbox.style.opacity = '0.6'; 
+                        checkbox.style.cursor = 'not-allowed'; 
+                    }
+
                     checkbox.onchange = async (e) => {
                         const esMarcado = e.target.checked; 
                         if(esMarcado && myConfettiInstance) lanzarAnimacionCelebracion(myConfettiInstance, e);
                         try {
-                            await fetchData(`/sub-objetivos-estado`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ idSubObjetivoDB: parseInt(sub.id), completado: esMarcado }) });
+                            await fetchData(`/sub-objetivos-estado`, 'POST', { idSubObjetivoDB: parseInt(sub.id), completado: esMarcado }); // Modificado para pasar como POST data
                             await cargarObjetivos(mode_id);
                         }
                         catch (error) {
@@ -444,6 +521,7 @@ export async function renderizarCalendario(currentYear, currentMonth, updateGlob
 
     for (let dia = 1; dia <= numDiasEnMes; dia++) {
         const fechaStr = `${anioVista}-${String(mesVista + 1).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
+        const fechaActualDia = new Date(Date.UTC(anioVista, mesVista, dia));
         const porcentaje = estadosDias[fechaStr] ?? -1;
         const anotacionDia = anotacionesMes[fechaStr];
 
@@ -460,11 +538,40 @@ export async function renderizarCalendario(currentYear, currentMonth, updateGlob
         }
 
         if (porcentaje >= 0) diaSpan.classList.add(obtenerClaseDeEstado(porcentaje)); 
-        if (new Date(Date.UTC(anioVista, mesVista, dia)).getTime() === hoy.getTime()) diaSpan.classList.add('dia-actual'); 
+        if (fechaActualDia.getTime() === hoy.getTime()) diaSpan.classList.add('dia-actual'); 
         
-        diaSpan.onclick = () => verDetalleDia(fechaStr); 
-        diaSpan.oncontextmenu = (e) => { e.preventDefault(); abrirModalParaNuevoElemento('dia-a-dia', fechaStr); };
-        diaSpan.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') e.target.click(); };
+        // Nuevo: Deshabilitar días pasados en el calendario visual
+        const esDiaPasado = fechaActualDia.getTime() < hoy.getTime();
+        if (esDiaPasado) {
+            diaSpan.classList.add('dia-pasado');
+            diaSpan.setAttribute('aria-disabled', 'true'); // Indicador de accesibilidad
+            diaSpan.removeAttribute('tabindex'); // Remover del foco de navegación
+            // Eliminar listeners o reemplazarlos por una alerta
+            diaSpan.onclick = () => alert("No se pueden interactuar con días anteriores al actual.");
+            diaSpan.oncontextmenu = (e) => { 
+                e.preventDefault(); 
+                alert("No se pueden añadir tareas o anotaciones a días anteriores al actual.");
+            };
+            diaSpan.onkeydown = (e) => { 
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    alert("No se pueden interactuar con días anteriores al actual.");
+                }
+            };
+        } else {
+            diaSpan.onclick = () => verDetalleDia(fechaStr); 
+            diaSpan.oncontextmenu = (e) => { 
+                e.preventDefault(); 
+                // Nuevo: Comprobar email verificado antes de abrir modal de añadir
+                if (!currentUser.is_admin && !currentUser.email_verified) {
+                    alert("Su correo electrónico no está verificado. Por favor, verifique su correo para crear elementos.");
+                    return;
+                }
+                abrirModalParaNuevoElemento('dia-a-dia', fechaStr); 
+            };
+            diaSpan.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') e.target.click(); };
+        }
+        
         diasMesContenedor.appendChild(diaSpan);
     }
     
@@ -493,7 +600,7 @@ export async function verDetalleDia(fechaStr) {
 
     const detalleDiaFechaSpan = modalInterno.querySelector('#detalleDiaFecha');
     const listaDetalleTareasScrollDiv = modalInterno.querySelector('#listaDetalleTareasScroll');
-    const formModalActionsDiv = modalInterno.querySelector('.form-modal-actions'); // Referencia al único contenedor de acciones
+    // const formModalActionsDiv = modalInterno.querySelector('.form-modal-actions'); // Referencia al único contenedor de acciones
     const fechaConsultadaObj = new Date(fechaStr + 'T00:00:00Z');
     detalleDiaFechaSpan.textContent = fechaConsultadaObj.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' });
 
@@ -534,37 +641,44 @@ export async function verDetalleDia(fechaStr) {
     const hoy = new Date(); 
     hoy.setUTCHours(0,0,0,0);
     const esDiaPasado = fechaConsultadaObj.getTime() < hoy.getTime();
+    
+    // Nuevo: El selector de emojis solo se muestra si el día no es pasado y si el usuario está verificado o es admin
+    const canEditAnnotations = (!esDiaPasado && (currentUser.is_admin || currentUser.email_verified));
     const emojiOptionsHTML = EMOJIS_PREDEFINIDOS.map(e => `<span class="emoji-option" data-emoji="${e}" role="button" tabindex="0" aria-label="Seleccionar ${e}">${e}</span>`).join('');
     
     const anotacionEditorHtml = `
         <div class="anotacion-editor">
             <h4>Anotación del Día:</h4>
             <div>
-                <label for="emojiDiaModalInput" class="form-label">Emoji(s) (máx. 3): <span id="emojiDiaModalDisplay" class="current-emoji-display">${currentEmojisString}</span></label>
-                ${!esDiaPasado ? `<div id="emojiSelectorModal" class="emoji-selector-container">${emojiOptionsHTML}</div>` : ''}
+                <label for="emojiDiaModalInput" class="form-label">Emoji(s) (máx. 3): <span id="emojiDiaModalDisplay" class="current-emoji-display"></span></label>
+                ${canEditAnnotations ? `<div id="emojiSelectorModal" class="emoji-selector-container">${emojiOptionsHTML}</div>` : ''}
                 <input type="hidden" id="emojiDiaModalInput" value="${currentEmojisString}">
             </div>
             <div class="form-group">
                 <label for="descripcionEmojiDiaModal" class="form-label">Descripción:</label>
-                <input type="text" id="descripcionEmojiDiaModal" value="${currentDesc}" class="form-control" ${esDiaPasado ? 'disabled' : ''}>
+                <input type="text" id="descripcionEmojiDiaModal" value="${currentDesc}" class="form-control" ${canEditAnnotations ? '' : 'disabled'}>
             </div>
         </div>
     `;
     listaDetalleTareasScrollDiv.innerHTML = `<div id="tareas-del-dia-container">${tareasHtml}</div><hr>${anotacionEditorHtml}`;
 
-    if (!esDiaPasado) {
+    // Rellenar el display de emojis inicial después de renderizar el HTML
+    modalInterno.querySelector('#emojiDiaModalDisplay').textContent = currentEmojisString;
+
+    if (canEditAnnotations) {
         const guardarBtn = modalInterno.querySelector('#guardarAnotacionBtnModal');
-        const quitarBtn = modalInterno.querySelector('#quitarAnotacionBtnModal'); // Ahora siempre existirá, aunque oculto inicialmente
+        const quitarBtn = modalInterno.querySelector('#quitarAnotacionBtnModal'); 
 
         if (currentEmojisString || currentDesc) {
-            quitarBtn.style.display = 'inline-block'; // Mostrar si hay contenido
+            quitarBtn.style.display = 'inline-block'; 
         } else {
-            quitarBtn.style.display = 'none'; // Ocultar si no hay contenido
+            quitarBtn.style.display = 'none'; 
         }
         
-        quitarBtn.onclick = async () => { // Adjuntar listener siempre
+        quitarBtn.onclick = async () => { 
             if (!confirm("¿Quitar anotación?")) return;
             try {
+                // Nuevo: Incluir fecha en payload DELETE
                 await fetchData('/anotaciones', 'POST', { _method: 'DELETE', fecha: fechaStr }); 
                 cerrarBtn.click();
                 await renderizarCalendario(appFechaCalendarioActual.getFullYear(), appFechaCalendarioActual.getMonth(), appSetFechaCalendarioActual);
@@ -588,8 +702,8 @@ export async function verDetalleDia(fechaStr) {
         };
 
         const emojiOptions = modalInterno.querySelectorAll('#emojiSelectorModal .emoji-option');
-        const emojiDisplay = modalInterno.querySelector('#emojiDiaModalDisplay');
         const emojiInputHidden = modalInterno.querySelector('#emojiDiaModalInput');
+        const emojiDisplay = modalInterno.querySelector('#emojiDiaModalDisplay'); // Asegúrate de tener esta referencia
 
         let selectedEmojis = emojiInputHidden.value.match(/./gu) || [];
         emojiOptions.forEach(option => {
@@ -609,7 +723,7 @@ export async function verDetalleDia(fechaStr) {
             };
         });
     } else {
-        // Si es un día pasado, ocultamos el botón de guardar y quitar
+        // Si es un día pasado o el usuario no puede editar, ocultamos los botones
         const guardarBtn = modalInterno.querySelector('#guardarAnotacionBtnModal');
         const quitarBtn = modalInterno.querySelector('#quitarAnotacionBtnModal'); 
         if (guardarBtn) guardarBtn.style.display = 'none';

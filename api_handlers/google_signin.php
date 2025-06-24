@@ -26,7 +26,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $google_id = $payload['sub'];
 
             // Verificar si el usuario ya existe en la base de datos
-            $stmt_check = $mysqli->prepare("SELECT id, username FROM usuarios WHERE email = ?");
+            // Incluir el campo is_admin para recuperación
+            $stmt_check = $mysqli->prepare("SELECT id, username, is_admin FROM usuarios WHERE email = ?");
             $stmt_check->bind_param("s", $email);
             $stmt_check->execute();
             $result = $stmt_check->get_result();
@@ -36,7 +37,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $user = $result->fetch_assoc();
                 $_SESSION['usuario_id'] = $user['id'];
                 $_SESSION['username'] = $user['username'];
-                json_response(['success' => true, 'message' => 'Inicio de sesión exitoso.']);
+                $_SESSION['email_verified'] = true; // Google ya verificó el email
+                $_SESSION['is_admin'] = (bool)$user['is_admin']; // Nuevo: rol de administrador
+
+                json_response([
+                    'success' => true,
+                    'message' => 'Inicio de sesión exitoso.',
+                    'username' => $user['username'],
+                    'email_verified' => true,
+                    'is_admin' => (bool)$user['is_admin']
+                ]);
             } else {
                 // El usuario no existe, crearlo
                 // Generar una contraseña aleatoria y segura, ya que el usuario usará Google para iniciar sesión
@@ -56,17 +66,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         break;
                     }
                     $final_username = $username_base . $counter++;
+                    // Para evitar nombres de usuario excesivamente largos, limitar el contador o la longitud total
+                    if (strlen($final_username) > 250) { // Un límite razonable
+                        $final_username = substr($username_base, 0, 240) . '_' . $counter;
+                    }
                 }
 
-
-                $stmt_insert = $mysqli->prepare("INSERT INTO usuarios (username, email, password_hash, google_id) VALUES (?, ?, ?, ?)");
-                $stmt_insert->bind_param("ssss", $final_username, $email, $password_hash, $google_id);
+                // Insertar nuevo usuario, marcando el email como verificado inmediatamente
+                // e incluyendo is_admin (por defecto false)
+                $stmt_insert = $mysqli->prepare("INSERT INTO usuarios (username, email, password_hash, google_id, email_verified_at, is_admin) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP(), ?)");
+                // Asumiendo que is_admin por defecto será false para nuevos registros de Google
+                $default_is_admin = false;
+                $stmt_insert->bind_param("ssssi", $final_username, $email, $password_hash, $google_id, $default_is_admin);
                 
                 if ($stmt_insert->execute()) {
                     // Iniciar sesión para el nuevo usuario
                     $_SESSION['usuario_id'] = $mysqli->insert_id;
                     $_SESSION['username'] = $final_username;
-                    json_response(['success' => true, 'message' => 'Registro e inicio de sesión exitosos.']);
+                    $_SESSION['email_verified'] = true; // Google ya verificó el email
+                    $_SESSION['is_admin'] = $default_is_admin;
+
+                    json_response([
+                        'success' => true,
+                        'message' => 'Registro e inicio de sesión exitosos.',
+                        'username' => $final_username,
+                        'email_verified' => true,
+                        'is_admin' => $default_is_admin
+                    ]);
                 } else {
                     json_response(['error' => 'Error al registrar el nuevo usuario.'], 500);
                 }

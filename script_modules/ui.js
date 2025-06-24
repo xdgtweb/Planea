@@ -7,6 +7,7 @@ import {
     mostrarFormularioAddSubTarea
 } from './modals.js';
 import { restaurarTarea, eliminarTareaDiaria } from './views.js';
+import { currentUser } from './app.js'; // Importar currentUser para lógica de admin
 
 let miniCalCurrentMonth, miniCalCurrentYear;
 export let miniCalSelectedDates = [];
@@ -27,10 +28,10 @@ export function setupEventListeners() {
 }
 
 export function updateUsernameInUI() {
-    const username = sessionStorage.getItem('username');
+    // Usar el username del objeto currentUser
     const displayElement = document.getElementById('username-display');
-    if (username && displayElement) {
-        displayElement.textContent = `Hola, ${username}`;
+    if (currentUser.username && displayElement) {
+        displayElement.textContent = `Hola, ${currentUser.username}`;
     }
 }
 
@@ -90,6 +91,10 @@ function getActionsForItem(item, fecha, contexto) {
     const esObjetivo = contexto === 'corto-medio-plazo' || contexto === 'largo-plazo';
     const esTareaDiaria = contexto === 'dia-a-dia';
     const esActivo = item.activo;
+    
+    // Nuevo: Determinar si el usuario tiene permiso para editar/eliminar
+    // Si no es admin y su email no está verificado, no puede hacer nada.
+    const canModify = currentUser.is_admin || currentUser.email_verified;
 
     let actions = [];
 
@@ -97,24 +102,43 @@ function getActionsForItem(item, fecha, contexto) {
         // Acciones para elementos activos
         if (esObjetivo) {
             if (item.sub_objetivos !== undefined) { // Es un objetivo principal
-                actions.push({ label: "Editar Objetivo", handler: () => mostrarFormularioEditarObjetivo(item, contexto) });
-                actions.push({ label: "Añadir Sub-objetivo", handler: () => mostrarFormularioAddSubObjetivo(item.id, contexto) });
+                if (canModify) {
+                    actions.push({ label: "Editar Objetivo", handler: () => mostrarFormularioEditarObjetivo(item, contexto) });
+                    actions.push({ label: "Añadir Sub-objetivo", handler: () => mostrarFormularioAddSubObjetivo(item.id, contexto) });
+                }
             } else { // Es un sub-objetivo
-                actions.push({ label: "Editar Sub-objetivo", handler: () => mostrarFormularioEditarSubObjetivo(item, contexto) });
+                if (canModify) {
+                    actions.push({ label: "Editar Sub-objetivo", handler: () => mostrarFormularioEditarSubObjetivo(item, contexto) });
+                }
             }
         } else if (esTareaDiaria) {
             if (item.tipo === 'titulo') {
-                actions.push({ label: "Editar Título", handler: () => mostrarFormularioEditarTarea(item, fecha, 'titulo') });
-                actions.push({ label: "Añadir Subtarea", handler: () => mostrarFormularioAddSubTarea(item.id, fecha) });
-            } else {
-                actions.push({ label: "Editar Subtarea", handler: () => mostrarFormularioEditarTarea(item, fecha, 'subtarea') });
+                // Solo el propietario de la tarea puede editar/compartir/eliminar
+                if (item.usuario_id === currentUser.id && canModify) { 
+                    actions.push({ label: "Editar Título", handler: () => mostrarFormularioEditarTarea(item, fecha, 'titulo') });
+                    actions.push({ label: "Añadir Subtarea", handler: () => mostrarFormularioAddSubTarea(item.id, fecha) });
+                    // No hay "compartir" directo aquí, se hace desde el modal de edición
+                } else if (item.is_shared) { // Si es compartida y no eres el propietario
+                    // Podrías añadir una acción para "Ver detalles de compartido"
+                    // actions.push({ label: "Ver detalles compartido", handler: () => alert("Tarea compartida por otro usuario.") });
+                }
+            } else { // Es una subtarea
+                if (item.usuario_id === currentUser.id && canModify) {
+                    actions.push({ label: "Editar Subtarea", handler: () => mostrarFormularioEditarTarea(item, fecha, 'subtarea') });
+                }
             }
         }
-        actions.push({ label: "Archivar", handler: () => eliminarTareaDiaria(item, fecha, true) });
-    } else {
-        // Acciones para elementos inactivos
-        actions.push({ label: "Restaurar", handler: () => restaurarTarea(item, fecha) });
-        actions.push({ label: "Eliminar Permanentemente", handler: () => eliminarTareaDiaria(item, fecha, false) });
+        
+        // Acciones de archivar/eliminar (solo para el propietario y si tiene permiso)
+        if (item.usuario_id === currentUser.id && canModify) {
+             actions.push({ label: "Archivar", handler: () => eliminarTareaDiaria(item, fecha, true) });
+        }
+    } else { // Acciones para elementos inactivos
+        // Solo el propietario de la tarea inactiva puede restaurarla o eliminarla permanentemente
+        if (item.usuario_id === currentUser.id && canModify) {
+            actions.push({ label: "Restaurar", handler: () => restaurarTarea(item, fecha) });
+            actions.push({ label: "Eliminar Permanentemente", handler: () => eliminarTareaDiaria(item, fecha, false) });
+        }
     }
 
     return actions;
@@ -135,6 +159,7 @@ export function mostrarFormulario(camposHTML, onSaveCallback, titulo = "Formular
 
     formContainer.classList.remove('hidden');
     formContainer.removeAttribute('inert');
+    formContainer.setAttribute('aria-hidden', 'false'); // Nuevo: Mostrar el modal para lectores de pantalla
 }
 
 export function ocultarFormulario() {
@@ -145,6 +170,7 @@ export function ocultarFormulario() {
     }
     formContainer.classList.add('hidden');
     formContainer.setAttribute('inert', 'true');
+    formContainer.setAttribute('aria-hidden', 'true'); // Nuevo: Ocultar el modal para lectores de pantalla
 }
 
 export function renderMiniCalendar(year, month, allowMultiple = false) {
@@ -173,8 +199,12 @@ export function renderMiniCalendar(year, month, allowMultiple = false) {
     for (let i = 1; i < diaDeSemanaPrimerDia; i++) diasMesContenedor.appendChild(document.createElement('span'));
 
     const numDiasEnMes = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
+    const hoy = new Date();
+    hoy.setUTCHours(0,0,0,0); // Normalizar a medianoche UTC
+    
     for (let dia = 1; dia <= numDiasEnMes; dia++) {
         const fechaStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
+        const fechaActualDia = new Date(Date.UTC(year, month, dia)); // Crear fecha para comparación
         const diaSpan = document.createElement('span');
         diaSpan.className = 'dia-calendario';
         diaSpan.dataset.fecha = fechaStr;
@@ -186,21 +216,29 @@ export function renderMiniCalendar(year, month, allowMultiple = false) {
             diaSpan.classList.add('selected');
         }
 
-        diaSpan.onclick = () => {
-            const index = miniCalSelectedDates.indexOf(fechaStr);
-            if (index > -1) {
-                miniCalSelectedDates.splice(index, 1);
-                diaSpan.classList.remove('selected');
-            } else {
-                if (!allowMultiple) {
-                    miniCalSelectedDates.length = 0;
-                    container.querySelectorAll('.dia-calendario.selected').forEach(el => el.classList.remove('selected'));
+        // Nuevo: Deshabilitar días pasados en el mini calendario
+        if (fechaActualDia.getTime() < hoy.getTime()) {
+            diaSpan.classList.add('dia-pasado');
+            diaSpan.setAttribute('aria-disabled', 'true');
+            diaSpan.removeAttribute('tabindex'); // Eliminar del orden de tabulación
+            diaSpan.onclick = () => alert("No se pueden seleccionar días anteriores al actual.");
+        } else {
+            diaSpan.onclick = () => {
+                const index = miniCalSelectedDates.indexOf(fechaStr);
+                if (index > -1) {
+                    miniCalSelectedDates.splice(index, 1);
+                    diaSpan.classList.remove('selected');
+                } else {
+                    if (!allowMultiple) {
+                        miniCalSelectedDates.length = 0;
+                        container.querySelectorAll('.dia-calendario.selected').forEach(el => el.classList.remove('selected'));
+                    }
+                    miniCalSelectedDates.push(fechaStr);
+                    diaSpan.classList.add('selected');
                 }
-                miniCalSelectedDates.push(fechaStr);
-                diaSpan.classList.add('selected');
-            }
-            document.getElementById('selected-dates-display').textContent = `Fechas: ${miniCalSelectedDates.join(', ')}`;
-        };
+                document.getElementById('selected-dates-display').textContent = `Fechas: ${miniCalSelectedDates.join(', ')}`;
+            };
+        }
         diasMesContenedor.appendChild(diaSpan);
     }
 
