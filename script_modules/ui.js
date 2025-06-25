@@ -7,10 +7,14 @@ import {
     mostrarFormularioAddSubTarea
 } from './modals.js';
 import { restaurarTarea, eliminarTareaDiaria } from './views.js';
-import { currentUser } from './app.js'; // Importar currentUser para lógica de admin
+// Se elimina la importación directa de currentUser desde app.js para evitar problemas de sincronización.
+// import { currentUser } from './app.js'; 
 
 let miniCalCurrentMonth, miniCalCurrentYear;
 export let miniCalSelectedDates = [];
+
+// Variable local para almacenar el estado de currentUser pasado desde app.js
+let appCurrentUser = {};
 
 // CORRECCIÓN: Se añade la palabra 'export' para que la función sea pública.
 export function setupEventListeners() {
@@ -27,11 +31,19 @@ export function setupEventListeners() {
     }
 }
 
+// Inicializa el módulo UI con el estado de la aplicación, incluyendo currentUser
+export function initUIModule(appState) {
+    appCurrentUser = appState.currentUser; // Almacena el currentUser pasado
+    console.log("UI.JS: appCurrentUser establecido en initUIModule:", appCurrentUser); // Añade esta línea
+    setupEventListeners();
+    updateUsernameInUI(); 
+}
+
 export function updateUsernameInUI() {
-    // Usar el username del objeto currentUser
+    // Usar el username del objeto appCurrentUser
     const displayElement = document.getElementById('username-display');
-    if (currentUser.username && displayElement) {
-        displayElement.textContent = `Hola, ${currentUser.username}`;
+    if (appCurrentUser.username && displayElement) {
+        displayElement.textContent = `Hola, ${appCurrentUser.username}`;
     }
 }
 
@@ -65,7 +77,8 @@ function toggleActionPanel(button, item, fecha, contexto) {
 
 function populateAndShowPanel(panel, item, fecha, contexto) {
     panel.innerHTML = ''; 
-    const actions = getActionsForItem(item, fecha, contexto);
+    const actions = getActionsForItem(item, fecha, contexto); // Obtiene las acciones.
+    console.log("UI.JS: Populating panel. Acciones encontradas:", actions.length, actions); // Añade esta línea
     actions.forEach(action => {
         const actionBtn = document.createElement('button');
         actionBtn.textContent = action.label;
@@ -88,13 +101,14 @@ export function closeAllActionPanels(exceptButton = null) {
 }
 
 function getActionsForItem(item, fecha, contexto) {
+    console.log("UI.JS: getActionsForItem llamado. appCurrentUser:", appCurrentUser); // Añade esta línea
     const esObjetivo = contexto === 'corto-medio-plazo' || contexto === 'largo-plazo';
     const esTareaDiaria = contexto === 'dia-a-dia';
     const esActivo = item.activo;
     
-    // Nuevo: Determinar si el usuario tiene permiso para editar/eliminar
-    // Si no es admin y su email no está verificado, no puede hacer nada.
-    const canModify = currentUser.is_admin || currentUser.email_verified;
+    // Se utiliza la variable local appCurrentUser para asegurar que los datos del usuario estén sincronizados
+    const canModify = appCurrentUser.is_admin || appCurrentUser.email_verified; 
+    console.log("UI.JS: canModify calculado como:", canModify); // Añade esta línea
 
     let actions = [];
 
@@ -114,7 +128,7 @@ function getActionsForItem(item, fecha, contexto) {
         } else if (esTareaDiaria) {
             if (item.tipo === 'titulo') {
                 // Solo el propietario de la tarea puede editar/compartir/eliminar
-                if (item.usuario_id === currentUser.id && canModify) { 
+                if (item.usuario_id === appCurrentUser.id && canModify) { 
                     actions.push({ label: "Editar Título", handler: () => mostrarFormularioEditarTarea(item, fecha, 'titulo') });
                     actions.push({ label: "Añadir Subtarea", handler: () => mostrarFormularioAddSubTarea(item.id, fecha) });
                     // No hay "compartir" directo aquí, se hace desde el modal de edición
@@ -123,19 +137,19 @@ function getActionsForItem(item, fecha, contexto) {
                     // actions.push({ label: "Ver detalles compartido", handler: () => alert("Tarea compartida por otro usuario.") });
                 }
             } else { // Es una subtarea
-                if (item.usuario_id === currentUser.id && canModify) {
+                if (item.usuario_id === appCurrentUser.id && canModify) {
                     actions.push({ label: "Editar Subtarea", handler: () => mostrarFormularioEditarTarea(item, fecha, 'subtarea') });
                 }
             }
         }
         
         // Acciones de archivar/eliminar (solo para el propietario y si tiene permiso)
-        if (item.usuario_id === currentUser.id && canModify) {
+        if (item.usuario_id === appCurrentUser.id && canModify) {
              actions.push({ label: "Archivar", handler: () => eliminarTareaDiaria(item, fecha, true) });
         }
     } else { // Acciones para elementos inactivos
         // Solo el propietario de la tarea inactiva puede restaurarla o eliminarla permanentemente
-        if (item.usuario_id === currentUser.id && canModify) {
+        if (item.usuario_id === appCurrentUser.id && canModify) {
             actions.push({ label: "Restaurar", handler: () => restaurarTarea(item, fecha) });
             actions.push({ label: "Eliminar Permanentemente", handler: () => eliminarTareaDiaria(item, fecha, false) });
         }

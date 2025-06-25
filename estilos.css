@@ -659,14 +659,16 @@ input[type="checkbox"]:focus {
     border: 1px solid var(--border-color);
     border-radius: var(--radius-s);
     box-shadow: var(--shadow-medium);
-    z-index: var(--z-dropdown);
+    /* Aumenta el z-index para que esté por encima del overlay del modal */
+    z-index: 1055; 
     right: var(--space-s);
     /* Position from right edge */
+    /* top de nuevo para que abra hacia abajo */
     top: 100%;
-    /* Position below the toggle button */
     opacity: 0;
     visibility: hidden;
-    transform: translateY(10px);
+    /* Ajusta el transform de nuevo para la animación hacia abajo */
+    transform: translateY(10px); 
     transition: opacity var(--transition-duration-fast), transform var(--transition-duration-fast), visibility var(--transition-duration-fast) linear var(--transition-duration-fast);
     padding: var(--space-xs);
     min-width: 180px;
@@ -1178,6 +1180,8 @@ input[type="checkbox"]:focus {
 
 
 /* Tareas Archivadas/Inactivas toggle */
+/* Se eliminan los estilos del toggle antiguo, ya no es necesario */
+/*
 #toggle-tareas-inactivas {
     display: block;
     width: 100%;
@@ -1213,10 +1217,11 @@ input[type="checkbox"]:focus {
 
 #lista-tareas-inactivas.expandido {
     max-height: 500px;
-    /* Adjust as needed, large enough to contain content */
+    
     padding: var(--space-m) var(--space-l);
     transition: max-height 0.5s ease-in, padding 0.5s ease-in;
 }
+*/
 
 /* Empty message styles */
 .mensaje-vacio {

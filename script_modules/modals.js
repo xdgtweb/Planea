@@ -160,124 +160,130 @@ export function abrirModalParaNuevoElemento(contexto = null, fechaPreseleccionad
     
     const onGuardarCallback = async () => {
         const tipoOp = contexto;
-        
-        // Nuevo: Comprobación de verificación de email antes de guardar
-        if (!currentUser.is_admin && !currentUser.email_verified) {
-            alert("Su correo electrónico no está verificado. Por favor, verifique su correo para crear o modificar elementos.");
-            throw new Error("Email no verificado");
-        }
+        const saveBtn = document.getElementById('form-save-btn'); // Obtener referencia al botón de guardar
+        if (saveBtn) saveBtn.disabled = true; // Deshabilitar el botón al inicio de la operación
 
-        if (tipoOp === 'dia-a-dia') {
-            const tituloTexto = document.getElementById('nuevoTituloTexto').value.trim();
-            if (!tituloTexto) { alert('El texto del título es obligatorio.'); throw new Error("Título vacío"); }
-            
-            const subtareas = Array.from(document.querySelectorAll('#subtasks-inputs-container .subtask-text-input')).map(i=>i.value.trim()).filter(t=>t);
-            if (subtareas.length === 0) { alert('Al menos una subtarea es obligatoria.'); throw new Error("Subtarea vacía"); }
-            
-            const tipoRecurrencia = document.getElementById('tipoRecurrencia').value;
-            const fechasParaGuardar = uiMiniCalSelectedDates; 
-
-            if (fechasParaGuardar.length === 0) { alert('Debe seleccionar al menos una fecha del calendario.'); throw new Error("Fechas no seleccionadas"); }
-
-            let regla_recurrencia_final = tipoRecurrencia;
-            if (tipoRecurrencia === 'WEEKLY') {
-                const dias = Array.from(document.querySelectorAll('#days-of-week-selector input[name="recurrenciaDia"]:checked')).map(cb => cb.value);
-                if (dias.length === 0) { alert("Seleccione días para repetición semanal."); throw new Error("Días semanales no seleccionados"); }
-                regla_recurrencia_final = `WEEKLY:${dias.join(',')}`;
+        try { // Envuelve todo el código asíncrono en un try-catch
+            // Nuevo: Comprobación de verificación de email antes de guardar
+            if (!currentUser.is_admin && !currentUser.email_verified) {
+                alert("Su correo electrónico no está verificado. Por favor, verifique su correo para crear o modificar elementos.");
+                throw new Error("Email no verificado");
             }
 
-            // CAMPOS DE RECORDATORIO
-            const sendReminder = document.getElementById('activarRecordatorio').checked;
-            const reminderType = document.getElementById('tipoRecordatorio').value;
-            // NUEVO: Obtener las horas seleccionadas del input oculto
-            const selectedReminderHours = document.getElementById('selectedReminderHoursInput').value.split(',').filter(time => time);
+            if (tipoOp === 'dia-a-dia') {
+                const tituloTexto = document.getElementById('nuevoTituloTexto').value.trim();
+                if (!tituloTexto) { alert('El texto del título es obligatorio.'); throw new Error("Título vacío"); }
+                
+                const subtareas = Array.from(document.querySelectorAll('#subtasks-inputs-container .subtask-text-input')).map(i=>i.value.trim()).filter(t=>t);
+                if (subtareas.length === 0) { alert('Al menos una subtarea es obligatoria.'); throw new Error("Subtarea vacía"); }
+                
+                const tipoRecurrencia = document.getElementById('tipoRecurrencia').value;
+                const fechasParaGuardar = uiMiniCalSelectedDates; 
 
-            // Campos de compartir
-            const shareEmailsInput = document.getElementById('shareEmails').value.trim();
-            const emailsToShare = shareEmailsInput ? shareEmailsInput.split(',').map(email => email.trim()).filter(email => email) : [];
+                if (fechasParaGuardar.length === 0) { alert('Debe seleccionar al menos una fecha del calendario.'); throw new Error("Fechas no seleccionadas"); }
+
+                let regla_recurrencia_final = tipoRecurrencia;
+                if (tipoRecurrencia === 'WEEKLY') {
+                    const dias = Array.from(document.querySelectorAll('#days-of-week-selector input[name="recurrenciaDia"]:checked')).map(cb => cb.value);
+                    if (dias.length === 0) { alert("Seleccione días para repetición semanal."); throw new Error("Días semanales no seleccionados"); }
+                    regla_recurrencia_final = `WEEKLY:${dias.join(',')}`;
+                }
+
+                // CAMPOS DE RECORDATORIO
+                const sendReminder = document.getElementById('activarRecordatorio').checked;
+                const reminderType = document.getElementById('tipoRecordatorio').value;
+                // NUEVO: Obtener las horas seleccionadas del input oculto
+                const selectedReminderHours = document.getElementById('selectedReminderHoursInput').value.split(',').filter(time => time);
+
+                // Campos de compartir
+                const shareEmailsInput = document.getElementById('shareEmails').value.trim();
+                const emailsToShare = shareEmailsInput ? shareEmailsInput.split(',').map(email => email.trim()).filter(email => email) : [];
 
 
-            let successfulSaves = 0;
-            let failedSaves = 0;
-            let errors = [];
+                let successfulSaves = 0;
+                let failedSaves = 0;
+                let errors = [];
 
-            for (const fecha of fechasParaGuardar) {
+                for (const fecha of fechasParaGuardar) {
+                    const payload = { 
+                        texto: tituloTexto, 
+                        tipo: 'titulo', 
+                        subtareas_textos: subtareas,
+                        regla_recurrencia: regla_recurrencia_final,
+                        fecha_inicio: fecha, 
+                        emoji_anotacion: document.getElementById('emojiAnotacionTareaInput').value, 
+                        descripcion_anotacion: document.getElementById('descripcionAnotacionTarea').value.trim(),
+                        // Añadir datos de recordatorio al payload
+                        send_reminder: sendReminder,
+                        reminder_type: reminderType,
+                        selected_reminder_times: selectedReminderHours // NUEVO: Añadir las horas seleccionadas
+                    };
+
+                    try {
+                        const response = await fetchData('tareas-dia-a-dia', 'POST', payload);
+                        if (response.success) {
+                            successfulSaves++;
+                            // Si la tarea se guarda con éxito, intentar compartirla
+                            if (emailsToShare.length > 0) {
+                                const shareResponse = await fetchData('share-task', 'POST', {
+                                    task_id: response.id, // ID de la tarea recién creada
+                                    emails_to_share: emailsToShare,
+                                    include_reminder_times: sendReminder && reminderType === 'hours_before', // Si se activó recordatorio por horas
+                                    task_details_text: tituloTexto // Texto de la tarea para el email
+                                });
+                                if (!shareResponse.success) {
+                                    errors.push(`Error al compartir con algunos usuarios para la fecha ${fecha}: ${shareResponse.message || 'Error desconocido'}`);
+                                    console.error(`Error al compartir para la fecha ${fecha}:`, shareResponse);
+                                } else if (shareResponse.failed_to_send_to && shareResponse.failed_to_send_to.length > 0) {
+                                    const failedEmails = shareResponse.failed_to_send_to.map(f => f.email).join(', ');
+                                    errors.push(`No se pudo compartir con: ${failedEmails} para la fecha ${fecha}.`);
+                                }
+                            }
+                        } else {
+                            failedSaves++;
+                            errors.push(`Error al guardar para la fecha ${fecha}: ${response.message || 'Error desconocido'}`);
+                            console.error(`Error al guardar para la fecha ${fecha}:`, response);
+                        }
+                    } catch (error) {
+                        failedSaves++;
+                        errors.push(`Error de conexión o API para la fecha ${fecha}: ${error.message}`);
+                        console.error(`Error de conexión/API para la fecha ${fecha}:`, error);
+                    }
+                }
+                
+                if (successfulSaves > 0) {
+                    alert(`Programación guardada exitosamente para ${successfulSaves} día(s).`);
+                }
+                if (failedSaves > 0) {
+                    alert(`Atención: Fallo al guardar para ${failedSaves} día(s). Errores: \n${errors.join('\n')}`);
+                }
+
+                ocultarFormulario();
+                
+                // REFRESH UI: Recargar las tareas y el calendario para la fecha actual de visualización
+                // Esto asegura que los cambios se reflejen en el mes/día que el usuario está viendo.
+                await cargarTareasDiaADia(fechaCalendarioActual); 
+                await appRenderizarCalendario(fechaCalendarioActual.getFullYear(), fechaCalendarioActual.getMonth(), setFechaCalendarioActual);
+
+            } else if (tipoOp === 'corto-medio-plazo' || tipoOp === 'largo-plazo') {
+                const titulo = document.getElementById('nuevoObjetivoTitulo').value.trim();
+                if (!titulo) { alert('El título del objetivo no puede estar vacío.'); throw new Error("Título vacío"); }
+                
                 const payload = { 
-                    texto: tituloTexto, 
-                    tipo: 'titulo', 
-                    subtareas_textos: subtareas,
-                    regla_recurrencia: regla_recurrencia_final,
-                    fecha_inicio: fecha, 
-                    emoji_anotacion: document.getElementById('emojiAnotacionTareaInput').value, 
-                    descripcion_anotacion: document.getElementById('descripcionAnotacionTarea').value.trim(),
-                    // Añadir datos de recordatorio al payload
-                    send_reminder: sendReminder,
-                    reminder_type: reminderType,
-                    selected_reminder_times: selectedReminderHours // NUEVO: Añadir las horas seleccionadas
+                    titulo, 
+                    fecha_estimada: document.getElementById('nuevoObjetivoFecha').value.trim(), 
+                    descripcion: document.getElementById('nuevoObjetivoDescripcion').value.trim(), 
+                    mode_id: tipoOp 
                 };
 
-                try {
-                    const response = await fetchData('tareas-dia-a-dia', 'POST', payload);
-                    if (response.success) {
-                        successfulSaves++;
-                        // Si la tarea se guarda con éxito, intentar compartirla
-                        if (emailsToShare.length > 0) {
-                            const shareResponse = await fetchData('share-task', 'POST', {
-                                task_id: response.id, // ID de la tarea recién creada
-                                emails_to_share: emailsToShare,
-                                include_reminder_times: sendReminder && reminderType === 'hours_before', // Si se activó recordatorio por horas
-                                task_details_text: tituloTexto // Texto de la tarea para el email
-                            });
-                            if (!shareResponse.success) {
-                                errors.push(`Error al compartir con algunos usuarios para la fecha ${fecha}: ${shareResponse.message || 'Error desconocido'}`);
-                                console.error(`Error al compartir para la fecha ${fecha}:`, shareResponse);
-                            } else if (shareResponse.failed_to_send_to && shareResponse.failed_to_send_to.length > 0) {
-                                const failedEmails = shareResponse.failed_to_send_to.map(f => f.email).join(', ');
-                                errors.push(`No se pudo compartir con: ${failedEmails} para la fecha ${fecha}.`);
-                            }
-                        }
-                    } else {
-                        failedSaves++;
-                        errors.push(`Error al guardar para la fecha ${fecha}: ${response.message || 'Error desconocido'}`);
-                        console.error(`Error al guardar para la fecha ${fecha}:`, response);
-                    }
-                } catch (error) {
-                    failedSaves++;
-                    errors.push(`Error de conexión o API para la fecha ${fecha}: ${error.message}`);
-                    console.error(`Error de conexión/API para la fecha ${fecha}:`, error);
-                }
+                await fetchData('objetivos', 'POST', payload);
+                
+                alert('Objetivo añadido.');
+                ocultarFormulario();
+                await cargarObjetivos(tipoOp);
             }
-            
-            if (successfulSaves > 0) {
-                alert(`Programación guardada exitosamente para ${successfulSaves} día(s).`);
-            }
-            if (failedSaves > 0) {
-                alert(`Atención: Fallo al guardar para ${failedSaves} día(s). Errores: \n${errors.join('\n')}`);
-            }
-
-            ocultarFormulario();
-            
-            // REFRESH UI: Recargar las tareas y el calendario para la fecha actual de visualización
-            // Esto asegura que los cambios se reflejen en el mes/día que el usuario está viendo.
-            await cargarTareasDiaADia(fechaCalendarioActual); 
-            await appRenderizarCalendario(fechaCalendarioActual.getFullYear(), fechaCalendarioActual.getMonth(), setFechaCalendarioActual);
-
-        } else if (tipoOp === 'corto-medio-plazo' || tipoOp === 'largo-plazo') {
-            const titulo = document.getElementById('nuevoObjetivoTitulo').value.trim();
-            if (!titulo) { alert('El título del objetivo no puede estar vacío.'); throw new Error("Título vacío"); }
-            
-            const payload = { 
-                titulo, 
-                fecha_estimada: document.getElementById('nuevoObjetivoFecha').value.trim(), 
-                descripcion: document.getElementById('nuevoObjetivoDescripcion').value.trim(), 
-                mode_id: tipoOp 
-            };
-
-            await fetchData('objetivos', 'POST', payload);
-            
-            alert('Objetivo añadido.');
-            ocultarFormulario();
-            await cargarObjetivos(tipoOp);
+        } finally {
+            if (saveBtn) saveBtn.disabled = false; // Habilitar el botón al final de la operación
         }
     };
     
@@ -498,35 +504,38 @@ export function mostrarFormularioEditarTarea(tarea, fechaObjRecarga, tipoOrigina
     }
     
     const onGuardarEditarTarea = async () => { 
-        // Nuevo: Comprobación de verificación de email antes de guardar
-        if (!currentUser.is_admin && !currentUser.email_verified) {
-            alert("Su correo electrónico no está verificado. Por favor, verifique su correo para crear o modificar elementos.");
-            throw new Error("Email no verificado");
-        }
+        const saveBtn = document.getElementById('form-save-btn'); // Obtener referencia al botón de guardar
+        if (saveBtn) saveBtn.disabled = true; // Deshabilitar el botón al inicio de la operación
 
-        const texto = document.getElementById('editTareaTexto').value.trim();
-        if (!texto) { alert('El texto no puede estar vacío.'); throw new Error("Texto vacío"); }
-        const payload = { _method: "PUT", id: tarea.id, texto, tipo: tarea.tipo }; // Added tipo
-
-        if (tipoOriginal === 'titulo') {
-            payload.fecha_inicio = document.getElementById('editFechaInicioTarea').value;
-            let tipoRecurrenciaVal = document.getElementById('editTipoRecurrencia').value;
-            if (tipoRecurrenciaVal === "WEEKLY") {
-                const dias = Array.from(document.querySelectorAll('#edit-days-of-week-selector input:checked')).map(cb => cb.value);
-                if (dias.length === 0) { alert("Debe seleccionar al menos un día para la repetición semanal."); throw new Error("Días no seleccionados"); }
-                tipoRecurrenciaVal = `WEEKLY:${dias.join(',')}`;
+        try { // Envuelve todo el código asíncrono en un try-catch
+            // Nuevo: Comprobación de verificación de email antes de guardar
+            if (!currentUser.is_admin && !currentUser.email_verified) {
+                alert("Su correo electrónico no está verificado. Por favor, verifique su correo para crear o modificar elementos.");
+                throw new Error("Email no verificado");
             }
-            payload.regla_recurrencia = tipoRecurrenciaVal;
 
-            // CAMPOS DE RECORDATORIO
-            payload.send_reminder = document.getElementById('editActivarRecordatorio').checked;
-            payload.reminder_type = document.getElementById('editTipoRecordatorio').value;
-            // NUEVO: Obtener las horas seleccionadas para la edición del input oculto
-            const selectedEditReminderHours = document.getElementById('selectedEditReminderHoursInput').value.split(',').filter(time => time);
-            payload.selected_reminder_times = selectedEditReminderHours;
-        }
+            const texto = document.getElementById('editTareaTexto').value.trim();
+            if (!texto) { alert('El texto no puede estar vacío.'); throw new Error("Texto vacío"); }
+            const payload = { _method: "PUT", id: tarea.id, texto, tipo: tarea.tipo }; // Added tipo
 
-        try {
+            if (tipoOriginal === 'titulo') {
+                payload.fecha_inicio = document.getElementById('editFechaInicioTarea').value;
+                let tipoRecurrenciaVal = document.getElementById('editTipoRecurrencia').value;
+                if (tipoRecurrenciaVal === "WEEKLY") {
+                    const dias = Array.from(document.querySelectorAll('#edit-days-of-week-selector input:checked')).map(cb => cb.value);
+                    if (dias.length === 0) { alert("Debe seleccionar al menos un día para la repetición semanal."); throw new Error("Días no seleccionados"); }
+                    tipoRecurrenciaVal = `WEEKLY:${dias.join(',')}`;
+                }
+                payload.regla_recurrencia = tipoRecurrenciaVal;
+
+                // CAMPOS DE RECORDATORIO
+                payload.send_reminder = document.getElementById('editActivarRecordatorio').checked;
+                payload.reminder_type = document.getElementById('editTipoRecordatorio').value;
+                // NUEVO: Obtener las horas seleccionadas para la edición del input oculto
+                const selectedEditReminderHours = document.getElementById('selectedEditReminderHoursInput').value.split(',').filter(time => time);
+                payload.selected_reminder_times = selectedEditReminderHours;
+            }
+
             const response = await fetchData('tareas-dia-a-dia', 'POST', payload);
             if (response.success) {
                 alert('Tarea actualizada.'); 
@@ -561,6 +570,8 @@ export function mostrarFormularioEditarTarea(tarea, fechaObjRecarga, tipoOrigina
             }
         } catch (error) {
             alert(`Error de conexión o API al actualizar tarea: ${error.message}`);
+        } finally {
+            if (saveBtn) saveBtn.disabled = false; // Habilitar el botón al final de la operación
         }
     };
 
@@ -693,11 +704,14 @@ export function mostrarFormularioAddSubTarea(parentId, fechaObjRecarga) {
                             </div>`;
     
     const onGuardarSubTarea = async () => { 
-        const texto = document.getElementById('nuevaSubTareaTexto').value.trim();
-        if (!texto) { alert('El texto no puede estar vacío.'); throw new Error("Texto vacío"); }
-        
-        const payload = { texto, tipo: 'subtarea', parent_id: parentId, fecha_inicio: fechaObjRecarga.toISOString().split('T')[0], regla_recurrencia: 'NONE' };
-        try {
+        const saveBtn = document.getElementById('form-save-btn'); // Obtener referencia al botón de guardar
+        if (saveBtn) saveBtn.disabled = true; // Deshabilitar el botón al inicio de la operación
+
+        try { // Envuelve todo el código asíncrono en un try-catch
+            const texto = document.getElementById('nuevaSubTareaTexto').value.trim();
+            if (!texto) { alert('El texto no puede estar vacío.'); throw new Error("Texto vacío"); }
+            
+            const payload = { texto, tipo: 'subtarea', parent_id: parentId, fecha_inicio: fechaObjRecarga.toISOString().split('T')[0], regla_recurrencia: 'NONE' };
             await fetchData('tareas-dia-a-dia', 'POST', payload);
             alert('Sub-tarea añadida.'); 
             ocultarFormulario();
@@ -706,6 +720,8 @@ export function mostrarFormularioAddSubTarea(parentId, fechaObjRecarga) {
             await appRenderizarCalendario(fechaObjRecarga.getFullYear(), fechaObjRecarga.getMonth(), setFechaCalendarioActual);
         } catch (error) {
             alert(`Error al añadir subtarea: ${error.message}`);
+        } finally {
+            if (saveBtn) saveBtn.disabled = false; // Habilitar el botón al final de la operación
         }
     };
     
@@ -725,16 +741,21 @@ export function mostrarFormularioAddSubObjetivo(objetivoPrincipalId, mode_id_rec
                             </div>`;
     
     const onGuardarSubObjetivo = async () => {
-        const texto = document.getElementById('nuevoSubObjetivoModalTexto').value.trim();
-        if (!texto) { alert('El texto no puede estar vacío.'); throw new Error("Texto vacío"); }
-        
-        try {
+        const saveBtn = document.getElementById('form-save-btn'); // Obtener referencia al botón de guardar
+        if (saveBtn) saveBtn.disabled = true; // Deshabilitar el botón al inicio de la operación
+
+        try { // Envuelve todo el código asíncrono en un try-catch
+            const texto = document.getElementById('nuevoSubObjetivoModalTexto').value.trim();
+            if (!texto) { alert('El texto no puede estar vacío.'); throw new Error("Texto vacío"); }
+            
             await fetchData('sub_objetivos', 'POST', { objetivo_id: objetivoPrincipalId, texto });
             alert('Sub-objetivo añadido.');
             ocultarFormulario();
             await cargarObjetivos(mode_id_recarga);
         } catch (error) {
             alert(`Error al añadir sub-objetivo: ${error.message}`);
+        } finally {
+            if (saveBtn) saveBtn.disabled = false; // Habilitar el botón al final de la operación
         }
     };
 
@@ -764,23 +785,28 @@ export function mostrarFormularioEditarObjetivo(objetivo, mode_id_recarga) {
     `;
     
     const onGuardarEditarObjetivo = async () => {
-        const titulo = document.getElementById('editObjetivoTitulo').value.trim();
-        if (!titulo) { alert('El título no puede estar vacío.'); throw new Error("Título vacío"); }
-        
-        const payload = { 
-            _method: "PUT", 
-            id: objetivo.id, 
-            titulo, 
-            fecha_estimada: document.getElementById('editObjetivoFecha').value.trim(), 
-            descripcion: document.getElementById('editObjetivoDescripcion').value.trim() 
-        };
-        try {
+        const saveBtn = document.getElementById('form-save-btn'); // Obtener referencia al botón de guardar
+        if (saveBtn) saveBtn.disabled = true; // Deshabilitar el botón al inicio de la operación
+
+        try { // Envuelve todo el código asíncrono en un try-catch
+            const titulo = document.getElementById('editObjetivoTitulo').value.trim();
+            if (!titulo) { alert('El título no puede estar vacío.'); throw new Error("Título vacío"); }
+            
+            const payload = { 
+                _method: "PUT", 
+                id: objetivo.id, 
+                titulo, 
+                fecha_estimada: document.getElementById('editObjetivoFecha').value.trim(), 
+                descripcion: document.getElementById('editObjetivoDescripcion').value.trim() 
+            };
             await fetchData('objetivos', 'POST', payload);
             alert('Objetivo actualizado.'); 
             ocultarFormulario();
             await cargarObjetivos(mode_id_recarga); 
         } catch (error) {
             alert(`Error al actualizar objetivo: ${error.message}`);
+        } finally {
+            if (saveBtn) saveBtn.disabled = false; // Habilitar el botón al final de la operación
         }
     };
     mostrarFormulario(formHtmlCampos, onGuardarEditarObjetivo, "Editar Objetivo");
@@ -801,17 +827,22 @@ export function mostrarFormularioEditarSubObjetivo(subObjetivo, mode_id_recarga)
     `;
     
     const onGuardarEditarSubObjetivo = async () => {
-        const texto = document.getElementById('editSubObjetivoTexto').value.trim(); // Corrigido: .value.trim()
-        if (!texto) { alert('El texto no puede estar vacío.'); throw new Error("Texto vacío"); }
-        
-        const payload = { _method: "PUT", id: subObjetivo.id, texto }; 
-        try {
+        const saveBtn = document.getElementById('form-save-btn'); // Obtener referencia al botón de guardar
+        if (saveBtn) saveBtn.disabled = true; // Deshabilitar el botón al inicio de la operación
+
+        try { // Envuelve todo el código asíncrono en un try-catch
+            const texto = document.getElementById('editSubObjetivoTexto').value.trim(); // Corrigido: .value.trim()
+            if (!texto) { alert('El texto no puede estar vacío.'); throw new Error("Texto vacío"); }
+            
+            const payload = { _method: "PUT", id: subObjetivo.id, texto }; 
             await fetchData('sub_objetivos', 'POST', payload);
             alert('Sub-objetivo actualizado.'); 
             ocultarFormulario();
             await cargarObjetivos(mode_id_recarga); 
         } catch (error) {
             alert(`Error al actualizar sub-objetivo: ${error.message}`);
+        } finally {
+            if (saveBtn) saveBtn.disabled = false; // Habilitar el botón al final de la operación
         }
     };
     mostrarFormulario(formHtmlCampos, onGuardarEditarSubObjetivo, "Editar Sub-Objetivo");

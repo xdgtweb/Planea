@@ -33,27 +33,25 @@ export async function renderizarModoDiaADia() {
         return; 
     }
     
+    // Se elimina el contenedor de tareas inactivas antiguo, ahora se gestionará con un modal.
     modoContenido.innerHTML = `
         <h2>Día a Día</h2>
         <p class="descripcion-pagina">Clic derecho en un día del calendario para añadir tareas programadas. Clic izquierdo para ver detalles y anotaciones del día.</p>
         <div id="calendario-contenedor"></div>
         <div id="add-daily-item-container" style="text-align: center; margin: 15px 0;"></div>
         <div id="tareasDiariasLista"></div>
-        <div id="tareas-inactivas-contenedor">
-            <h3 id="toggle-tareas-inactivas" aria-expanded="false" role="button" tabindex="0">Mostrar Tareas Archivadas/Inactivas</h3>
-            <div id="lista-tareas-inactivas" class="tareas-listado"></div>
-        </div>
         <div id="tareasDetalleDia" class="form-overlay hidden" role="dialog" aria-modal="true" aria-hidden="true" inert>
             <div class="form-modal"></div>
         </div>`;
         
     const addDailyItemContainer = document.getElementById('add-daily-item-container');
+    
+    // Botón para añadir nuevas tareas/títulos
     const btnAddDaily = document.createElement('button');
     btnAddDaily.id = 'add-daily-item-btn';
     btnAddDaily.className = 'add-elemento-diario-btn';
     btnAddDaily.textContent = '+ Añadir Título y Subtareas (Hoy)';
     btnAddDaily.onclick = () => {
-        // Nuevo: Comprobar si el email está verificado antes de permitir añadir tareas
         if (!currentUser.is_admin && !currentUser.email_verified) {
             alert("Su correo electrónico no está verificado. Por favor, verifique su correo para crear o modificar elementos.");
             return;
@@ -62,37 +60,120 @@ export async function renderizarModoDiaADia() {
     }; 
     addDailyItemContainer.appendChild(btnAddDaily);
     
-    const toggleInactivasBtn = document.getElementById('toggle-tareas-inactivas');
-    const listaInactivasDiv = document.getElementById('lista-tareas-inactivas');
-    toggleInactivasBtn.onclick = () => {
-        const isExpanded = listaInactivasDiv.classList.toggle('expandido');
-        toggleInactivasBtn.setAttribute('aria-expanded', isExpanded.toString());
-        // Siempre recargar la lista si se expande, para asegurar que esté actualizada
-        if (isExpanded) { 
-            cargarTareasDiaADia(new Date(appFechaCalendarioActual.getTime())); 
-        }
-    };
+    // Nuevo botón para mostrar el modal de tareas archivadas
+    const btnShowArchived = document.createElement('button');
+    btnShowArchived.id = 'show-archived-tasks-btn';
+    btnShowArchived.className = 'add-elemento-diario-btn'; // Reutilizamos el estilo del botón añadir
+    btnShowArchived.textContent = 'Ver Tareas Archivadas';
+    btnShowArchived.style.marginLeft = '10px'; // Añade un pequeño espacio
+    btnShowArchived.onclick = mostrarModalTareasInactivas; // Llama a la nueva función
+    addDailyItemContainer.appendChild(btnShowArchived);
+
+    // Se eliminan los event listeners y referencias a los elementos antiguos de tareas inactivas
+    // const toggleInactivasBtn = document.getElementById('toggle-tareas-inactivas');
+    // const listaInactivasDiv = document.getElementById('lista-tareas-inactivas');
+    // ...
 
     await renderizarCalendario(appFechaCalendarioActual.getFullYear(), appFechaCalendarioActual.getMonth(), appSetFechaCalendarioActual); 
     await cargarTareasDiaADia(new Date(appFechaCalendarioActual.getTime())); 
 }
 
+export async function mostrarModalTareasInactivas() {
+    const title = "Tareas Archivadas/Inactivas";
+    // El botón de "Guardar" del modal genérico se usará como botón de "Cerrar"
+    const saveButtonText = "Cerrar"; 
+
+    // Contenido inicial del modal mientras se cargan las tareas
+    let formHtmlContent = `<div id="form-fields"><p>Cargando tareas archivadas...</p></div>`;
+
+    // Muestra el modal con el mensaje de carga
+    mostrarFormulario(formHtmlContent, ocultarFormulario, title, saveButtonText); 
+
+    // Personaliza los botones del modal para este caso
+    const formSaveBtn = document.getElementById('form-save-btn');
+    const formCancelBtn = document.getElementById('form-cancel-btn');
+
+    if (formSaveBtn) {
+        formSaveBtn.textContent = 'Cerrar';
+        formSaveBtn.classList.remove('save-btn'); // Quita el estilo de botón de guardar (verde)
+        formSaveBtn.classList.add('cancel-btn');  // Añade el estilo de botón de cancelar (gris)
+        formSaveBtn.onclick = ocultarFormulario;
+    }
+    if (formCancelBtn) {
+        formCancelBtn.style.display = 'none'; // Oculta el botón de cancelar duplicado
+    }
+
+    // Obtiene la fecha actual para la API
+    const fechaParaAPI = appFechaCalendarioActual.toISOString().split('T')[0];
+    try {
+        // Obtenemos todas las tareas para el día y luego filtramos las inactivas.
+        // Esto asume que la API /tareas-dia-a-dia?fecha=... devuelve todas las tareas.
+        const todasLasTareas = await fetchData(`/tareas-dia-a-dia?fecha=${fechaParaAPI}`);
+        const tareasInactivas = todasLasTareas.filter(t => !t.activo);
+
+        const formFieldsDiv = document.getElementById('form-fields');
+        if (!formFieldsDiv) {
+            console.error("No se encontró el contenedor 'form-fields' dentro del modal.");
+            return;
+        }
+
+        if (tareasInactivas.length === 0) {
+            formFieldsDiv.innerHTML = `<p class="mensaje-vacio">No hay tareas archivadas para este día.</p>`;
+        } else {
+            formFieldsDiv.innerHTML = ''; // Limpia el mensaje de carga
+            const ulInactivas = document.createElement('ul');
+            ulInactivas.className = 'tareas-listado';
+            tareasInactivas.forEach(item => {
+                // Reutilizamos las funciones de renderizado de tareas
+                const elementoTarea = item.tipo === 'titulo'
+                    ? crearElementoTituloTareaDiaria(item, appFechaCalendarioActual)
+                    : (item.parent_id === null ? crearElementoSubTareaDiaria(item, appFechaCalendarioActual, true) : null);
+
+                if (elementoTarea) {
+                    ulInactivas.appendChild(elementoTarea);
+                    // Si es un título con subtareas, renderizamos también las subtareas inactivas
+                    if (item.tipo === 'titulo' && item.subtareas && item.subtareas.length > 0) {
+                        const ulSubInactivas = document.createElement('ul');
+                        ulSubInactivas.className = 'subtareas-listado';
+                        item.subtareas.forEach(subtarea => {
+                            ulSubInactivas.appendChild(crearElementoSubTareaDiaria(subtarea, appFechaCalendarioActual, false));
+                        });
+                        ulInactivas.appendChild(ulSubInactivas);
+                    }
+                }
+            });
+            formFieldsDiv.appendChild(ulInactivas);
+        }
+
+    } catch (error) {
+        console.error("Error al cargar tareas archivadas:", error);
+        const formFieldsDiv = document.getElementById('form-fields');
+        if (formFieldsDiv) {
+            formFieldsDiv.innerHTML = `<p class="error-mensaje">Error al cargar tareas archivadas: ${error.message}</p>`;
+        }
+    }
+}
+
+
 export async function cargarTareasDiaADia(fechaObj) {
     const tareasDiariasListaDiv = document.getElementById('tareasDiariasLista');
-    const listaTareasInactivasDiv = document.getElementById('lista-tareas-inactivas');
+    // Se elimina la referencia a listaTareasInactivasDiv ya que no se gestionará en esta función.
+    // const listaTareasInactivasDiv = document.getElementById('lista-tareas-inactivas');
     
-    if (!tareasDiariasListaDiv || !listaTareasInactivasDiv) return;
+    if (!tareasDiariasListaDiv) return;
 
     tareasDiariasListaDiv.innerHTML = '<p>Cargando tareas activas...</p>';
-    if (listaTareasInactivasDiv.classList.contains('expandido')) {
-        listaTareasInactivasDiv.innerHTML = '<p>Cargando tareas inactivas...</p>';
-    }
+    // Se elimina la lógica de carga para tareas inactivas del modo principal.
+    // if (listaTareasInactivasDiv.classList.contains('expandido')) {
+    //     listaTareasInactivasDiv.innerHTML = '<p>Cargando tareas inactivas...</p>';
+    // }
 
     const fechaParaAPI = fechaObj.toISOString().split('T')[0];
     try {
         const todasLasTareas = await fetchData(`/tareas-dia-a-dia?fecha=${fechaParaAPI}`);
         const tareasActivas = todasLasTareas.filter(t => t.activo);
-        const tareasInactivas = todasLasTareas.filter(t => !t.activo); 
+        // Se elimina el filtro para tareas inactivas ya que se cargarán en el modal.
+        // const tareasInactivas = todasLasTareas.filter(t => !t.activo); 
 
         tareasDiariasListaDiv.innerHTML = '';
         if (tareasActivas.length > 0) {
@@ -119,13 +200,18 @@ export async function cargarTareasDiaADia(fechaObj) {
         } else {
             tareasDiariasListaDiv.innerHTML = '<p class="mensaje-vacio">No hay tareas activas para este día.</p>';
         }
-        renderizarTareasInactivas(tareasInactivas, fechaObj); 
+        // Se elimina la llamada a renderizarTareasInactivas, ahora lo hace el modal.
+        // renderizarTareasInactivas(tareasInactivas, fechaObj); 
     } catch (error) { 
         console.error("Error en cargarTareasDiaADia:", error); 
         tareasDiariasListaDiv.innerHTML = `<p class="error-mensaje">Error al cargar tareas: ${error.message}</p>`; 
     }
 }
 
+// La función renderizarTareasInactivas ya no es necesaria como exportable para la vista principal,
+// su lógica se ha integrado directamente en mostrarModalTareasInactivas.
+// Podría ser una función auxiliar interna si se necesitara reutilizar el HTML de una lista de tareas inactivas.
+/*
 export function renderizarTareasInactivas(tareasInactivas, fechaObj) {
     const listaTareasInactivasDiv = document.getElementById('lista-tareas-inactivas');
     const toggleBtn = document.getElementById('toggle-tareas-inactivas');
@@ -162,6 +248,7 @@ export function renderizarTareasInactivas(tareasInactivas, fechaObj) {
         listaTareasInactivasDiv.appendChild(ulInactivas);
     }
 }
+*/
 
 export function crearElementoTituloTareaDiaria(tarea, fechaObj) {
     const liTitulo = document.createElement('li');
@@ -303,6 +390,14 @@ export async function restaurarTarea(tareaARestaurar, fechaObjRecarga) {
         alert('Elemento restaurado a activo.');
         await cargarTareasDiaADia(new Date(appFechaCalendarioActual.getTime() || fechaObjRecarga.getTime())); 
         await renderizarCalendario(appFechaCalendarioActual.getFullYear(), appFechaCalendarioActual.getMonth(), appSetFechaCalendarioActual);
+        
+        // Nuevo: Si el modal de tareas archivadas está abierto, recargar su contenido
+        const formContainer = document.getElementById('form-container'); // Este es el overlay genérico del modal
+        const formTitle = document.getElementById('form-title'); // Título del modal
+        if (formContainer && formContainer.getAttribute('aria-hidden') === 'false' && formTitle.textContent === 'Tareas Archivadas/Inactivas') {
+            await mostrarModalTareasInactivas(); // Re-renderizar el contenido del modal
+        }
+
     } catch (error) { alert(`Error al restaurar tarea: ${error.message}`); }
 }
 
@@ -351,6 +446,14 @@ export async function eliminarTareaDiaria(tarea, fechaObjRecarga, esActivaActual
         
         await cargarTareasDiaADia(new Date(appFechaCalendarioActual.getTime() || fechaObjRecarga.getTime()));
         await renderizarCalendario(appFechaCalendarioActual.getFullYear(), appFechaCalendarioActual.getMonth(), appSetFechaCalendarioActual);
+
+        // Nuevo: Si el modal de tareas archivadas está abierto, recargar su contenido
+        const formContainer = document.getElementById('form-container'); // Este es el overlay genérico del modal
+        const formTitle = document.getElementById('form-title'); // Título del modal
+        if (formContainer && formContainer.getAttribute('aria-hidden') === 'false' && formTitle.textContent === 'Tareas Archivadas/Inactivas') {
+            await mostrarModalTareasInactivas(); // Re-renderizar el contenido del modal
+        }
+
     } catch (error) { 
         console.error("-> Error durante fetchData para eliminación:", error); 
         alert(`Error al procesar la eliminación: ${error.message}`); 

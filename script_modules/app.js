@@ -3,9 +3,10 @@ console.log("[app.js] PASO 1: Archivo cargado y ejecutándose.");
 
 import { checkLoginStatus, logout } from './auth.js';
 import { showLoginScreen } from './ui_auth.js';
-import { setupEventListeners, updateUsernameInUI, closeAllActionPanels } from './ui.js';
+import * as ui from './ui.js'; // Importar ui como módulo
+import * as modals from './modals.js';
 import { fetchData } from './utils.js';
-
+ 
 // No importamos 'views.js' aquí para evitar la dependencia circular.
 
 export let modosDisponibles = []; 
@@ -31,8 +32,9 @@ document.addEventListener('DOMContentLoaded', () => {
             currentUser.is_admin = status.is_admin; // Actualizar rol de administrador
             currentUser.is_admin_original_login = status.is_admin_original_login || false; // Si se accedió como admin
 
+            console.log("APP.JS: currentUser después de verificar sesión:", currentUser); // Añade esta línea
             console.log("[app.js] PASO 4A: Decisión -> Usuario LOGUEADO. Llamando a cargarModos()...");
-            cargarModos();
+            cargarModos(); // Esto se encargará de configurar la UI y cargar el contenido
         } else {
             console.log("[app.js] PASO 4B: Decisión -> Usuario NO LOGUEADO. Llamando a showLoginScreen()...");
             showLoginScreen();
@@ -86,8 +88,16 @@ export async function cargarModos() {
         </div>
     `;
 
-    await initAppModules();
+    // Inicializar módulos de la aplicación aquí
+    // El módulo UI se inicializa con el currentUser ya poblado
+    ui.initUIModule({ 
+        currentUser: currentUser 
+    });
+    // Se eliminan las llamadas directas a setupEventListeners() y updateUsernameInUI()
+    // ya que ui.initUIModule() las maneja internamente.
     
+    await initAppModules(); // Esto contiene otras inicializaciones de módulos
+
     try {
         modosDisponibles = await fetchData('/modos');
         renderizarBotonesModos();
@@ -135,7 +145,7 @@ function renderizarBotonesModos() {
 
 async function activarModo(modeId) {
     const { renderizarModoDiaADia, renderizarModoObjetivos } = await import('./views.js');
-    closeAllActionPanels();
+    ui.closeAllActionPanels(); // Asegurarse de usar la función exportada de ui.js
     modoActivo = modeId;
 
     const navModesContainer = document.getElementById('nav-modes-container');
@@ -149,11 +159,27 @@ async function activarModo(modeId) {
         await renderizarModoDiaADia();
     } else if (modeId === 'corto-medio-plazo' || modeId === 'largo-plazo') {
         await renderizarModoObjetivos(modeId);
+    } else if (modeId === 'admin-panel') {
+        // Nuevo: Mostrar pantalla de login si no es admin
+        if (!currentUser.is_admin) {
+            alert("Acceso denegado: solo los administradores pueden ver este panel.");
+            // Opcional: Redirigir a otro modo si el acceso es denegado
+            modoActivo = 'dia-a-dia'; 
+            await activarModo(modoActivo); // Llama a activarModo para renderizar el nuevo modo
+            renderizarBotonesModos(); // Para actualizar el botón activo visualmente
+            return;
+        }
+        // Asumiendo que renderizarAdminPanel es una función en views.js o un módulo similar
+        const { renderizarAdminPanel } = await import('./views.js');
+        await renderizarAdminPanel();
     }
+    // No hay necesidad de un default, los modos no reconocidos se gestionan arriba o no deberían ocurrir.
 }
 
 async function initAppModules() {
+    // Importa initViewsModule dinámicamente ya que views.js no se importa a nivel superior
     const { initViewsModule } = await import('./views.js');
+
     const confettiCanvas = document.getElementById('confetti-canvas');
     if (confettiCanvas && typeof confetti !== 'undefined') {
         myConfettiInstance = confetti.create(confettiCanvas, { resize: true, useWorker: true });
@@ -168,8 +194,7 @@ async function initAppModules() {
         currentUser: currentUser // Pasar la información del usuario actual a views.js
     });
     
-    setupEventListeners();
-    updateUsernameInUI();
+    // ui.initUIModule ya se llama en cargarModos. Se eliminan llamadas redundantes aquí.
 }
 
 // Nuevo: Función para mostrar el panel de administrador
@@ -198,7 +223,8 @@ async function showAdminPanel() {
                 if (response.success) {
                     alert(response.message);
                     // Recargar la app para reflejar la sesión del admin original
-                    currentUser.id = response.usuario_id; // Debería venir en la respuesta
+                    // Es importante actualizar el currentUser global
+                    currentUser.id = response.usuario_id; // El ID del usuario al que se cambió
                     currentUser.username = response.username;
                     currentUser.email_verified = true; // Asumimos verificado
                     currentUser.is_admin = true;
