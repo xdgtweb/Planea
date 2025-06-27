@@ -42,7 +42,21 @@ switch ($method) {
                 return;
             }
 
-            // Aquí se debería verificar que el objetivo_id pertenece al usuario_id para seguridad
+            // INICIO DE LA MODIFICACIÓN: Añadir verificación de seguridad
+            // Verificar que el objetivo_id pertenece al usuario_id actual
+            $stmt_check_owner = $mysqli->prepare("SELECT id FROM objetivos WHERE id = ? AND usuario_id = ?");
+            $stmt_check_owner->bind_param("ii", $objetivo_id, $usuario_id);
+            $stmt_check_owner->execute();
+            $result_check_owner = $stmt_check_owner->get_result();
+
+            if ($result_check_owner->num_rows === 0) {
+                json_response(['error' => 'Objetivo padre no encontrado o no autorizado'], 403);
+                $stmt_check_owner->close();
+                return;
+            }
+            $stmt_check_owner->close();
+            // FIN DE LA MODIFICACIÓN
+
             $stmt = $mysqli->prepare("INSERT INTO sub_objetivos (objetivo_id, texto) VALUES (?, ?)");
             $stmt->bind_param("is", $objetivo_id, $texto);
 

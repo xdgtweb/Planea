@@ -54,7 +54,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $password_hash = password_hash($random_password, PASSWORD_DEFAULT);
                 
                 // Usar el nombre de Google como nombre de usuario, o una versión saneada
-                $username_base = preg_replace('/[^a-zA-Z0-9]/', '', $nombre_usuario);
+                // INICIO DE LA MODIFICACIÓN
+                // Paso 1: Eliminar cualquier carácter que NO sea alfanumérico o un espacio.
+                // Esto mantiene los caracteres válidos del nombre (letras, números, espacios).
+                $sanitized_name = preg_replace('/[^a-zA-Z0-9\s]/u', '', $nombre_usuario); 
+
+                // Paso 2: Reemplazar secuencias de espacios múltiples (o cualquier espacio en blanco) con un solo espacio.
+                $collapsed_spaces_name = preg_replace('/\s+/', ' ', $sanitized_name);
+
+                // Paso 3: Recortar los espacios al principio y al final.
+                $username_base = trim($collapsed_spaces_name);
+                // FIN DE LA MODIFICACIÓN
+
                 $final_username = $username_base;
                 $counter = 1;
                 // Asegurarse de que el nombre de usuario sea único

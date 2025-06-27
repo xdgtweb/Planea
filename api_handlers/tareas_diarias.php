@@ -102,6 +102,14 @@ switch ($method) {
         $root_tasks = [];
         // Primera pasada: Organizar todas las tareas por ID y separar las tareas raíz
         foreach ($tasks_by_id as $id => &$task) {
+            // Inicializar subtareas y el array temporal para control de duplicados
+            if (!isset($task['subtareas'])) {
+                $task['subtareas'] = [];
+            }
+            if (!isset($task['subtareas_indexed'])) { // <-- INICIO DE LA MODIFICACIÓN
+                $task['subtareas_indexed'] = []; // Array temporal para controlar IDs ya añadidos
+            } // <-- FIN DE LA MODIFICACIÓN
+
             if ($task['parent_id'] === null) {
                 $root_tasks[$task['id']] = &$tasks_by_id[$task['id']]; // Mantener referencia a la tarea raíz
             }
@@ -111,7 +119,7 @@ switch ($method) {
         $own_task_ids = [];
         foreach ($tasks_by_id as $id => $task) {
             // Solo si la tarea es del usuario, no si es compartida de otro
-            if ($task['usuario_id'] == $usuario_id) {
+            if (isset($task['usuario_id']) && $task['usuario_id'] == $usuario_id) {
                 $own_task_ids[] = $id;
             }
         }
@@ -157,7 +165,14 @@ switch ($method) {
             if ($task['parent_id'] !== null) {
                 $parent_id = $task['parent_id'];
                 if (isset($tasks_by_id[$parent_id])) {
-                    $tasks_by_id[$parent_id]['subtareas'][] = &$task; // Anidar por referencia
+                    // INICIO DE LA MODIFICACIÓN para evitar duplicados de subtareas en el array JSON
+                    // Solo añadir la subtarea si su ID no ha sido añadido ya a este padre
+                    if (!isset($tasks_by_id[$parent_id]['subtareas_indexed'][$id])) {
+                        $tasks_by_id[$parent_id]['subtareas'][] = &$task; // Añadir al array secuencial para el orden de salida JSON
+                        $tasks_by_id[$parent_id]['subtareas_indexed'][$id] = true; // Marcar como añadida para evitar volver a añadir
+                    }
+                    // FIN DE LA MODIFICACIÓN
+                    
                     // Si una subtarea está anidada, ya no debe ser una tarea raíz independiente
                     if (isset($root_tasks[$id])) {
                         unset($root_tasks[$id]);
@@ -165,6 +180,14 @@ switch ($method) {
                 }
             }
         }
+
+        // INICIO DE LA MODIFICACIÓN: Limpiar el array temporal 'subtareas_indexed' antes de la salida JSON
+        foreach ($tasks_by_id as $id => &$task) {
+            if (isset($task['subtareas_indexed'])) {
+                unset($task['subtareas_indexed']);
+            }
+        }
+        // FIN DE LA MODIFICACIÓN
 
         // Convertir el array de tareas raíz a un array indexado para la respuesta JSON
         $final_output = array_values($root_tasks);
@@ -300,7 +323,7 @@ switch ($method) {
                 if (!$stmt) {
                     throw new Exception('Error al preparar la actualización general de tarea: ' . $mysqli->error);
                 }
-                $stmt->bind_param($bind_types, ...$bind_params);
+                $stmt->bind_param($types, ...$params);
 
                 if (!$stmt->execute()) {
                     throw new Exception('No se pudo actualizar la tarea: ' . $stmt->error);
@@ -687,7 +710,7 @@ switch ($method) {
                     json_response(['error' => 'Error en la transacción: ' . $e->getMessage()], 500);
                 }
             } else { // Crear tarea simple
-                $stmt = $mysqli->prepare("INSERT INTO tareas_diarias (usuario_id, texto, tipo, parent_id, regla_recurrencia, fecha_inicio, submission_group_id) VALUES (?, ?, ?, ?, ?, ?, ?)"); 
+                $stmt = $mysqli->prepare("INSERT INTO tareas_diarias (usuario_id, texto, tipo, parent_id, regla_recurrencia, submission_group_id) VALUES (?, ?, ?, ?, ?, ?, ?)"); 
                 if (!$stmt) {
                      json_response(['error' => 'Error al preparar la inserción de tarea simple: ' . $mysqli->error], 500);
                      return;
